@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import os
+import tempfile
 
 from .base import *  # noqa: F403
 from .base import env
 
-SECRET_KEY = "test-only-key-not-used-outside-tests-000000000000"
+# Public test-only constant: the test profile runs no real traffic and signs nothing that
+# leaves the test process, so a generated or environment-supplied key would add no safety.
+SECRET_KEY = "test-only-key-not-used-outside-tests-000000000000"  # nosec B105
 DEBUG = False
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 
@@ -19,4 +22,4 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 THROTTLES_ENABLED = False
-MEDIA_ROOT = os.path.join(os.path.dirname(os.environ.get("TMPDIR", "/tmp")), "academy-test-media")
+MEDIA_ROOT = os.path.join(tempfile.gettempdir(), "academy-test-media")

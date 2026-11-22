@@ -128,8 +128,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No packages are installed, so a pip cache has nothing to save (it failed the job).
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip }
+        with: { python-version: "3.12" }
       - run: python scripts/gate_imports.py
 
   # G8 — E2E + axe smoke. Active once the first UI screens land (T-023).
