@@ -133,9 +133,26 @@ jobs:
       - run: python scripts/gate_imports.py
 
   # G8 — E2E + axe smoke. Active once the first UI screens land (T-023).
-  g8-e2e:
+  # The guard decides whether the suite exists; a job-level `if` cannot call hashFiles.
+  g8-guard:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('tests/e2e/**') != '' }}
+    outputs:
+      present: ${{ steps.suite.outputs.present }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: suite
+        run: |
+          if [ -n "$(ls -A tests/e2e 2>/dev/null)" ]; then
+            echo "present=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=no" >> "$GITHUB_OUTPUT"
+            echo "G8 inactive: tests/e2e/ is empty or absent; it activates at T-023."
+          fi
+
+  g8-e2e:
+    needs: g8-guard
+    if: needs.g8-guard.outputs.present == 'yes'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
