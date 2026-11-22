@@ -6,8 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # ffmpeg/ffprobe are required by the media pipeline (docs/background-jobs.md); curl is used
-# by the container health checks.
+# by the container health checks. The base image lags Debian's security fixes, so the
+# packages it already ships are upgraded in the same layer: G6's image scan only reports
+# findings that have a fix, and a stale base is the usual source of them.
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends ffmpeg curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,7 +21,9 @@ COPY config ./config
 COPY manage.py ./
 # The development image carries the gates' tooling; the production image does not.
 ARG INSTALL_DEV=true
-RUN if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir ".[dev]"; \
+# pip itself is not a project dependency, so `pip-audit` never sees it; trivy does.
+RUN pip install --no-cache-dir --upgrade pip \
+    && if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir ".[dev]"; \
     else pip install --no-cache-dir .; fi
 
 COPY . .
