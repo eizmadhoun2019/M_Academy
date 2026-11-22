@@ -30,30 +30,30 @@ and verified here.
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-22; history rebased onto `origin/main` and pushed, CI result pending) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
-| T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | TODO | Tech authority | T-001 | Worker ping task via Redis; settings tests |
-| T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | TODO | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
-| T-004 | Adapter interfaces + `host_stub` + 4 contract suites | TODO | Tech authority | T-003 | All contract suites pass |
-| T-005 | Domain events (signals, on-commit emitter, handlers) | TODO | Tech authority | T-003 | Events fire only after commit |
-| T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | TODO | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
-| T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | TODO | Tech authority | T-006 | Constraints + indexes tested |
-| T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | TODO | Tech authority | T-007 | Meta-test: every model is a TenantModel |
-| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | TODO | Tech authority | T-004 | Allow/deny/scope matrix tests |
-| T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | TODO | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
-| T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | TODO | Tech authority | T-009 | Schema builds with 0 warnings |
-| T-012 | Audit trail: model + append-only trigger + `audit.record` service | TODO | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
-| T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | TODO | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
-| T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | TODO | Tech authority | T-004 | Unauthenticated/inactive/role-change tests |
-| T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | TODO | Tech authority | T-004, T-014 | Contract + integration suites pass vs fake |
-| T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | TODO | Tech authority | T-009 | REQ-13 matrix tests in DRF + web, both modes |
-| T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | TODO | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
-| T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | TODO | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
-| T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | TODO | Tech authority | T-017 | REQ-08, sequential-lock matrix |
-| T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | TODO | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
-| T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | TODO | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
-| T-022 | Reports + CSV export (scoped selectors, formula-safe CSV) | TODO | Tech authority | T-020 | REQ-12; query-count + scope tests; columns and CSV per `docs/reports.md` |
-| T-023 | Learner + management web UI (bilingual, responsive, accessible, player) | TODO | Tech authority | T-020, T-022 | REQ-14; manual checks recorded in LOG |
-| T-024 | Journey test + E2E + accessibility + load test + ops (deploy/backup/restore/alerts) + security review + privacy tooling + pilot | TODO | Tech authority | T-023 | REQ-15…REQ-20 evidence in LOG; alert thresholds in `docs/operations/environments.md` §8 |
-| GATE-1 | Phase 1 gate: all REQ-01…REQ-20 verified; release `v1.0.0` | TODO | Project owner | T-001…T-024 | [RELEASE] entry in LOG with per-REQ evidence |
+| T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | `[ ]` | Tech authority | T-001 | Worker ping task via Redis; settings tests |
+| T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[ ]` | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
+| T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[ ]` | Tech authority | T-003 | All contract suites pass |
+| T-005 | Domain events (signals, on-commit emitter, handlers) | `[ ]` | Tech authority | T-003 | Events fire only after commit |
+| T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[ ]` | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
+| T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[ ]` | Tech authority | T-006 | Constraints + indexes tested |
+| T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[ ]` | Tech authority | T-007 | Meta-test: every model is a TenantModel |
+| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[ ]` | Tech authority | T-004 | Allow/deny/scope matrix tests |
+| T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[ ]` | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
+| T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[ ]` | Tech authority | T-009 | Schema builds with 0 warnings |
+| T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[ ]` | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
+| T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[ ]` | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
+| T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[ ]` | Tech authority | T-004 | Unauthenticated/inactive/role-change tests |
+| T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[ ]` | Tech authority | T-004, T-014 | Contract + integration suites pass vs fake |
+| T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[ ]` | Tech authority | T-009 | REQ-13 matrix tests in DRF + web, both modes |
+| T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[ ]` | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
+| T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[ ]` | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
+| T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[ ]` | Tech authority | T-017 | REQ-08, sequential-lock matrix |
+| T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[ ]` | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
+| T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[ ]` | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
+| T-022 | Reports + CSV export (scoped selectors, formula-safe CSV) | `[ ]` | Tech authority | T-020 | REQ-12; query-count + scope tests; columns and CSV per `docs/reports.md` |
+| T-023 | Learner + management web UI (bilingual, responsive, accessible, player) | `[ ]` | Tech authority | T-020, T-022 | REQ-14; manual checks recorded in LOG |
+| T-024 | Journey test + E2E + accessibility + load test + ops (deploy/backup/restore/alerts) + security review + privacy tooling + pilot | `[ ]` | Tech authority | T-023 | REQ-15…REQ-20 evidence in LOG; alert thresholds in `docs/operations/environments.md` §8 |
+| GATE-1 | Phase 1 gate: all REQ-01…REQ-20 verified; release `v1.0.0` | `[ ]` | Project owner | T-001…T-024 | [RELEASE] entry in LOG with per-REQ evidence |
 
 Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; endpoint tasks
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
@@ -87,7 +87,10 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not duplicate values.
 
 - **Open:** D-001 (video storage provider), D-005 (upstream domain/TLS), D-009 (KPI values),
-  D-010 (Hub implementation owner). None blocks Phase 0.
+  D-010 (Hub implementation owner), D-025 (object-storage image for the development stack).
+  Only D-025 blocks a Phase 0 acceptance item — the bucket step of T-001; none blocks Phase 0
+  implementation work.
+- **Confirmed:** D-023 (repository stays public; the documentation baseline is published).
 - **Defaulted** (build proceeds on the documented value; owner may override): D-002, D-003,
   D-004, D-006, D-007, D-008, D-011, D-012, D-013, D-014, D-015, D-016, D-017.
 - Retired legacy numbers (D-018…D-022, plus the four CHARTER 2.0 collisions) are mapped in

@@ -136,7 +136,7 @@ Canonical location: `docs/performance-profile.yaml` (approved with this charter)
 | Clients bypass skip protection | Server-authoritative heartbeat (REQ-09); abuse tests |
 | Module entangles with Hub | Import-boundary test; adapters are the only seams |
 | Accessibility/mobile found late | UI foundation early; axe in E2E (REQ-15) |
-| Employee-privacy/legal concerns | D-008 with legal advisor before go-live; REQ-19 |
+| Employee-privacy/legal concerns | Retention and legal basis (D-003) confirmed with legal advisor before go-live; REQ-19 |
 | Base-image vulnerabilities block CI | Time-boxed owner-approved exception process (RULES → Exceptions) |
 
 ## 11. Change control

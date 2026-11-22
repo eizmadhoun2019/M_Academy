@@ -183,3 +183,29 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-22): stays public, proceed as is; path = rebase
   then normal push.
 - **References:** D-023, T-001, `docs/operations/environments.md` §1.
+
+### [2026-11-22] — Record-keeping defects corrected (no earlier entry edited)
+
+- **Type:** Change
+- **Status:** Implemented
+- **Summary:** A consistency review of the documentation found four defects in the record:
+  two LOG entries use a type or status outside the lists in RULES, `CHARTER.md` §10 and
+  `docs/configuration.md` §7 attributed retention to the wrong decision, STATUS omitted D-025
+  from its open list while calling it a blocker elsewhere, and `docs/skills/closing.md` cited a
+  sync table that did not exist.
+- **Impact:** Nothing was deleted or rewritten (append-only). The two superseded entries keep
+  their text and are corrected here; retention is D-003; `RULES.md` now carries the document
+  sync table, the definition of done, the commit-message format, the UI rules and the
+  dependency policy that other documents were already referring to; `ARCHITECTURE.md` §7 gained
+  an explicit tenant-isolation statement; `docs/traceability.md` §3 gained the gate activation
+  column that records which gates are live at each task.
+- **Evidence:** `python scripts/check_docs.py` passes; the corrected references resolve to
+  `docs/decisions.md` rows D-003 and D-008; every rule referenced by `docs/skills/closing.md`
+  now exists under that name.
+- **Corrects:** `[2026-11-22] Documentation baseline adopted as starting state` (Status
+  `Proposed`, `Approved by: Pending`) and `[2026-11-22] Build-blocking gaps closed:
+  configuration, jobs, copy, reports` (Type `Documentation`, Status `Done`).
+- **Approved by:** Project owner (2026-11-22: «أصلح كل ما سبق»).
+- **References:** RULES (LOG status values, Document sync table, Definition of done, Commit
+  messages, UI and frontend rules, Dependencies), CHARTER §10, `docs/configuration.md` §7,
+  `docs/decisions.md` D-003, `docs/traceability.md` §3, `docs/skills/closing.md`.

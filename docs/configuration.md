@@ -120,7 +120,7 @@ trips `progress_skip_rejected`).
 | Item | Where it lives | Why not an env var |
 |---|---|---|
 | Completion threshold (default 90%) | `Organization settings`, default `DEFAULT_COMPLETE_PERCENT` | Per-organization business rule |
-| Retention windows | `Organization settings`, defaults per `docs/domain-model.md` §8 | Legal/management decision (D-008/D-009) |
+| Retention windows | `Organization settings`, defaults per `docs/domain-model.md` §8 | Legal/management decision (D-003) |
 | Grants-only mode | `Organization settings` | Toggled by an admin, audited |
 | Business time zone | `ACADEMY_BUSINESS_TZ` (D-002) | Deployment-wide |
 

@@ -35,17 +35,22 @@ not appear in new text. Use §2 to translate any surviving occurrence.
 
 Referenced as “gate G7” and similar in skills and RULES. Definitions here are normative.
 
-| Gate | Check | Fails the merge when |
-|---|---|---|
-| G1 | `ruff format --check` + `ruff check` | Any finding |
-| G2 | `mypy` (public functions typed) | Any error |
-| G3 | `pytest` with coverage | Any failure, or services/selectors coverage < 85% |
-| G4 | `makemigrations --check --dry-run` + migrate forward/back | Missing or non-reversible migration |
-| G5 | OpenAPI schema build | Any warning |
-| G6 | Security scans: `bandit`, `pip-audit`, image scan, `check --deploy` | Any unresolved high/critical finding without an approved exception |
-| G7 | Import boundary + tenant isolation suites | `academy` imports host/`host_stub`, or any cross-org leak |
-| G8 | E2E + axe smoke | Journey failure, or axe critical/serious violation |
-| G9 | Documentation check (links, IDs, required sections) | Broken reference or missing required document section |
+**Activation.** A gate is fully applicable only from the task that first creates what it
+measures. Until then it runs and reports its state explicitly — an inactive gate exits 0 with
+a printed reason, so “green” never hides “not run”. The list below is the single place that
+records which gates are live, and it is updated in the task that activates a gate.
+
+| Gate | Check | Active | Fails the merge when |
+|---|---|---|---|
+| G1 | `ruff format --check` + `ruff check` | T-001 | Any finding |
+| G2 | `mypy` (public functions typed) | T-001 | Any error |
+| G3 | `pytest` with coverage | T-001 (suite), coverage threshold from T-003 | Any failure, or services/selectors coverage < 85% |
+| G4 | `makemigrations --check --dry-run` + migrate forward/back | T-001 | Missing or non-reversible migration |
+| G5 | OpenAPI schema build | T-001 | Any warning |
+| G6 | Security scans: `bandit`, `pip-audit`, image scan, `check --deploy` | T-001 (all four sub-checks) | Any unresolved high/critical finding without an approved exception |
+| G7 | Import boundary + tenant isolation suites | import boundary: T-001 (nothing to inspect until `academy/` exists, T-003); tenant half: T-010 | `academy` imports host/`host_stub`, or any cross-org leak |
+| G8 | E2E + axe smoke | T-023 (`tests/e2e/` non-empty; a guard job decides) | Journey failure, or axe critical/serious violation |
+| G9 | Documentation check (links, IDs, required sections) | T-001 | Broken reference or missing required document section |
 
 ## 4. Requirement → task → evidence
 

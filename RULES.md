@@ -70,6 +70,56 @@ Implemented, Tested, Verified, Merged and Released entries require evidence.
 - Postgres constraints enforce invariants; indexes begin with `organization_id`; migrations
   committed, reversible, never edited after application.
 
+## Document sync table
+A task that changes a fact updates the document that owns it in the same commit. `docs/skills/closing.md` step 3 refers to this table.
+
+| When this changes | Update |
+|---|---|
+| Scope, acceptance criteria, success measures, risks | `CHARTER.md` (+ LOG entry) |
+| An architecture decision (ADR) | `ARCHITECTURE.md` §11, plus `docs/adr/` when a record is needed |
+| A decision's value or status | `docs/decisions.md`, then every document that quotes it |
+| Task state, current phase, blockers, next action | `STATUS.md` |
+| Any completed or approved work | `LOG.md` (append-only) |
+| IDs, gate definitions and activation, requirement coverage | `docs/traceability.md` |
+| A configuration value, job, message text or report column | `docs/configuration.md`, `docs/background-jobs.md`, `docs/notifications.md`, `docs/reports.md` |
+| Ports, containers, buckets, isolation rules | `docs/operations/environments.md` |
+| Schema, constraints, progress rules | `docs/domain-model.md` |
+| An endpoint, capability or error code | `docs/api.md` |
+
+## Definition of done
+A task is `[x]` only when every item holds:
+1. Each acceptance criterion in its STATUS row has cited evidence: file+line, test name or command output.
+2. The gates that are active for it pass on the merge commit (`docs/traceability.md` §3); none is bypassed or silenced.
+3. The documents above are updated, and `python scripts/check_docs.py` (G9) passes.
+4. `ruff`, `mypy`, the migrations check and the tests covering the change pass locally.
+5. `LOG.md` has one entry with evidence; the STATUS row carries the merge commit and CI link.
+6. No orphan TODO: every marker names a task ID from STATUS.
+
+## Commit messages
+Conventional Commits, one focused change per commit, English imperative subject of at most 72
+characters: `<type>(<scope>): <subject>`, where type is one of `feat`, `fix`, `docs`,
+`refactor`, `test`, `build`, `ci`, `chore`, `perf`. The body says why, not what, and names the
+task ID (`Refs: T-003`). A commit never contains secrets, `.env`, generated artifacts, `*.log`
+or an unrelated file.
+
+## UI and frontend rules
+- Strict CSP without `unsafe-inline`: no inline `style=` and no inline `<script>`; styles and
+  scripts ship as cacheable files.
+- RTL first: use logical properties (`margin-inline-start`, `padding-block`,
+  `inset-inline-start`) instead of left/right-specific rules.
+- Every user-visible string comes from gettext (`ar` default RTL, `en` secondary); no literal
+  copy in templates or scripts.
+- Brand: locally hosted Noto Sans Arabic; the wordmark is a text logotype until D-008 is decided.
+- Accessibility target is WCAG 2.2 AA: labelled controls, visible focus, keyboard-reachable
+  player controls, and no colour-only meaning.
+
+## Dependencies
+- Every dependency is pinned to an exact version in `pyproject.toml`; no floating ranges.
+- A new dependency or external service needs technical-authority approval and a clean
+  `pip-audit` in the same change.
+- Upgrading or removing a pinned version is a normal change whose reason goes in the commit body.
+- Provider SDKs never appear inside `academy/`: adapters own them.
+
 ## AI agent permissions
 - Allowed: implement approved tasks end-to-end; run local focused verification; update
   documents per the sync duty; push to task branches; append LOG entries.

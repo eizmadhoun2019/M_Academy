@@ -83,6 +83,13 @@ Authorization in depth: view-declared capability → service recheck → object-
 `academy.learn | manage_content | assign | view_reports | admin`; effective access = Hub role
 defaults ∪ active individual grants; optional grants-only mode; last-active-admin
 protection; grant/revoke audited in the same transaction; denied admin actions audited.
+**Tenant isolation statement (Sensitive project).** Every Academy table carries
+`organization_id`, every index begins with it, and every query goes through
+`for_org(organization_id)` — code may not use an unscoped default manager. Learners and staff
+are opaque `user_ref` strings with no user-model foreign key and no name or email column.
+Composite foreign keys keep a child row in its parent's organization, and the tenant-isolation
+suite (G7) fails the build on any cross-organization read or write.
+
 Audited actions (canonical list — extend here first, per `docs/skills/audited-action.md`):
 `course.created`, `course.updated`, `course.archived`, `version.published`,
 `version.discarded`, `section.created|updated|deleted|reordered`,
