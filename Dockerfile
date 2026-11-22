@@ -21,8 +21,9 @@ COPY config ./config
 COPY manage.py ./
 # The development image carries the gates' tooling; the production image does not.
 ARG INSTALL_DEV=true
-# pip itself is not a project dependency, so `pip-audit` never sees it; trivy does.
-RUN pip install --no-cache-dir --upgrade pip \
+# pip and setuptools ship inside the base image, so neither is a project dependency and
+# `pip-audit` never sees them — trivy does, and its 70.3.0 setuptools carries CVE-2025-47273.
+RUN pip install --no-cache-dir --upgrade pip setuptools \
     && if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir ".[dev]"; \
     else pip install --no-cache-dir .; fi
 
