@@ -122,12 +122,22 @@ jobs:
         run: |
           set -euo pipefail
           docker build -t m-academy-web:ci .
+      # The report is copied into the run summary so the finding is readable from the run page
+      # without downloading logs; the exit code is still the gate.
       - name: Scan image (trivy)
         run: |
-          set -euo pipefail
+          set -uo pipefail
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
-            --ignore-unfixed m-academy-web:ci
+            --ignore-unfixed m-academy-web:ci 2>&1 | tee /tmp/trivy.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo '### Image scan (HIGH/CRITICAL, fixable only)'
+            echo '```'
+            tail -60 /tmp/trivy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
   # G7 — import boundary (the tenant half runs in G3)
   g7-imports:
