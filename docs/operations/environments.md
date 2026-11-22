@@ -2,7 +2,7 @@
 
 **Status:** Canonical. `ARCHITECTURE.md` §8 and `README.md` defer to this file.
 **Last updated:** 2026-11-22
-**Owner action required:** D-023 (publishing this repository) before any push.
+**Owner decision:** D-023 Confirmed (2026-11-22) — the repository stays public; the baseline is published.
 
 This file makes the isolation rule enforceable. The new project runs as a **separate stack**
 next to the legacy `Masheed-Academy` deployment on the same host, sharing nothing: not a
@@ -17,7 +17,7 @@ network, volume, database, cache, bucket, credential or port.
 | Repository | `https://github.com/eizmadhoun2019/M_Academy` |
 | Default branch | `main` |
 | Task branches | `task/<T-NNN>-<slug>` (RULES) |
-| Local workspace | this directory (documentation baseline); **not yet a git repository** |
+| Local workspace | this directory — its own git repository, `origin` = `M_Academy` |
 | Legacy repository | `Masheed-Academy` — reference only, never a remote, never cloned into this tree |
 
 Rules:
@@ -26,8 +26,8 @@ Rules:
 - The legacy repository and its deployment stay alive and unmodified. Reading it for context
   is allowed; copying from it is not — anything reused is re-derived from these documents
   and re-implemented here.
-- Push only after the owner authorizes publication (D-023). Nothing about visibility is
-  assumed.
+- Publication is authorized: the repository is public (D-023 Confirmed, 2026-11-22).
+  Everything pushed is world-readable, so secrets never enter a tracked file.
 
 ## 2. Stack identity
 
@@ -115,7 +115,7 @@ reminders (only one `m-academy-beat-1` at a time).
 ## 7. T-001 isolation checklist (part of its acceptance)
 
 1. `git init -b main` here, add `origin` = `M_Academy`, commit the documentation baseline.
-   Push only after D-023 is authorized.
+   Push authorized (D-023 Confirmed) and executed: `origin/main` carries the rebased history.
 2. `docker compose -p m-academy up -d --build --wait` succeeds.
 3. `docker ps --filter name=m-academy-` lists exactly the seven containers; `docker ps` shows
    the legacy `masheed-academy-*` containers still `Up` and untouched.

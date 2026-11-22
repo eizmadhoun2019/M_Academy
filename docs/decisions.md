@@ -53,7 +53,7 @@ history only and are never reused.
 
 | ID | Decision | Status | Value / default in force | Owner | Needed by | Impact if still undecided |
 |---|---|---|---|---|---|---|
-| D-023 | Repository visibility and publishing the documentation baseline | Open | The repository `M_Academy` is public and currently holds a single commit. The documentation names the owner, scope and internal decisions. Nothing is pushed and no CI secret is created until the owner confirms visibility and publication. | Project owner | T-001 step 0 (initial push) | The baseline stays local; the remote keeps its single commit. Blocks nothing else. |
+| D-023 | Repository visibility and publishing the documentation baseline | Confirmed | Owner decision 2026-11-22: the repository **stays public** and publishing is authorized. `origin/main` held only GitHub's placeholder `Initial commit` (`README.md` = `# M_Academy`) with no shared history, so the local history was rebased onto it (`git rebase origin/main`) and `main` was pushed normally: no force-push and no commit destroyed. No repository secret is created — `.github/workflows/ci.yml` carries inline placeholder values only. | Project owner | T-001 step 0 (initial push) | Closed. Pushed commits are public and permanent; every later commit must be assumed public, and secrets stay in the untracked `.env`. |
 
 ### UI/schema gaps (previously untracked, now resolved)
 

@@ -29,7 +29,7 @@ and verified here.
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-22) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
+| T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-22; history rebased onto `origin/main` and pushed, CI result pending) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
 | T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | TODO | Tech authority | T-001 | Worker ping task via Redis; settings tests |
 | T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | TODO | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
 | T-004 | Adapter interfaces + `host_stub` + 4 contract suites | TODO | Tech authority | T-003 | All contract suites pass |
@@ -81,7 +81,7 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 | Employee-data retention/legal basis needs legal confirmation | Blocks go-live | Management + legal | Advise before GATE-1 | GATE-1 |
 | MinIO development image is unavailable: `minio/minio` is gone from Docker Hub, `ghcr.io/minio/minio` is denied and `quay.io/minio/minio` returns 401 (checked 2026-11-22) | The storage service of the dev stack cannot start, so uploads and the bucket checks cannot run | Project owner | Decide D-025: load a MinIO image into the local engine (`docker save`/`load`) or approve an S3-compatible development substitute behind the existing `StorageAdapter` | T-018 |
 | Two stacks on one host (legacy `masheed-academy` + new `m-academy`) | Port/volume/cookie collision, or accidental destruction of legacy data | Tech authority | Isolation table + safety rules in `docs/operations/environments.md`; checklist §7 at T-001 | T-001 |
-| Repository is public but the baseline is internal material (D-023) | Unintended publication | Project owner | Decide visibility before the first push | T-001 |
+| Repository is public and the baseline is published (D-023 Confirmed: public) | Future internal material leaking into a tracked file | Project owner | Keep secrets in the untracked `.env`; assume every commit is public | ongoing |
 
 ## Decisions
 Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not duplicate values.
@@ -96,7 +96,7 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
 ## Next action
 Start **T-002** (settings profiles, Celery queues, JSON logging, i18n) on branch
 `task/T-002-settings`. T-001 stays open until the owner resolves D-025 (storage image) and
-D-023 allows the first push. Say «كمل» to authorize
+the CI run on the authorized first push is green. Say «كمل» to authorize
 the agent; the agent completes one task/checkpoint, commits, pushes, reports evidence, stops.
 
 ## Update rules

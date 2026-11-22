@@ -162,3 +162,24 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
   reporting a pass.
 - **References:** T-001, D-023, D-025, `docs/operations/environments.md` §7,
   `docs/configuration.md`, `.github/workflows/ci.yml`.
+
+### [2026-11-22] — D-023 confirmed: repository stays public, history published
+
+- **Type:** Decision
+- **Status:** Approved
+- **Summary:** The owner confirmed that `M_Academy` stays **public** and authorized
+  publishing. The remote held only GitHub's placeholder `Initial commit` (`README.md` =
+  `# M_Academy`) and shared no history with the local repository, so both local branches were
+  rebased onto `origin/main` (`git rebase origin/main`, ours kept for `README.md`) and `main`
+  was pushed normally — no force-push, no commit destroyed. The project `README.md` supersedes
+  the placeholder one.
+- **Impact:** The documentation baseline and the T-001 scaffold are on GitHub and the nine CI
+  jobs run there. Everything pushed is public from now on, so no secret may enter a tracked
+  file and future internal material must be assumed world-readable.
+- **Evidence:** `git rebase origin/main -X theirs` on `main` left a tree identical to the
+  pre-rebase baseline; the same on `task/T-001-scaffold` left a tree identical to the
+  pre-rebase T-001 commit (`git diff --stat 24e7b71` empty). Push and CI receipts are in the
+  checkpoint report.
+- **Approved by:** Project owner (2026-11-22): stays public, proceed as is; path = rebase
+  then normal push.
+- **References:** D-023, T-001, `docs/operations/environments.md` §1.
