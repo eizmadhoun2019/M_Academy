@@ -116,9 +116,15 @@ jobs:
           ACADEMY_CSRF_TRUSTED_ORIGINS=https://hub.example.com \
           ACADEMY_DB_PASSWORD=ci \
           python manage.py check --deploy --settings=config.settings.prod
-      - name: Image scan
+      # Two steps, not one: a build failure must not look like a scan finding, and the step
+      # name is the only fail signal that is readable without signing in to GitHub.
+      - name: Build image
         run: |
+          set -euo pipefail
           docker build -t m-academy-web:ci .
+      - name: Scan image (trivy)
+        run: |
+          set -euo pipefail
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
             --ignore-unfixed m-academy-web:ci
