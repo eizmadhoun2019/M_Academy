@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "m-academy"
+version = "0.1.0"
+description = "Masheed Academy — internal employee-training module"
+requires-python = ">=3.12"
+# Pinned to the versions resolved and verified at T-001 (2026-11-22).
+# docs/ARCHITECTURE.md §3 owns the stack; docs/configuration.md owns the settings.
+dependencies = [
+    "Django==5.2.19",
+    "djangorestframework==3.18.3",
+    "drf-spectacular==0.30.0",
+    "psycopg[binary]==3.3.9",
+    "celery==5.7.0",
+    "packaging==26.3",
+    "redis==8.1.0",
+    "boto3==1.44.9",
+    "django-storages==1.14.6",
+    "gunicorn==27.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+    "pytest-django==4.14.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.6",
+    "mypy==2.4.1",
+    "django-stubs==6.1.2",
+    "bandit==1.9.4",
+    "pip-audit==2.10.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "academy*", "host_stub*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/migrations/*" = ["E", "F"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+strict_optional = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+exclude = ["migrations", ".venv"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*", "boto3.*", "botocore.*", "storages.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["academy", "config"]
+omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

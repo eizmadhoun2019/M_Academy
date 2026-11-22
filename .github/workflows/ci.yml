@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.test
+  DJANGO_SECRET_KEY: ci-only-secret-key-0000000000000000000000000000000000
+  ACADEMY_DB_NAME: academy
+  ACADEMY_DB_USER: academy
+  ACADEMY_DB_PASSWORD: academy
+  ACADEMY_DB_HOST: 127.0.0.1
+  ACADEMY_DB_PORT: "5432"
+  ACADEMY_REDIS_URL: redis://127.0.0.1:6379/0
+  ACADEMY_CELERY_BROKER_URL: redis://127.0.0.1:6379/1
+  ACADEMY_CELERY_RESULT_URL: redis://127.0.0.1:6379/2
+
+jobs:
+  # G1 — format and lint
+  g1-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install "ruff==0.17.6"
+      - run: ruff check .
+      - run: ruff format --check .
+
+  # G2 — types
+  g2-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]"
+      - run: mypy .
+
+  # G3 — tests and coverage on services/selectors
+  g3-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: academy
+          POSTGRES_USER: academy
+          POSTGRES_PASSWORD: academy
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U academy -d academy"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]"
+      - run: pytest -q --cov --cov-report=term --cov-report=json
+      - run: python scripts/gate_coverage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: coverage, path: coverage.json, if-no-files-found: ignore }
+
+  # G4 — migrations
+  g4-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]"
+      - run: python manage.py makemigrations --check --dry-run
+
+  # G5 — OpenAPI: 0 warnings
+  g5-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]"
+      - run: python manage.py spectacular --validate --fail-on-warn --file schema.yml
+      - uses: actions/upload-artifact@v4
+        with: { name: openapi, path: schema.yml }
+
+  # G6 — security scans
+  g6-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]" "pip-audit==2.10.1" "bandit==1.9.4"
+      - name: pip-audit
+        run: pip-audit --skip-editable
+      - name: bandit
+        run: bandit -r config scripts -q
+      - name: Django deploy check
+        run: |
+          ACADEMY_DEBUG=false \
+          ACADEMY_ALLOWED_HOSTS=academy.example.com \
+          ACADEMY_CSRF_TRUSTED_ORIGINS=https://hub.example.com \
+          ACADEMY_DB_PASSWORD=ci \
+          python manage.py check --deploy --settings=config.settings.prod
+      - name: Image scan
+        run: |
+          docker build -t m-academy-web:ci .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
+            --ignore-unfixed m-academy-web:ci
+
+  # G7 — import boundary (the tenant half runs in G3)
+  g7-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: python scripts/gate_imports.py
+
+  # G8 — E2E + axe smoke. Active once the first UI screens land (T-023).
+  g8-e2e:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('tests/e2e/**') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install ".[dev]" pytest-playwright
+      - run: playwright install --with-deps chromium
+      - run: pytest tests/e2e -q
+
+  # G9 — documentation check
+  g9-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/check_docs.py
