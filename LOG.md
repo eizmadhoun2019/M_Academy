@@ -231,3 +231,25 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
   contains no secret patterns the scanner looks for.
 - **Approved by:** Project owner (2026-11-23): fix G6 before continuing.
 - **References:** T-001, `docs/traceability.md` §3 G6, `Dockerfile`.
+
+### [2026-11-23] — G6 verified green: the finding came from pip's bundled SBOM
+
+- **Type:** Fix
+- **Status:** Verified
+- **Summary:** The remaining red gate was not the image's own content. CI runs each step as
+  `bash -e`, so the failing trivy pipeline ended the step before any diagnostics ran; once
+  the exit code was captured and re-raised, the step reported `setuptools` /
+  `CVE-2025-47273` while the image contained no such package and the build assertion proved
+  it could not be imported. The step then named the matching files: the only declaration of
+  setuptools 70.3.0 was `pip/_vendor/bom.cdx.json`, the bill of materials that ships inside
+  pip and that trivy reads as a source of truth (hence its own warning about third-party
+  SBOMs). The runtime image needs no installer, so pip and setuptools are both removed after
+  the dependency install; the build fails if either is importable again.
+- **Impact:** The gate keeps its severity, `--ignore-unfixed` and exit-code rules — nothing was
+  waived, narrowed or silenced, and no exception record was needed. A failing scan now explains
+  itself in a run annotation that anyone can read without an account.
+- **Evidence:** CI run `45138282623` on `main` (commit `076af2d`): ten jobs, nine success, one
+  skipped by design (g8-e2e, guard), **G6 security green**; `python scripts/check_docs.py`
+  passes.
+- **Approved by:** Project owner (2026-11-23): «اصلح كل ما سبق وبعدها نعودلحسم مشكلتنا ci:g6».
+- **References:** T-001, `docs/traceability.md` §3 G6, `Dockerfile`, `.github/workflows/ci.yml`.

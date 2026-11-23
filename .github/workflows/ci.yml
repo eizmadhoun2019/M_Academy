@@ -142,19 +142,6 @@ jobs:
             msg="${totals:-no Total line} | libs=${libs:-none} | cves=${ids:-none}"
             echo "::error title=G6 image scan::${msg}"
             echo "::warning title=G6 image scan::${msg}"
-            # Which file the finding comes from, since an importable package and a leftover
-            # metadata file look the same in the report but need different fixes.
-            paths=$(docker run --rm --entrypoint sh m-academy-web:ci -lc \
-              "find / -xdev -iname '*setuptools*' 2>/dev/null | head -6 | paste -sd' ' -" || true)
-            echo "::warning title=G6 setuptools paths::${paths:-none}"
-            # trivy warns about a third-party SBOM; a bill of materials inside the image would
-            # explain a finding for a package that is not installed.
-            sbom=$(docker run --rm --entrypoint sh m-academy-web:ci -lc \
-              "find / -xdev \\( -iname '*sbom*' -o -iname 'bom.json' -o -iname '*.cdx.json' -o -iname '*.spdx*' \\) 2>/dev/null | head -6 | paste -sd' ' -" || true)
-            echo "::warning title=G6 sbom files::${sbom:-none}"
-            mentions=$(docker run --rm --entrypoint sh m-academy-web:ci -lc \
-              "grep -rIl '70\\.3\\.0' /app /usr/local /opt /etc 2>/dev/null | head -6 | paste -sd' ' -" || true)
-            echo "::warning title=G6 files mentioning 70.3.0::${mentions:-none}"
           fi
           {
             echo '### Image scan (HIGH/CRITICAL, fixable only)'
