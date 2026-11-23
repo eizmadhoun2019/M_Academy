@@ -22,19 +22,23 @@ COPY manage.py ./
 # The development image carries the gates' tooling; the production image does not.
 ARG INSTALL_DEV=true
 # pip and setuptools are build tooling, not runtime dependencies: nothing in the app imports
-# them, and `pip install .` builds in an isolated environment. The base image's setuptools
-# 70.3.0 is what G6 fails on (CVE-2025-47273); upgrading it did not clear the finding, so it
-# is removed from the image instead of kept and patched.
+# them, and `pip install .` builds in an isolated environment. Both are removed after the
+# install, because G6's scan is otherwise fed by pip's own bundled bill of materials
+# (`pip/_vendor/bom.cdx.json` declares setuptools 70.3.0, CVE-2025-47273, for a package this
+# image does not contain). A runtime image has no use for a package installer.
 RUN pip install --no-cache-dir --upgrade pip \
     && if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir ".[dev]"; \
     else pip install --no-cache-dir .; fi \
-    && (pip uninstall -y setuptools > /dev/null || true) \
     && rm -rf /usr/local/lib/python3.12/site-packages/setuptools* \
               /usr/local/lib/python3.12/site-packages/_distutils_hack \
               /usr/local/lib/python3.12/site-packages/distutils-precedence.pth \
-    # The image must not carry the package back in: fail the build here instead of leaving a
-    # scan finding that only shows up after the image is complete.
-    && ! python -c 'import setuptools' > /dev/null 2>&1
+              /usr/local/lib/python3.12/site-packages/pip \
+              /usr/local/lib/python3.12/site-packages/pip-* \
+              /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12 \
+    # The image must not carry either package back in: fail the build here instead of leaving
+    # a scan finding that only shows up after the image is complete.
+    && ! python -c 'import setuptools' > /dev/null 2>&1 \
+    && ! python -c 'import pip' > /dev/null 2>&1
 
 COPY . .
 
