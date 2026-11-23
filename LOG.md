@@ -421,3 +421,54 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-005, REQ-04, ADR-007, `docs/skills/service.md` step 4, `ARCHITECTURE.md` §4,
   `academy/events/`.
+
+### [2026-11-23] — T-005 merged to main
+
+- **Type:** Feature
+- **Status:** Merged
+- **Summary:** The owner merged `task/T-005-events` into `main` (fast-forward, no rewrite) on
+  the standing instruction «كمل», so the on-commit emitter and the handler registry are
+  mainline.
+- **Impact:** Services can emit events from inside their transactions; T-018 and T-021 add their
+  task-enqueueing handlers against a stable emitter.
+- **Evidence:** `main` = `0204cac`; CI run `45162780071` green on that exact commit (g1–g7 and
+  g9 pass, g8-e2e skipped by its guard); `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-005, REQ-04, ADR-007, `academy/events/`.
+
+### [2026-11-23] — T-006: catalog schema (Course, CourseVersion, Section, Lesson, MediaAsset)
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** The catalog of `docs/domain-model.md` §2.1–§2.5 now exists as a migration. Every
+  entity is a `TenantModel`; the documented rules live in the database rather than in the
+  promise of a future service: status enums with `CheckConstraint`s, non-blank titles,
+  positive positions, `required_watch_percent` between 50 and 100, the `pdf`-needs-a-body rule,
+  `UNIQUE(course, version_number)`, the partial unique index that allows at most one
+  `published` version per course (with `published_at`/`published_by_ref` required by a check),
+  the partial `(organization_id) WHERE status='published'` index, and the media rules
+  (`ready` needs a `storage_key`, a `ready` video needs a positive duration, `failed` needs an
+  `error_code`). Section and lesson positions use `UNIQUE ... DEFERRABLE INITIALLY DEFERRED` so
+  a reorder can move several rows in one transaction, and the two freeze rules are PostgreSQL
+  triggers: `courseversion_immutable` (a published version keeps its content, only
+  `published → archived`, and an archived version never returns) and `version_content_frozen`
+  (inserts, updates and deletes under a published version are refused for sections and
+  lessons).
+- **Impact:** T-007, T-017, T-018 and T-019 build on a schema whose invariants cannot be
+  bypassed by a script, a shell or a second writer. `academy/models/base.py` now binds the
+  tenant manager per model (`TenantManager[Course]`) so the type checker keeps model precision
+  and still reports any read that bypassed `for_org`.
+- **Evidence:** `python manage.py migrate` → `Applying academy.0001_initial... OK`;
+  `python manage.py migrate academy zero` → `Unapplying academy.0001_initial... OK`; then
+  forward again OK (triggers drop and recreate with the tables). `tests/test_catalog_models.py`
+  (26 tests) writes the rows each rule forbids — blank titles, unknown statuses, version 0,
+  duplicate version numbers, a second published version, an unstamped publish, position 0,
+  duplicate positions (checked with `SET CONSTRAINTS ... IMMEDIATE`), out-of-range watch
+  percent, unknown content types, a PDF without body, a `ready` asset without a key, a `ready`
+  video with zero duration, a `failed` asset without an error code — and proves the freeze
+  triggers reject content changes, inserts and deletes on published versions while drafts stay
+  editable. `pytest -q` → 171 passed; `ruff check`, `ruff format --check`, `mypy .` (51 files)
+  and `makemigrations --check --dry-run` clean; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-006, REQ-03, `docs/domain-model.md` §2.1–§2.5, §4–§5,
+  `academy/models/catalog.py`, `academy/models/media.py`, `academy/migrations/0001_initial.py`.
