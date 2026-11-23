@@ -31,7 +31,10 @@ RUN pip install --no-cache-dir --upgrade pip \
     && (pip uninstall -y setuptools > /dev/null || true) \
     && rm -rf /usr/local/lib/python3.12/site-packages/setuptools* \
               /usr/local/lib/python3.12/site-packages/_distutils_hack \
-              /usr/local/lib/python3.12/site-packages/distutils-precedence.pth
+              /usr/local/lib/python3.12/site-packages/distutils-precedence.pth \
+    # The image must not carry the package back in: fail the build here instead of leaving a
+    # scan finding that only shows up after the image is complete.
+    && ! python -c 'import setuptools' > /dev/null 2>&1
 
 COPY . .
 

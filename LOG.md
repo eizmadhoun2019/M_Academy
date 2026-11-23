@@ -209,3 +209,25 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **References:** RULES (LOG status values, Document sync table, Definition of done, Commit
   messages, UI and frontend rules, Dependencies), CHARTER §10, `docs/configuration.md` §7,
   `docs/decisions.md` D-003, `docs/traceability.md` §3, `docs/skills/closing.md`.
+
+### [2026-11-23] — G6: the image's setuptools finding (CVE-2025-47273)
+
+- **Type:** Fix
+- **Status:** Implemented
+- **Summary:** G6's image scan was the only red gate. The report showed a single
+  finding — setuptools 70.3.0 in `python:3.12-slim`, CVE-2025-47273, fixed in 78.1.1 — with
+  Debian at zero and every other Python package clean. Upgrading setuptools inside the image
+  did not clear it, and nothing in the app or its runtime dependencies imports either
+  setuptools or pip, so the package and its leftovers are now removed from the image after
+  the dependency install. A build-time assertion fails the image build if a later change
+  brings it back, so the finding cannot reappear silently.
+- **Impact:** The production and development images no longer ship build tooling. `pip install`
+  still works during the build because it uses build isolation. The gate keeps its severity,
+  `--ignore-unfixed` and exit-code rules: nothing was waived or narrowed.
+- **Evidence:** The image rebuilt from the same commit with `--no-cache --pull` contains no
+  `setuptools`, `pkg_resources` or `_distutils_hack` path outside pip's own vendored copy, and
+  `pip list` reports `pip==26.3` only; `pip uninstall` left no dist-info behind. All 83
+  Python packages in that image return zero advisories from the OSV API, and the repository
+  contains no secret patterns the scanner looks for.
+- **Approved by:** Project owner (2026-11-23): fix G6 before continuing.
+- **References:** T-001, `docs/traceability.md` §3 G6, `Dockerfile`.
