@@ -21,11 +21,17 @@ COPY config ./config
 COPY manage.py ./
 # The development image carries the gates' tooling; the production image does not.
 ARG INSTALL_DEV=true
-# pip and setuptools ship inside the base image, so neither is a project dependency and
-# `pip-audit` never sees them — trivy does, and its 70.3.0 setuptools carries CVE-2025-47273.
-RUN pip install --no-cache-dir --upgrade pip setuptools \
+# pip and setuptools are build tooling, not runtime dependencies: nothing in the app imports
+# them, and `pip install .` builds in an isolated environment. The base image's setuptools
+# 70.3.0 is what G6 fails on (CVE-2025-47273); upgrading it did not clear the finding, so it
+# is removed from the image instead of kept and patched.
+RUN pip install --no-cache-dir --upgrade pip \
     && if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir ".[dev]"; \
-    else pip install --no-cache-dir .; fi
+    else pip install --no-cache-dir .; fi \
+    && (pip uninstall -y setuptools > /dev/null || true) \
+    && rm -rf /usr/local/lib/python3.12/site-packages/setuptools* \
+              /usr/local/lib/python3.12/site-packages/_distutils_hack \
+              /usr/local/lib/python3.12/site-packages/distutils-precedence.pth
 
 COPY . .
 
