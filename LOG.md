@@ -472,3 +472,24 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-006, REQ-03, `docs/domain-model.md` §2.1–§2.5, §4–§5,
   `academy/models/catalog.py`, `academy/models/media.py`, `academy/migrations/0001_initial.py`.
+
+### [2026-11-23] — T-006: g2 found a type-checker-only defect on a clean interpreter
+
+- **Type:** Fix
+- **Status:** Verified
+- **Summary:** The first T-006 push failed gate G2 while the same `mypy .` passed in the
+development image. The error was reproducible only from a clean `python:3.12-slim` with a fresh
+`pip install ".[dev]"`: `Cannot override class variable ... with instance variable [misc]` on
+every `objects: TenantManager[Model]` line. The abstract base declared `objects` as a bare
+class attribute while the concrete models re-declare it as an annotated instance variable; the
+type checker refuses that mix once the model's own annotation is present. The base now declares
+`objects: Any = TenantManager()` with a comment, which is the declaration the per-model
+overrides require.
+- **Impact:** G2 is green again. The lesson is recorded because the development image had
+  already installed the package and did not reproduce it, so an image-local green is not
+  evidence for G2 — the clean-interpreter run is.
+- **Evidence:** CI run `45168784765` (failed, g2) and run `45173786647` (green on
+  `9deb22e`, all jobs except the by-design skipped g8-e2e); the clean-room reproduction printed
+  the six errors at `academy/models/{media,catalog}.py` and `tests/test_tenant_model.py`.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-006, `docs/traceability.md` §3 G2, `academy/models/base.py`.
