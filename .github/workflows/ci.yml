@@ -142,6 +142,11 @@ jobs:
             msg="${totals:-no Total line} | libs=${libs:-none} | cves=${ids:-none}"
             echo "::error title=G6 image scan::${msg}"
             echo "::warning title=G6 image scan::${msg}"
+            # Which file the finding comes from, since an importable package and a leftover
+            # metadata file look the same in the report but need different fixes.
+            paths=$(docker run --rm --entrypoint sh m-academy-web:ci -lc \
+              "find / -xdev -iname '*setuptools*' 2>/dev/null | head -6 | paste -sd' ' -" || true)
+            echo "::warning title=G6 setuptools paths::${paths:-none}"
           fi
           {
             echo '### Image scan (HIGH/CRITICAL, fixable only)'
