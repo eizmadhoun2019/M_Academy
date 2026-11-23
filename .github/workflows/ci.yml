@@ -127,10 +127,12 @@ jobs:
       - name: Scan image (trivy)
         run: |
           set -uo pipefail
+          # Actions runs the step as `bash -e`, so a bare failing pipeline aborts the script
+          # here and the diagnostics below would never run: the exit code is captured instead.
+          status=0
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
-            --ignore-unfixed m-academy-web:ci 2>&1 | tee /tmp/trivy.txt
-          status=${PIPESTATUS[0]}
+            --ignore-unfixed m-academy-web:ci 2>&1 | tee /tmp/trivy.txt || status=$?
           # Annotations are the only failure text a reader can see without signing in, so the
           # summary line is emitted before anything else and repeated as a warning.
           totals=$(grep -E '^Total:' /tmp/trivy.txt | paste -sd' ' - || true)
