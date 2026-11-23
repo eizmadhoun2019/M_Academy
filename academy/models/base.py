@@ -11,7 +11,7 @@ manager is what keeps the type checker able to find a call site that bypassed ``
 from __future__ import annotations
 
 import uuid
-from typing import TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from django.db import models
 from django.utils import timezone
@@ -51,7 +51,10 @@ class TenantModel(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = TenantManager()
+    # Re-bound per concrete model (``objects: TenantManager[Course]``), which is what keeps
+    # ``.create()`` and ``.for_org()`` typed as that model. The base stays ``Any`` so the
+    # override is legal for the type checker instead of becoming a ClassVar conflict.
+    objects: Any = TenantManager()
 
     class Meta:
         abstract = True
