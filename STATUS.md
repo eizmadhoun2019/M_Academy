@@ -19,7 +19,9 @@ until the owner resolves D-025. The `academy` package now exists (T-003): the te
 base model with `for_org` scoping, the adapter loader and the domain exceptions, registered in
 `INSTALLED_APPS` and inspected by gate G7. The four host seams are specified (T-004) as Protocols
 with their value types, the development/test stubs behind them, and one contract suite per
-seam that any future Hub or bucket implementation must pass. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+seam that any future Hub or bucket implementation must pass. Domain events now have their
+emitter (T-005): an event is queued through `transaction.on_commit` and dispatched to its
+subscribers only after the write commits. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -36,8 +38,8 @@ and verified here.
 | T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-23; gates G1–G9 green in CI run `45138282623` on `main`; the bucket step still waits on D-025) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
 | T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | `[x]` done on main (commit `8168477`, merged 2026-11-23 on owner instruction; CI run `45148819610` on `main` green on that commit; `tests/test_settings.py` — 26 tests; ruff/format/mypy clean locally) | Tech authority | T-001 | Worker ping task via Redis; settings tests |
 | T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[x]` done on main (commit `3b7d450`, merged 2026-11-23 on owner instruction; CI run `45154163445` on `main` green on that commit; 47 tests, ruff/format/mypy/migrations clean locally) | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
-| T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[~]` in progress/review (AI agent, 2026-11-23; branch `task/T-004-adapters`; 123 tests pass, ruff/format/mypy/migrations clean locally; awaiting owner merge) | Tech authority | T-003 | All contract suites pass |
-| T-005 | Domain events (signals, on-commit emitter, handlers) | `[ ]` | Tech authority | T-003 | Events fire only after commit |
+| T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[x]` done on main (commit `928e7da`, merged 2026-11-23 on owner instruction; CI run `45159244272` green on the branch commit and `45159847845` green on `main` at that commit; 123 tests at merge) | Tech authority | T-003 | All contract suites pass |
+| T-005 | Domain events (signals, on-commit emitter, handlers) | `[~]` in progress/review (AI agent, 2026-11-23; branch `task/T-005-events`; 145 tests pass, ruff/format/mypy/migrations clean locally; awaiting owner merge) | Tech authority | T-003 | Events fire only after commit |
 | T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[ ]` | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
 | T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[ ]` | Tech authority | T-006 | Constraints + indexes tested |
 | T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[ ]` | Tech authority | T-007 | Meta-test: every model is a TenantModel |
@@ -63,6 +65,11 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-23 — T-005 domain events: `academy.events` emits through `transaction.on_commit`, so a
+  rolled-back write dispatches nothing; handlers subscribe by event name, a failing handler is
+  logged without stopping the rest, and the envelope is frozen with a JSON payload. See LOG.md.
+- 2026-11-23 — T-004 merged to `main`: the four host-seam Protocols, the `host_stub`
+  implementations and their contract suites. See LOG.md.
 - 2026-11-23 — T-004 adapters: the four seams are Protocols (`IdentityAdapter`,
   `OrganizationAdapter`, `NotifyAdapter`, `StorageAdapter`) with stdlib-only value types, the
   `host_stub` implementations behind them, and one contract suite per seam under
@@ -107,9 +114,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-Start **T-005** (domain events: signals, on-commit emitter, handlers) on branch
-`task/T-005-events`, or merge `task/T-004-adapters` first if the owner prefers a clean
-`main`. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
+Start **T-006** (catalog models + migrations: Course/Version/Section/Lesson/MediaAsset per
+`docs/domain-model.md`) on branch `task/T-006-catalog`, after the owner merges
+`task/T-005-events`. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
 task/checkpoint, commits, pushes, reports evidence, stops.
 

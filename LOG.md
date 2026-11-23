@@ -376,3 +376,48 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-004, REQ-02, `ARCHITECTURE.md` §4/§6, `docs/configuration.md` §11,
   `docs/hub-contract.md` §2–§3, `docs/notifications.md` §1, `academy/adapters/`, `host_stub/`.
+
+### [2026-11-23] — T-004 merged to main
+
+- **Type:** Feature
+- **Status:** Merged
+- **Summary:** The owner merged `task/T-004-adapters` into `main` (fast-forward, no rewrite) on
+  the standing instruction «كمل», so the four host-seam Protocols, the development stubs and
+  their contract suites are mainline.
+- **Impact:** `main` carries the adapters; T-005 can build on them and T-015/T-018 have their
+  acceptance suites in place.
+- **Evidence:** `main` = `928e7da`; CI run `45159847845` green on that exact commit (g1–g7 and
+  g9 pass, g8-e2e skipped by its guard); `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-004, REQ-02, `academy/adapters/`, `host_stub/`, `tests/contracts/`.
+
+### [2026-11-23] — T-005: domain events dispatched only after commit
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** `academy.events` is the write path's event vocabulary. A service builds a event
+  with `emit_on_commit(name, organization_id=…, actor_ref=…, payload=…)` inside its transaction;
+  the event is queued through `transaction.on_commit`, so it fires once the outermost
+  transaction commits and never at all when that transaction rolls back. The envelope
+  (`DomainEvent`) is frozen, carries a generated `event_id` and a UTC `occurred_at`, and its
+  payload is validated as JSON-serializable because the same shape is the Celery argument.
+  Handlers subscribe by name (`subscribe`/`unsubscribe`/`handlers_for`), are called in
+  subscription order through one module-level receiver, and a handler that raises is logged
+  with the event name and id while the remaining handlers still run — a committed fact cannot
+  be undone by a broken listener, and a post-commit failure must not surface as a failed write.
+  Task-enqueueing handlers stay with the tasks they enqueue (T-018, T-021), so nothing schedules
+  a task that does not exist yet.
+- **Impact:** REQ-04's event half has its evidence; the service skill's step 4
+  (`emit_on_commit`) is now executable code. Audit immutability (the other half of REQ-04) is
+  T-012.
+- **Evidence:** `tests/test_events.py` (22 tests) proves the event waits for the outermost
+  commit, a rollback dispatches nothing, an event outside a transaction is dispatched
+  immediately, every subscriber receives it in order, unrelated names are not called,
+  unsubscribing stops delivery, a failing handler is logged without blocking the next, a
+  handler may emit a follow-up event, the envelope is frozen with an immutable payload, and the
+  name/actor/organization/payload/timestamp validations hold. `pytest -q` → 145 passed;
+  `ruff check`, `ruff format --check`, `mypy .` and `makemigrations --check --dry-run` clean;
+  G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-005, REQ-04, ADR-007, `docs/skills/service.md` step 4, `ARCHITECTURE.md` §4,
+  `academy/events/`.
