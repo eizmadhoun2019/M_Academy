@@ -17,6 +17,15 @@ ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 DATABASES["default"]["HOST"] = env("ACADEMY_TEST_DB_HOST", env("ACADEMY_DB_HOST", "db"))  # noqa: F405
 DATABASES["default"]["NAME"] = env("ACADEMY_TEST_DB_NAME", "test_academy")  # noqa: F405
 
+# The test profile runs every seam against its in-memory stub, so the loader is exercised for
+# real instead of being bypassed by a direct import (docs/configuration.md §8, §11).
+ACADEMY_ADAPTERS = {  # noqa: F405 - name comes from `base` via the star import
+    "identity": "host_stub.identity:DevelopmentIdentity",
+    "organization": "host_stub.organization:StubDirectory",
+    "notify": "host_stub.notify:RecordingNotifier",
+    "storage": "host_stub.storage:InMemoryStorage",
+}
+
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_TASK_ALWAYS_EAGER = True

@@ -11,3 +11,12 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 MEDIA_ROOT = env("ACADEMY_MEDIA_ROOT", str(BASE_DIR / "local_media"))
 DEVELOPMENT_LOGIN = env("ACADEMY_DEVELOPMENT_LOGIN", "true").lower() == "true"
+
+# The development stack runs against the stubs unless an adapter is configured explicitly, so a
+# fresh clone works without a Hub or a bucket (docs/configuration.md §11).
+ACADEMY_ADAPTERS = {  # noqa: F405 - name comes from `base` via the star import
+    "identity": env("ACADEMY_ADAPTER_IDENTITY") or "host_stub.identity:DevelopmentIdentity",
+    "organization": env("ACADEMY_ADAPTER_ORGANIZATION") or "host_stub.organization:StubDirectory",
+    "notify": env("ACADEMY_ADAPTER_NOTIFY") or "host_stub.notify:RecordingNotifier",
+    "storage": env("ACADEMY_ADAPTER_STORAGE") or "host_stub.storage:InMemoryStorage",
+}
