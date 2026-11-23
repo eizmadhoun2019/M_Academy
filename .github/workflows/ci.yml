@@ -131,17 +131,22 @@ jobs:
             aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
             --ignore-unfixed m-academy-web:ci 2>&1 | tee /tmp/trivy.txt
           status=${PIPESTATUS[0]}
+          # Annotations are the only failure text a reader can see without signing in, so the
+          # summary line is emitted before anything else and repeated as a warning.
+          totals=$(grep -E '^Total:' /tmp/trivy.txt | paste -sd' ' - || true)
+          ids=$(grep -oE 'CVE-[0-9]{4}-[0-9]+' /tmp/trivy.txt | sort -u | head -8 | paste -sd',' - || true)
+          libs=$(awk -F'│' '/CVE-[0-9]{4}-/ {gsub(/ /,"",$2); print $2}' /tmp/trivy.txt | sort -u | head -6 | paste -sd',' - || true)
+          if [ "$status" -ne 0 ]; then
+            msg="${totals:-no Total line} | libs=${libs:-none} | cves=${ids:-none}"
+            echo "::error title=G6 image scan::${msg}"
+            echo "::warning title=G6 image scan::${msg}"
+          fi
           {
             echo '### Image scan (HIGH/CRITICAL, fixable only)'
             echo '```'
             tail -60 /tmp/trivy.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$status" -ne 0 ]; then
-            totals=$(grep -E '^Total:' /tmp/trivy.txt | paste -sd' ' -)
-            ids=$(grep -oE 'CVE-[0-9]+-[0-9]+' /tmp/trivy.txt | sort -u | head -8 | paste -sd',' -)
-            echo "::error title=Image scan failed::${totals:-no total line}; ${ids:-no CVE id in output}"
-          fi
           exit "$status"
 
   # G7 — import boundary (the tenant half runs in G3)
