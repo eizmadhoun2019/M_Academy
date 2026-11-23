@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-23
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -15,7 +15,9 @@ The project is being rebuilt from scratch with a UPDS 1.0.0-rc2 documentation ba
 2026-11-22). The **T-001 scaffold** now exists: a Django 5.2 `config` project with `dev`/`test`/`prod`
 profiles, an isolated compose stack (`m-academy`) running six of seven services, pinned
 dependencies, the CI gate definitions and the docs check. The storage service stays down
-until the owner resolves D-025. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+until the owner resolves D-025. The `academy` package now exists (T-003): the tenant
+base model with `for_org` scoping, the adapter loader and the domain exceptions, registered in
+`INSTALLED_APPS` and inspected by gate G7. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -30,8 +32,8 @@ and verified here.
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-23; gates G1–G9 green in CI run `45138282623` on `main`; the bucket step still waits on D-025) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
-| T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | `[~]` in progress/review (AI agent, 2026-11-23; branch `task/T-002-settings`; `tests/test_settings.py` — 26 tests, ruff/format/mypy clean locally; awaiting owner merge) | Tech authority | T-001 | Worker ping task via Redis; settings tests |
-| T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[ ]` | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
+| T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | `[x]` done on main (commit `8168477`, merged 2026-11-23 on owner instruction; CI run `45141974756` green on that commit; `tests/test_settings.py` — 26 tests; ruff/format/mypy clean locally) | Tech authority | T-001 | Worker ping task via Redis; settings tests |
+| T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[~]` in progress/review (AI agent, 2026-11-23; branch `task/T-003-academy-skeleton`; 47 tests pass, ruff/format/mypy/migrations clean locally; awaiting owner merge) | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
 | T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[ ]` | Tech authority | T-003 | All contract suites pass |
 | T-005 | Domain events (signals, on-commit emitter, handlers) | `[ ]` | Tech authority | T-003 | Events fire only after commit |
 | T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[ ]` | Tech authority | T-003 | Migrations apply/reverse; constraint tests |

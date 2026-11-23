@@ -157,3 +157,19 @@ A request id is accepted from the inbound `X-Request-ID` header only when it mat
 `[A-Za-z0-9._-]{1,64}`; anything else is replaced by a generated 32-character id, which is also
 returned in `X-Request-ID` on the response. This is what makes a support report traceable to
 the lines it produced.
+
+## 11. Adapters
+
+`academy/` reaches the host only through four seams (`ARCHITECTURE.md` §4). Each seam is named
+by a `module.path:ClassName` value, resolved on first use by `academy.adapters.loader` and
+cached for the process lifetime. An empty value means **not configured**: the loader raises
+`AdapterNotConfigured` instead of substituting a default, so a deployment that forgot an
+adapter fails on the first call rather than degrading silently. `academy` itself never imports
+`host_stub` or a provider SDK (gate G7); only the configured class does.
+
+| Variable | Seam | Default | Notes |
+|---|---|---|---|
+| `ACADEMY_ADAPTER_IDENTITY` | `identity` | empty | Signed-identity verification; the development stub lands with T-004 |
+| `ACADEMY_ADAPTER_ORGANIZATION` | `organization` | empty | Hub directory lookups (ADR-012, 60 s cache) |
+| `ACADEMY_ADAPTER_NOTIFY` | `notify` | empty | Mail and activity log; never called from a request cycle |
+| `ACADEMY_ADAPTER_STORAGE` | `storage` | empty | Presign/stat/delete for media (D-001 keeps the provider open) |

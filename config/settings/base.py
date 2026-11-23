@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
+    "academy",
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,17 @@ TEMPLATES = [
         },
     },
 ]
+
+# --- Adapters (ARCHITECTURE.md §4) -------------------------------------------
+# Four host seams, each named by a ``module.path:ClassName`` value and resolved on first use
+# by ``academy.adapters.loader``. Empty means "not configured": the loader raises instead of
+# substituting a default (docs/configuration.md §11).
+ACADEMY_ADAPTERS = {
+    "identity": env("ACADEMY_ADAPTER_IDENTITY"),
+    "organization": env("ACADEMY_ADAPTER_ORGANIZATION"),
+    "notify": env("ACADEMY_ADAPTER_NOTIFY"),
+    "storage": env("ACADEMY_ADAPTER_STORAGE"),
+}
 
 # --- Data stores -------------------------------------------------------------
 DATABASES = {

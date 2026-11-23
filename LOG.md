@@ -285,3 +285,46 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23): «كمل» after G6 went green.
 - **References:** T-002, `docs/configuration.md` §10, `docs/background-jobs.md` §1–§4,
   `docs/operations/environments.md` §4, `config/settings/base.py`, `config/celery.py`.
+
+### [2026-11-23] — T-002 merged to main
+
+- **Type:** Feature
+- **Status:** Merged
+- **Summary:** The owner merged `task/T-002-settings` into `main` (fast-forward, no rewrite) at
+  the owner's instruction «ادمج», so the queue routes, the JSON log format and the locale
+  middleware are now part of the mainline rather than a branch.
+- **Impact:** `main` carries the settings work; the status row moved from review to done.
+- **Evidence:** `main` = `8168477`; CI run `45141974756` green on that exact commit (g1–g7 and
+  g9 pass, g8-e2e skipped by its guard); `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «ادمج ثم كمل».
+- **References:** T-002, `STATUS.md`, `config/settings/base.py`.
+
+### [2026-11-23] — T-003: academy skeleton (tenant base model, adapter loader, exceptions)
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** The `academy` package now exists as a Django app with the three pieces every
+  later task builds on. `TenantModel` (abstract) carries the documented shared columns —
+  UUID primary key generated in Python, a plain `organization_id` UUID (never a foreign key,
+  because the organization lives in the Hub), and the two timestamps — plus a `for_org`
+  manager that refuses anything that is not an organization UUID, so an unscoped read is a
+  failing test rather than a global query. `academy.adapters.loader` resolves each host seam
+  from an `ACADEMY_ADAPTER_*` `module:Class` value, caches it, and raises on an unknown,
+  unset, malformed or non-class path instead of substituting a default. `academy.exceptions`
+  defines the base error with the stable wire code and the four shapes services will raise
+  (validation, not found, forbidden, conflict; adapters add "unavailable").
+- **Impact:** Gate G7 is now real work: `academy/` exists, so the import boundary inspects
+  every module, and `tests/test_import_boundary.py` runs the same script CI runs and proves it
+  fails on a planted host import — a green gate can no longer mean "nothing was checked".
+  Four new environment variables are documented in `docs/configuration.md` §11 and listed in
+  `.env.example`; empty values are valid and mean "not configured".
+- **Evidence:** `tests/test_tenant_model.py` (abstract columns, Python-side UUID, default
+  manager, `for_org` returns only its organization while the unscoped manager still sees every
+  row, `for_org` rejects `None`/str/int), `tests/test_adapter_loader.py` (resolution, caching,
+  reset, unconfigured seam per name, unknown seam, five malformed configurations),
+  `tests/test_import_boundary.py` (gate active, passes on the tree, detects a planted
+  violation). Locally: 47 tests pass, `ruff check`, `ruff format --check`, `mypy .` and
+  `makemigrations --check --dry-run` clean; `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «ادمج ثم كمل ثم نظف جذر المشروع».
+- **References:** T-003, `docs/domain-model.md` §1.1, `ARCHITECTURE.md` §4,
+  `docs/configuration.md` §11, `docs/traceability.md` §3 G7, `academy/`.
