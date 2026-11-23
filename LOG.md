@@ -326,5 +326,53 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
   violation). Locally: 47 tests pass, `ruff check`, `ruff format --check`, `mypy .` and
   `makemigrations --check --dry-run` clean; `python scripts/check_docs.py` passes.
 - **Approved by:** Project owner (2026-11-23): «ادمج ثم كمل ثم نظف جذر المشروع».
-- **References:** T-003, `docs/domain-model.md` §1.1, `ARCHITECTURE.md` §4,
+- **References:** T-003, `docs/domain-model.md` §1.1,
+  `ARCHITECTURE.md` §4,
   `docs/configuration.md` §11, `docs/traceability.md` §3 G7, `academy/`.
+
+### [2026-11-23] — T-003 merged to main
+
+- **Type:** Feature
+- **Status:** Merged
+- **Summary:** The owner merged `task/T-003-academy-skeleton` into `main` (fast-forward, no
+  rewrite) on the standing instruction «ادمج ثم كمل», so the tenant base model, the adapter
+  loader and the domain exceptions are mainline rather than a branch.
+- **Impact:** `main` carries the T-003 skeleton; the status row moved from review to done.
+- **Evidence:** `main` = `3b7d450`; CI run `45154163445` green on that exact commit
+  (g1–g7 and g9 pass, g8-e2e skipped by its guard); `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «ادمج ثم كمل».
+- **References:** T-003, `STATUS.md`, `academy/models/base.py`, `academy/adapters/loader.py`.
+
+### [2026-11-23] — T-004: the four host seams, their stubs and their contract suites
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** The host boundary is now specified as code instead of prose. `academy.adapters`
+  holds four `Protocol`s — `IdentityAdapter.verify(token, keys)`, the six directory reads of
+  `OrganizationAdapter`, `NotifyAdapter.send_mail/record_activity`, and
+  `StorageAdapter.presign_put/presign_get/stat/delete_prefix` — with stdlib-only value types
+  (`Department`, `DirectoryUser`, `Role`, `MailMessage`, `MailReceipt`, `ActivityEvent`,
+  `ObjectStat`). Two rules are enforced at the seam rather than left to each caller: storage
+  keys must sit under `org/<organization_id>/media/` with no traversal and deletion only at a
+  directory boundary, and a notification carries an opaque `recipient_ref` with channels from
+  `docs/notifications.md` and a Hub-origin-relative link. `host_stub/` implements all four for
+  development and tests: HMAC-SHA256 identity with a token signer, an in-memory directory that
+  expands department descendants and hides inactive memberships, a recording transport that
+  deduplicates by idempotency key and event id (conflicting reuse raises `Conflict`), and an
+  in-memory bucket with `put`/`get` helpers. The development and test profiles now default the
+  empty `ACADEMY_ADAPTER_*` values to those stubs, so a fresh clone runs with no Hub and no
+  bucket while production still fails loudly on the first call.
+- **Impact:** REQ-02's evidence now exists: one contract suite per seam under `tests/contracts/`
+  (adding an implementation to `IMPLEMENTATIONS` runs the whole suite against it), plus a
+  wiring test that loads every seam through `load_adapter` in the test profile and checks the
+  instance against its `Protocol`. T-015's Hub transports and T-018's bucket implementation
+  plug in without touching callers. `docs/configuration.md` §11 records the stub defaults and
+  the acceptance rule.
+- **Evidence:** `pytest -q` → 123 passed (76 new); `ruff check`, `ruff format --check`, `mypy .`
+  and `makemigrations --check --dry-run` clean; `python scripts/check_docs.py` passes. The
+  suites cover signature, key-ring rotation, tampering, malformed tokens, unknown organization
+  isolation, descendant membership, the 50-reference batch cap, idempotent mail and activity
+  delivery, conflicting key reuse, presign lifetime, key traversal and prefix-delete scope.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-004, REQ-02, `ARCHITECTURE.md` §4/§6, `docs/configuration.md` §11,
+  `docs/hub-contract.md` §2–§3, `docs/notifications.md` §1, `academy/adapters/`, `host_stub/`.

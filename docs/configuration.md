@@ -169,7 +169,14 @@ adapter fails on the first call rather than degrading silently. `academy` itself
 
 | Variable | Seam | Default | Notes |
 |---|---|---|---|
-| `ACADEMY_ADAPTER_IDENTITY` | `identity` | empty | Signed-identity verification; the development stub lands with T-004 |
-| `ACADEMY_ADAPTER_ORGANIZATION` | `organization` | empty | Hub directory lookups (ADR-012, 60 s cache) |
-| `ACADEMY_ADAPTER_NOTIFY` | `notify` | empty | Mail and activity log; never called from a request cycle |
-| `ACADEMY_ADAPTER_STORAGE` | `storage` | empty | Presign/stat/delete for media (D-001 keeps the provider open) |
+| `ACADEMY_ADAPTER_IDENTITY` | `identity` | `host_stub.identity:DevelopmentIdentity` (dev/test), empty in production | Signed-identity verification (T-015 adds the Hub verifier) |
+| `ACADEMY_ADAPTER_ORGANIZATION` | `organization` | `host_stub.organization:StubDirectory` (dev/test), empty in production | Hub directory lookups (ADR-012) |
+| `ACADEMY_ADAPTER_NOTIFY` | `notify` | `host_stub.notify:RecordingNotifier` (dev/test), empty in production | Mail and activity log; never called from a request cycle |
+| `ACADEMY_ADAPTER_STORAGE` | `storage` | `host_stub.storage:InMemoryStorage` (dev/test), empty in production | Presign/stat/delete for media (D-001 keeps the provider open) |
+
+The development and test profiles fill any empty value with the stub above, so a fresh clone
+runs without a Hub or a bucket; the production profile keeps the empty value and therefore
+fails at the first call until the deployment supplies a real implementation. Each seam has a
+contract suite under `tests/contracts/` — an implementation is accepted when that suite passes,
+which is how T-015's Hub transports and T-018's bucket implementation land without changing
+their callers.
