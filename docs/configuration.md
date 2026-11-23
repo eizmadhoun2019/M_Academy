@@ -136,3 +136,24 @@ adapter `InMemoryStorage` or MinIO `academy-media-test`, throttle rates disabled
 Contains every variable of §1–§6 with placeholder values and a comment naming the owning
 document. No secret, no real host, no legacy value. `git check-ignore .env` must pass
 (`docs/operations/environments.md` §7 item 9).
+
+## 10. Logging and request ids
+
+Every process writes one JSON object per line to stdout, so the container runtime collects a
+stream that needs no parsing rule:
+
+| Field | Meaning |
+|---|---|
+| `ts` | UTC ISO 8601 with milliseconds |
+| `level` | `DEBUG` … `CRITICAL` |
+| `logger` | Dotted logger name |
+| `service` | `academy` |
+| `env` | Value of `ACADEMY_ENV` |
+| `message` | Rendered message; never a token, cookie, email or media URL (§1) |
+| `request_id` | Present only inside a request |
+| `exception` / `stack` | Present only when the record carries them |
+
+A request id is accepted from the inbound `X-Request-ID` header only when it matches
+`[A-Za-z0-9._-]{1,64}`; anything else is replaced by a generated 32-character id, which is also
+returned in `X-Request-ID` on the response. This is what makes a support report traceable to
+the lines it produced.

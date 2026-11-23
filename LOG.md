@@ -253,3 +253,35 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
   passes.
 - **Approved by:** Project owner (2026-11-23): «اصلح كل ما سبق وبعدها نعودلحسم مشكلتنا ci:g6».
 - **References:** T-001, `docs/traceability.md` §3 G6, `Dockerfile`, `.github/workflows/ci.yml`.
+
+### [2026-11-23] — T-002: settings profiles, Celery queues, JSON logging, i18n
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** The Celery app now has the queue topology its catalogue assumes: `default`,
+  `media` and `notifications` are declared explicitly, `academy.media.*` routes to `media`,
+  `academy.notifications.*` and `academy.escalations.*` to `notifications`, and anything else —
+  including a misnamed task — to `default`, with implicit queue creation off so a typo cannot
+  open a queue no worker reads. The beat schedule stays with the tasks it names
+  (`docs/background-jobs.md` §4), because scheduling a task that does not exist yet would only
+  fill queues with unroutable messages. Logging is one JSON object per line
+  (`config/logging.py`) with a request id that `RequestIdMiddleware` takes from an
+  `X-Request-ID` header only when it is short and safe, generates otherwise, and echoes back.
+  `LocaleMiddleware` is installed in Django's required order, the default language `ar` is
+  validated against the supported list, and the language cookie is `django_language`.
+- **Impact:** Every process logs machine-readable lines with a traceable request id; a task name
+  is routed by code rather than by whoever typed the worker command. No new environment
+  variable was introduced, so `docs/configuration.md` §1–§9 is unchanged; its new §10 documents
+  the log fields and the header.
+- **Evidence:** `tests/test_settings.py` (26 tests overall in the suite) covers the routing of
+  every documented task name, the default-queue fallback, the declared queue set, `ping`
+  returning `pong`, a real publish through this project's Redis broker landing on `default`
+  (probe on a spare database so the development worker cannot consume it first), the JSON
+  fields, request-id validation and echo, the Arabic default, English availability, locale
+  middleware order, the cookie switching the active language, and the production profile
+  refusing a missing `ACADEMY_ALLOWED_HOSTS` or a short `DJANGO_SECRET_KEY` while loading with
+  the required values. Locally `ruff check`, `ruff format --check`, `mypy .` and `pytest -q`
+  pass; `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «كمل» after G6 went green.
+- **References:** T-002, `docs/configuration.md` §10, `docs/background-jobs.md` §1–§4,
+  `docs/operations/environments.md` §4, `config/settings/base.py`, `config/celery.py`.
