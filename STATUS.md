@@ -25,7 +25,6 @@ subscribers only after the write commits. The documentation also records the own
 target** (charter 2.3; decisions D-026…D-030): Masheed only, one record set with Hub-integrated
 or standalone local sign-in, `grants_only` management authority, an Academy-owned dashboard and
 sidebar, and screens specified in `docs/ui/screen-specification.md`. Those are documented
-targets — no code implements them yet. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 targets — no code implements them yet. The catalog schema exists (T-006): Course →
 CourseVersion → Section → Lesson plus MediaAsset, with every documented check, partial unique
 index, deferrable position constraint and the two freeze triggers in the database itself. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
