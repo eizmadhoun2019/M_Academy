@@ -28,6 +28,7 @@ duplicate a user-visible effect. Exactly one `beat` process runs at a time.
 | `academy.notifications.sweep` | `notifications` | beat, every 15 min | 300 s | Picks `pending`/`failed` rows with `attempt_count < 3`; the unique key prevents doubles | Re-enqueues `academy.notifications.send` |
 | `academy.reminders.evaluate` | `default` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ` (D-002) | 1800 s; no retry (idempotent, next run re-evaluates) | `UNIQUE(enrollment_id, kind, recipient_ref)` on `ReminderLog`, checked in the same transaction that creates the notification | Emits `due_minus_3`, `due`, `due_plus_1` for active, incomplete, non-cancelled enrollments with a due date that is not yet acknowledged |
 | `academy.escalations.digest` | `notifications` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ`, for enrollments at due+3 | 1800 s; 1 retry | `ReminderLog.kind='manager_escalation'` per `(enrollment, manager)` | Sends one digest per manager covering their overdue learners (REQ-11) |
+| `academy.membership.reconcile` | `default` | beat, every `ACADEMY_MEMBERSHIP_RECONCILE_MINUTES` (60) | 600 s; 1 retry | Upserts only linked users; a directory failure leaves stored state unchanged | Re-reads linked employees from the Hub directory (D-029); a failed read is never treated as a deactivation |
 | `academy.audit.mirror` | `default` | beat, every 5 min | 120 s; 5 attempts, capped backoff 15 min | `AuditEvent.event_id` is the outbound idempotency key | Pushes unmirrored events to the Hub `activity` path through `HubHttp`; stops silently when the circuit is open |
 
 ## 2. Explicitly not background jobs
@@ -62,6 +63,7 @@ duplicate a user-visible effect. Exactly one `beat` process runs at a time.
 |---|---|
 | every 15 min | `academy.notifications.sweep` |
 | every 5 min | `academy.audit.mirror` |
+| every 60 min | `academy.membership.reconcile` |
 | 03:10 daily UTC | `academy.media.purge_abandoned` |
 | 04:10 daily UTC | `academy.progress.compact` |
 | 08:00 daily business TZ | `academy.reminders.evaluate`, `academy.escalations.digest` |
@@ -77,3 +79,4 @@ deployed schedule matches this table at review time.
 - `media.process` failure paths set `failed` + `error_code` and never leave `ready` without a
   playlist.
 - `audit.mirror` with the Hub circuit open retries later and mirror lag stays observable.
+- `membership.reconcile` with a failing directory changes no link and cancels no enrollment.

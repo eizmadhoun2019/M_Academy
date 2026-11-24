@@ -9,7 +9,7 @@
 | D-004 · Token format and rotation | HMAC-SHA256 signed envelope, independent identity/webhook key rings, 60-second identity lifetime and five seconds of clock skew | Configure key rings and the identity verifier. A JWT variant requires a compatible verifier and agreement on the wire format. |
 | D-010 · Hub implementation owner and availability | Academy-side verification uses a loopback Hub fake. Hub owner, integration contact, test URL and delivery date are pending. | Hub team assigns an owner and supplies the service URL, credential and accepted route map. Configure these per environment. |
 | D-005 · Academy DNS and TLS | Public browser origin is the Hub's HTTPS origin. Academy uses a private HTTPS upstream reachable by the Hub proxy and webhook sender. | Configure Hub origin, Academy upstream hostname and certificate, allowlisted proxy networks, script prefix, trusted CSRF origins and bucket CORS origin per environment. Example hosts below are placeholders. |
-| D-011 · Navigation source | Academy settings supply the mirrored, same-origin menu. | Set ACADEMY_HUB_NAVIGATION_SOURCE to settings or identity. Supply items in ACADEMY_HUB_NAVIGATION or the signed navigation claim, respectively. |
+| D-011 · Navigation source | Academy owns its own permission-aware sidebar and personal dashboard; it does **not** mirror Hub navigation. | Any legacy `ACADEMY_HUB_NAVIGATION_SOURCE` setting is a compatibility concern only; Academy decides internal links from effective Academy permissions. A contextual Return to Hub link is optional. |
 
 ## 1. Requests from the browser through Hub
 
@@ -164,3 +164,27 @@ The `config.settings.prod` profile requires the Hub origin, API credential, iden
 - [ ] Verify directory filtering, descendant membership, pagination, manager lookup and organization isolation against the examples. Retry each POST and confirm one mail delivery or one activity item.
 - [ ] Deliver both webhook types. Verify wrong signatures fail, repeated nonce fails, and the original event with a new nonce and identical body is acknowledged without repeating effects.
 - [ ] Simulate Hub service API errors and repeat under an open circuit. Continue signed learner heartbeat through the available proxy. Simulate proxy loss and verify resume from Academy's confirmed progress after recovery.
+
+
+## H1 scope clarification — owner-approved documentation target
+
+The integration serves **Masheed only** in H1. Hub owns verified employee
+identity, membership and directory; Academy owns training-specific grants,
+courses, assignments, progress and audit. Hub's role claims do **not**
+automatically grant Academy management capabilities (`grants_only`).
+
+Academy uses signed Hub webhooks and reconciles **linked employee accounts only**
+hourly (`academy.membership.reconcile`, `docs/background-jobs.md` §1) and after connection
+restoration. A directory outage must not be
+interpreted as a deactivation. The exact reconciliation API operations and
+credentials require confirmation from the Hub owner; this section does not
+invent an endpoint or claim that production integration has passed.
+
+In Hub mode, entry opens Academy's personal dashboard directly with no second
+login. Hub owns session expiration; Academy denies protected requests after
+that session ends. A separate simple production standalone mode uses trusted
+local membership and a verified administrative account link to the same
+training record. This local sign-in is **not** Hub SSO and does not create
+a second organization.
+
+For the authoritative UI navigation decision, see `docs/decisions.md` D-011.

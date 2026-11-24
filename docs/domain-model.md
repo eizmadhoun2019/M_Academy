@@ -184,6 +184,9 @@ Constraints:
 - `CHECK (status <> 'completed' OR completed_at IS NOT NULL)`
 - `CHECK (status <> 'cancelled' OR cancelled_at IS NOT NULL)`
 - `CHECK (course_version_id IS NOT NULL)` — the service refuses to enroll onto a draft.
+- Re-enrollment inserts a **new** row: the partial unique index covers `active` rows only, so a
+  cancelled enrollment never blocks a new one, and reactivation never revives a cancelled row
+  (D-028).
 Indexes: `(organization_id, user_ref, status)`, `(organization_id, course_id, status)`,
 `(organization_id, due_at) WHERE status = 'active' AND due_at IS NOT NULL`.
 
@@ -286,7 +289,27 @@ Constraints:
 - `UNIQUE (organization_id, user_ref, capability, scope_type, COALESCE(scope_ref, '')) WHERE revoked_at IS NULL`
 - `CHECK (revoked_at IS NULL OR revoked_by_ref IS NOT NULL)`
 
-### 2.15 Deliberately absent
+### 2.15 `AccessSuspension` (Academy-local)
+
+D-028: a local administrative suspension makes stored grants ineffective without deleting
+them, and never changes Hub membership.
+
+| Field | Type | Null | Default | Constraints |
+|---|---|---|---|---|
+| `user_ref` | varchar(64) | no | — | |
+| `reason` | varchar(500) | no | — | Non-blank |
+| `suspended_at` | timestamptz | no | — | Set by the service, `timezone.now()` |
+| `suspended_by_ref` | varchar(64) | no | — | Effective `academy.admin` |
+| `lifted_at` | timestamptz | yes | `NULL` | Manual lift only |
+| `lifted_by_ref` | varchar(64) | yes | `NULL` | Required iff `lifted_at` is set |
+
+Constraints: `UNIQUE (organization_id, user_ref) WHERE lifted_at IS NULL`,
+`CHECK (lifted_at IS NULL OR lifted_by_ref IS NOT NULL)`, `CHECK (length(btrim(reason)) > 0)`.
+Enforcement is in the authorization layer: an active row yields no effective capability, the
+next request is denied with `403 access_suspended`, and the learner sees screen X2. No local
+membership row and no session store are added.
+
+### 2.16 Deliberately absent
 | Not stored | Why |
 |---|---|
 | Per-heartbeat rows | Volume (14 req/s → 1.2 M rows/day) and privacy; merged ranges suffice (ADR-013) |
@@ -492,6 +515,7 @@ trustworthy (CHARTER risk table).
 | `NotificationLog`, `ReminderLog` | 90 d | Recipients are refs only |
 | `MediaAsset` rows for stale uploads | 24 h then purged | Storage object deleted with the row |
 | `Enrollment` | Life of employment + retention period | Anonymization replaces `user_ref` with a tombstone |
+| `AccessSuspension` | 5 y with the audit trail | The reason text may carry personal context; export/anonymize cover it |
 
 The meta-test in `academy/tests/test_privacy.py` fails when a model with a `user_ref`-like
 column is missing from the export/anonymize registry (REQ-19).
@@ -505,5 +529,7 @@ column is missing from the export/anonymize registry (REQ-19).
 - `test_gating_matrix`: locked lesson returns 403 and no body; non-required lessons skipped.
 - `test_completion_idempotency`: double submit yields one `CompletionRecord` and one
   notification key.
+- `test_access_suspension`: a suspended user has no effective capability, keeps every stored
+  grant, and a lift restores exactly those grants.
 - Constraint tests: every `CHECK`/unique index above has one `IntegrityError` test.
 - Isolation: every entity here appears in the two-organization fixture.

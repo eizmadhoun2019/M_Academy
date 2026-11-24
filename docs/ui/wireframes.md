@@ -22,9 +22,9 @@ Values sampled from flat pixels in the Poppler renders. The color roles below re
 | Draft/neutral background | `#F1F5F9` | 5, 11, 22 | PDF sample |
 | Player | `#0B1117` | 21 | PDF sample |
 
-Rounded panels use a 12 px radius, a thin border, and a regular 4 px spacing scale. The dark theme derives from the sampled navy with lighter foregrounds. Noto Sans Arabic is hosted locally until D-010 is resolved. The archived color values were used only for the cross-check column.
+Rounded panels use a 12 px radius, a thin border, and a regular 4 px spacing scale. The dark theme derives from the sampled navy with lighter foregrounds. Noto Sans Arabic is hosted locally under the D-008 branding default. The archived color values were used only for the cross-check column.
 
-## A–F wireframes
+## A–F reference wireframes (A is course management, not the personal dashboard)
 
 Each row describes the reading order and panel placement. RTL reverses inline placement. On phones the sidebar uses a drawer and table rows read as labeled cards.
 
@@ -46,7 +46,7 @@ Show the **Permissions** tab in Academy management only to users with effective 
 | Area | Wide layout | Phone and tablet |
 |---|---|---|
 | Entry and actions | Management tabs → Permissions heading → **Grant access** | Same reading order. Keep the main action visible above the user list. |
-| Users and access | User, capability, department scope, source, expiry, and status in a table. Label role defaults and individual grants separately. | User rows become labeled cards on phones. Keep capability, scope, expiry and action together. |
+| Users and access | User, capability, department scope, source, expiry, and status in a table. In H1 `grants_only`, show individual Academy grants as the effective source; Hub roles may be shown as identity metadata but **never** as automatic training-management authority. | User rows become labeled cards on phones. Keep capability, scope, expiry and action together. |
 | Grant dialog | Choose one user and capability. Select all departments or choose allowed departments. Add an optional expiry date and submit. | Stack fields and show validation next to the field. Scoped admins only see departments they can administer. |
 | Revoke | A **Revoke** action appears for individual grants the viewer can administer. The confirmation shows the user, capability and scope. | Reuse the same confirmation. Keep revoked history visible and label active, expired and revoked states in text. If revocation would remove the last active admin, show the reason. |
 
@@ -69,3 +69,29 @@ In development, open `/academy/preview/`. Use the menu and language switch to vi
 ## Account screens
 
 Both account screens use the shared canvas and card in Arabic (RTL) and English (LTR). The development sign-in stacks a title, labeled username and password fields, any validation messages, and the sign-in button. The inactive-account screen stacks its title, a short message directing members to their organization administrator, and the sign-out button.
+
+
+## H1 screen additions and navigation
+
+The owner-approved H1 UX target is described in
+[`screen-specification.md`](screen-specification.md). These additions **do not
+rename or replace** the PDF reference screens A–G:
+
+- **L1 Personal Dashboard:** assignments, active learning, progress and resume.
+- **L2 My Courses:** own courses, status and due dates.
+- **L3 Course Details:** summary, ordered lessons, locked/unlocked states.
+- **L4 Achievements:** completed courses and dates, without Phase 1 certificates.
+- **S1 Audit:** scoped read-only audit table for authorized `academy.admin`.
+- **X1 Local Sign-in:** standalone mode only; Hub entry has no Academy login.
+
+**Academy sidebar:** My Learning (Dashboard, My Courses, Achievements);
+Training Management (Courses & Content, Assignments, Reports); System Management
+(Permissions, Audit). Each management link is individually permission-gated,
+and a section is hidden when it has no visible child links. A contextual
+Return to Hub link is optional only in integrated mode. Server-side checks
+remain mandatory. On phones the sidebar becomes an accessible drawer.
+
+**Design source:** continue to use the approved PDF's navy, gold, white cards,
+RTL/LTR patterns and responsive layouts. The new screen specification defines
+content, behavior and states; it does **not** claim new screen mockups have
+been approved or built.

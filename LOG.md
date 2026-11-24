@@ -421,3 +421,31 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-005, REQ-04, ADR-007, `docs/skills/service.md` step 4, `ARCHITECTURE.md` §4,
   `academy/events/`.
+
+
+### [2026-11-23] — Documentation: H1 target adopted selectively (charter 2.3)
+
+- **Type:** Documentation
+- **Status:** Approved
+- **Summary:** The project owner supplied a complete documentation package (charter,
+  architecture, LOG, decision register, Hub contract, UI wireframes plus a new screen
+  specification). Its product content was reviewed line by line and adopted **selectively**:
+  charter 2.3 records the H1 target (Masheed only, one record set with Hub-integrated or
+  standalone local sign-in, `grants_only`, Academy-owned dashboard and sidebar), decisions
+  D-011 and D-026…D-030 are confirmed, `docs/ui/screen-specification.md` joins the repository,
+  and the Hub contract, wireframes and configuration/API/schema/job documents were aligned.
+  The package's replacement copies of `LOG.md` and `ARCHITECTURE.md` were **not** adopted:
+  they carried a different history and renumbered ADR-001…ADR-018 with different meanings,
+  which would have invalidated the references in `docs/adr/`, `docs/domain-model.md`,
+  `docs/configuration.md` and `academy/adapters/organization.py`. `INSTALLATION_AR.md` stays
+  outside the repository: it is the package's delivery note.
+- **Impact:** Documents now describe the H1 product target truthfully as a target. No code,
+  migration, endpoint or screen exists for `grants_only`, the standalone mode or
+  `AccessSuspension`; T-009, T-014 and T-016 carry that work. No task status was changed by
+  this documentation commit.
+- **Evidence:** `python scripts/check_docs.py` (G9) passes; relative links, retired identifier
+  patterns and required documents were re-checked. No test asserts any of the new product
+  text.
+- **Approved by:** Project owner (2026-11-23), after reviewing the conflicts above.
+- **References:** CHARTER §§1, 3.1, 4, 5; ARCHITECTURE §§7, 11; `docs/decisions.md`
+  D-011, D-026…D-030; `docs/ui/screen-specification.md`; `docs/domain-model.md` §2.7, §2.15.

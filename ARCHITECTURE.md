@@ -80,9 +80,15 @@ assignment target, lesson summary (D-013…D-016).
 ## 7. Security and privacy design
 Authorization in depth: view-declared capability → service recheck → object-level
 (enrollment ownership / department scope) → tenant scope on every query. Capabilities:
-`academy.learn | manage_content | assign | view_reports | admin`; effective access = Hub role
-defaults ∪ active individual grants; optional grants-only mode; last-active-admin
-protection; grant/revoke audited in the same transaction; denied admin actions audited.
+`academy.learn | manage_content | assign | view_reports | admin`. Two effective-access modes
+(D-027): **H1 production runs `grants_only`** — management and administration come only from
+active Academy grants, while active members keep `academy.learn` under enrollment and
+ownership checks; `role_plus_grants` (Hub role defaults ∪ grants) remains a tested
+compatibility mode. The capability matrix and grant rules are `CHARTER.md` §3.1. An
+Academy-local suspension (D-028) makes stored grants ineffective without deleting them and is
+lifted manually; it never changes Hub membership. Last-active-admin protection; audited
+grant, revoke, denial, suspension and lift in the same transaction. Access mode (`hub` or
+`standalone`) and authorization mode are settings, not code paths: `docs/configuration.md` §1.
 **Tenant isolation statement (Sensitive project).** Every Academy table carries
 `organization_id`, every index begins with it, and every query goes through
 `for_org(organization_id)` — code may not use an unscoped default manager. Learners and staff
@@ -96,9 +102,11 @@ Audited actions (canonical list — extend here first, per `docs/skills/audited-
 `lesson.created|updated|deleted|reordered`, `media.upload_created`, `media.retry`,
 `assignment.created`, `assignment.cancelled`, `enrollment.cancelled`,
 `enrollment.completed_override`, `grant.created`, `grant.revoked`, `grant.denied`,
-`settings.updated`, `user.exported`, `user.anonymized`.
-Identity: only verified Hub assertions accepted (signature, issuer, audience, freshness,
-single-use nonce via shared store); standalone dev uses database-backed sessions.
+`settings.updated`, `access.suspended`, `access.lifted`, `user.exported`,
+`user.anonymized`.
+Identity: in `hub` mode only verified Hub assertions are accepted (signature, issuer,
+audience, freshness, single-use nonce via shared store); `standalone` mode uses
+database-backed local sessions with trusted local membership (D-026).
 Secrets from env/secret manager; TLS everywhere; HSTS, CSP, `check --deploy` in CI;
 CSV formula-injection neutralization; no PII in logs; audit immutability enforced by
 PostgreSQL trigger.
@@ -131,7 +139,7 @@ values in this file.
 
 ## 11. Architecture decisions
 Consequential decisions (ADR-NNN). Expanded records live in `docs/adr/` when one is needed;
-the text below is authoritative for ADR-001…ADR-011.
+the text below is authoritative for ADR-001…ADR-014.
 1. ADR-001 — Service layer: views/serializers thin, all logic in services.
 2. ADR-002 — Opaque `user_ref`, no user FK; names/emails fetched, never stored.
 3. ADR-003 — `organization_id` UUID on every table; `for_org` scoping.
@@ -148,6 +156,10 @@ the text below is authoritative for ADR-001…ADR-011.
     membership projection; `member_changed` carries the refs needed for auto-enrollment.
 13. ADR-013 — Watched coverage is stored as merged ranges on one `LessonProgress` row;
     no per-heartbeat rows (volume and privacy).
+14. ADR-014 — Dual-mode H1 access over one record set: Hub-signed identity in `hub` mode and
+    local sign-in with trusted membership in `standalone` mode; `grants_only` is the H1
+    authorization default, and an Academy-local suspension is separate from Hub membership
+    (owner-approved 2026-11-23, D-026…D-030).
 
 ## 12. Current versus planned
 **Current (2026-11-22):** documentation baseline only — this rebuild starts from scratch.
@@ -159,3 +171,5 @@ playback within T-018, assignments T-019, gating T-019, heartbeat T-020, complet
 notifications T-021, reminders T-021, reports T-022, grants T-016) → hardening, E2E, ops,
 security, privacy, pilot, release `v1.0.0` (T-024, GATE-1).
 Labels: the Hub contract and identity format remain **proposed** until Hub-team confirmation.
+H1 screen requirements (L1–L4 learner, A–G management, S1 audit, X1–X2 account) are specified
+in `docs/ui/screen-specification.md`; the approved PDF remains the visual source.

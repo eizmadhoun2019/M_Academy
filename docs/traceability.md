@@ -2,7 +2,7 @@
 
 **Status:** Canonical reference. Kept current by every task that closes (see
 `docs/skills/closing.md`).
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-23
 
 ## 1. Identifier scheme (current)
 
@@ -67,8 +67,8 @@ records which gates are live, and it is updated in the task that activates a gat
 | REQ-09 | T-020 | Progress matrix (see `docs/domain-model.md` §7) |
 | REQ-10, REQ-11 | T-021 | Idempotency tests with frozen time |
 | REQ-12 | T-022 | Query-count and scope tests; CSV formula safe |
-| REQ-13 | T-016 | Capability matrix in DRF and web, both modes |
-| REQ-14 | T-023 | Manual check record in LOG |
+| REQ-13 | T-016 | Capability matrix in DRF and web, both modes; H1 `grants_only`, local suspension, last-admin guard |
+| REQ-14 | T-023 | Manual check record in LOG; screens L1–L4, S1, X1–X2 per `docs/ui/screen-specification.md` |
 | REQ-15–REQ-20 | T-024 | Journey, E2E, load, ops, security, privacy, pilot evidence |
 
 ## 5. Sources of truth (never restate elsewhere)
@@ -87,6 +87,7 @@ records which gates are live, and it is updated in the task that activates a gat
 | Celery task names, schedules, retries, idempotency | `docs/background-jobs.md` |
 | Report metrics, columns, CSV format | `docs/reports.md` |
 | Notification and reminder copy (ar/en), channels, dedupe keys | `docs/notifications.md` |
+| Screen requirements and navigation (L1–L4, A–G, S1, X1–X2) | `docs/ui/screen-specification.md` |
 
 ## 6. Verification
 `docs/traceability.md`, `STATUS.md` and `LOG.md` must agree: every `T-NNN` in STATUS exists

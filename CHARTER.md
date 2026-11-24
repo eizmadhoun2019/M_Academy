@@ -1,10 +1,11 @@
 # CHARTER — Project Purpose, Scope and Success
 
-**Charter version:** 2.2 (UPDS baseline; supersedes legacy charter 1.3 content, same scope;
-2.1 corrected decision IDs to `docs/decisions.md`; 2.2 adds the new-repository and
-isolated-environment constraints — no change to product scope)
+**Charter version:** 2.3 (2.1 corrected decision IDs; 2.2 added the new-repository and
+isolated-environment constraints; 2.3 records the owner-approved H1 product target —
+Masheed only, two access modes over one record set, `grants_only`, Academy-owned navigation —
+without changing the requirement set or the repository/stack constraints)
 **Approved by:** Project owner
-**Last reviewed:** 2026-11-22
+**Last reviewed:** 2026-11-23
 
 ## 1. Identity and purpose
 - **Project name:** Masheed_Academy (Python package: `academy`).
@@ -14,10 +15,13 @@ isolated-environment constraints — no change to product scope)
 - **Problem:** Ad-hoc training wastes time and causes errors; managers cannot see completion;
   manual reminders consume management time; external LMS platforms mean per-seat recurring
   cost and training data leaving our systems.
-- **Vision (three horizons):** H1 internal module inside Masheed Hub (this charter) ·
-  H2 sellable add-on for Hub customers (multi-tenancy, plans, white-label) ·
-  H3 standalone platform (own SSO, SCORM/xAPI, AI). This charter authorizes H1 with an
-  architecture that does not block H2/H3.
+- **Vision (three horizons):** H1 internal module for Masheed only (this charter), running
+  in two access modes over one record set: Hub-integrated (trusted signed identity, no second
+  login) and a simple production standalone mode with local sign-in and trusted local
+  membership (D-026) · H2 sellable add-on for Hub customers (multi-tenancy, plans,
+  white-label) · H3 standalone platform (own SSO, SCORM/xAPI, AI). This charter authorizes H1
+  with an architecture that does not block H2/H3. H1 remains one organization: no
+  multi-organization administration, customer onboarding, billing or platform-owner UI.
 
 ## 2. Goals
 - G1 Deliver video-based courses through the account employees already use.
@@ -36,6 +40,30 @@ isolated-environment constraints — no change to product scope)
 | Masheed Hub team | Owns sign-in, reverse proxy `/academy/*`, signed identity, webhooks. |
 | Project owner / management | Sponsor; approves scope, decisions D-001… and UAT. |
 
+### 3.1 Effective authorization in H1 (`grants_only`)
+
+Default access is deny. Hub supplies verified identity, membership and department; **Academy
+management authority comes only from active Academy grants** (D-027). Hub roles are identity
+metadata and never grant management implicitly; the role-plus-grants union remains a tested
+compatibility mode, not the H1 production default.
+
+| Capability | Actions | Boundary |
+|---|---|---|
+| `academy.learn` | Own enrollments, progress, resume, unlocked lessons | Active membership, own enrollment |
+| `academy.manage_content` | Courses, lessons, publish/archive, media, captions | Authorized departments; organization-wide needs all-department scope |
+| `academy.assign` | Create/cancel assignments | Authorized departments and recipients |
+| `academy.view_reports` | Reports and CSV export | Authorized departments and subjects |
+| `academy.admin` | Grants, settings, audit view/export, local suspension | Authorized departments; organization-wide settings need all-department scope |
+
+A grant covers one user and one grantable capability, all departments or an explicit list, with
+an optional expiry. Only an effective `academy.admin` may grant, revoke or suspend within their
+own scope; the last active administrator cannot be removed; revoked grants are retained with
+`revoked_at`; grants, revocations, denials and suspensions are audited. An Academy-local
+suspension makes stored grants ineffective without deleting them and is lifted manually
+(D-028). Hub deactivation blocks both modes and cancels unfinished enrollments; reactivation
+does not revive cancelled rows. Screens and per-capability navigation:
+`docs/ui/screen-specification.md`.
+
 ## 4. Scope
 ### In scope (H1)
 - Course authoring with immutable versions, sections, lessons (video Phase 1; pdf/text Phase 2).
@@ -44,6 +72,10 @@ isolated-environment constraints — no change to product scope)
 - Server-authoritative heartbeat progress, anti-skip, completion records.
 - Notifications (learner + manager), reminders with manager escalation digest.
 - Reports + CSV export; Academy-managed permission grants; audit trail.
+- Two H1 access modes over the same records (Hub-integrated signed identity; simple standalone
+  local sign-in with trusted local membership) and an Academy-owned dashboard and sidebar
+  (D-011, D-026).
+- Academy-local administrative suspension that leaves Hub membership untouched (D-028).
 - Privacy: export, anonymization, retention; Arabic (RTL) and English UI, WCAG 2.2 AA.
 ### Out of scope (H1)
 Live streaming, comments/forums, gamification, SCORM/xAPI, payments, mobile apps, AI,
@@ -67,8 +99,8 @@ manual checks in LOG.md before release.
 | REQ-10 | Completion + notifications exactly once | Must | Learner congrats + manager notification, idempotent via NotificationLog | Tech authority |
 | REQ-11 | Reminders + escalation | Must | due−3/due/due+1 learner reminders; manager digest at due+3; idempotent (ReminderLog) | Tech authority |
 | REQ-12 | Manager reports + CSV | Must | Completion %, overdue, avg time per course/department; formula-safe CSV; scoped | Tech authority |
-| REQ-13 | Permission grants | Must | Allow/deny/scope matrix for role defaults + grants, both modes, DRF and web; last-admin protection; audited | Project owner |
-| REQ-14 | Learner + management web UI | Must | My courses, outline/locks, player (hls.js) + resume; editor, uploader, assignments, dashboard | Tech authority |
+| REQ-13 | Permission grants | Must | Allow/deny/scope matrix for `role_plus_grants` and H1 `grants_only`, DRF and web; local suspension; last-admin protection; audited | Project owner |
+| REQ-14 | Learner + management web UI | Must | My courses, outline/locks, player (hls.js) + resume; editor, uploader, assignments, dashboard; screens L1–L4, S1, X1–X2 per `docs/ui/screen-specification.md` | Tech authority |
 | REQ-15 | Journey/E2E, accessibility, responsiveness | Must | Full API journey test; Playwright at 3 viewports in ar+en; axe zero critical/serious | Tech authority |
 | REQ-16 | Operations | Must | Staging deploy from CI; daily backup; recorded restore drill; monitored /healthz with alerts | Tech authority |
 | REQ-17 | Performance at design capacity | Must | §6 targets met in load test or owner-accepted deviation recorded | Project owner |
@@ -105,8 +137,8 @@ Canonical location: `docs/performance-profile.yaml` (approved with this charter)
 
 ## 8. Constraints and dependencies
 - Hub integration contract is **proposed** — Hub-team confirmation pending (identity format
-  D-004, Hub implementation D-010, domain/TLS D-005, menu source D-011, ingress D-012; the
-  single register is `docs/decisions.md`).
+  D-004, Hub implementation D-010, domain/TLS D-005, navigation D-011 (Academy-owned, not
+  mirrored), ingress D-012; the single register is `docs/decisions.md`).
 - Business time zone (D-002), retention periods (D-003), browser support (D-007), brand
   font/wordmark (D-008) and video storage provider (D-001) use the defaults recorded in
   `docs/decisions.md` until the owner decides; none of them blocks the build.
@@ -148,3 +180,4 @@ bump version → propagate to ARCHITECTURE/STATUS.
 | Role | Name | Decision | Date |
 |---|---|---|---|
 | Project owner | (owner) | Approved | 2026-11-22 |
+| Project owner | (owner) | Approved charter 2.3: H1 target — dual-mode access, `grants_only`, Academy-owned navigation (documentation only) | 2026-11-23 |

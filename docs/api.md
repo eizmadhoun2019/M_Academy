@@ -10,10 +10,11 @@
 
 - Base path: `/api/v1/academy/` on the Academy service. Through Hub it appears as
   `/academy/api/v1/academy/` (prefix stripped once at the proxy).
-- Auth: verified Hub identity header in production; database session in the standalone dev
-  profile. Missing/invalid identity → **401**. Verified but inactive → **403
-  `account_inactive`**. Denied capability → **403 `forbidden`**. Wrong tenant → **404** for
-  object routes, empty list for collections.
+- Auth: `ACADEMY_ACCESS_MODE=hub` accepts only a verified Hub identity header; `standalone`
+  (development now, production target per D-026) uses a database session with trusted local
+  membership. Missing/invalid identity → **401**. Verified but inactive → **403
+  `account_inactive`**. Locally suspended → **403 `access_suspended`**. Denied capability →
+  **403 `forbidden`**. Wrong tenant → **404** for object routes, empty list for collections.
 - Errors: `{"code": "...", "detail": "...", "fields": {...}}`. Codes are stable; `detail` is
   localized human text. Domain exceptions map here in the view layer, never in services.
 - Pagination: `page` (1-based) + `page_size` (default 25, max 100), cursor allowed for
@@ -40,6 +41,10 @@
 | `academy.admin` | `platform_admin` | addable, last-admin protected |
 
 Effective capability = Hub role defaults ∪ active grants, unless grants-only mode is enabled.
+H1 production sets `ACADEMY_AUTHORIZATION_MODE=grants_only` (D-027): the "Default holders"
+column is the compatibility `role_plus_grants` map, not an H1 grant of authority. The first
+`academy.admin` is provisioned once through a guarded setup check, and a local suspension
+(D-028) removes effective capability without deleting the stored grants.
 
 ## 3. Learner endpoints (`academy.learn`)
 
@@ -110,6 +115,9 @@ in tests (no N+1 over enrollments).
 | GET | `manage/grants/` | List grants | Filters: `user_ref`, `capability`, `state` (`active \| expired \| revoked`) |
 | POST | `manage/grants/` | Grant | `Idempotency-Key`; audited in the same transaction |
 | DELETE | `manage/grants/{id}/` | Revoke | 409 `last_admin` when it would remove the last active admin; audited |
+| GET | `manage/access/` | Local suspensions | Filters: `user_ref`, `state` (`suspended \| lifted`) |
+| POST | `manage/access/{user_ref}/suspend/` | Suspend Academy access locally | `academy.admin` in scope; reason required; audited `access.suspended`; stored grants kept |
+| POST | `manage/access/{user_ref}/lift/` | Lift a local suspension | Reason required; audited `access.lifted`; never changes Hub membership |
 | GET | `manage/settings/` | Organization settings | Completion threshold default, retention values, grants-only mode |
 | PATCH | `manage/settings/` | Update settings | Audited |
 | GET | `manage/audit/` | Audit search | Filters: `action`, `object_type`, `object_id`, `actor_ref`, date range |
@@ -142,6 +150,12 @@ in tests (no N+1 over enrollments).
 | `/learn/{enrollment_id}/` | E · Course player | `learn` + ownership |
 | `/manage/team/` | F · Team training | `view_reports` |
 | `/manage/permissions/` | G · Permissions | `admin` |
+| `/manage/audit/` | S1 · Audit log | `admin` |
+| `/dashboard/` | L1 · My dashboard | `learn` |
+| `/my/courses/` | L2 · My courses | `learn` |
+| `/my/courses/{course_id}/` | L3 · Course details | `learn` + enrolled |
+| `/my/achievements/` | L4 · Achievements | `learn` |
+| `/login/` | X1 · Local sign-in | `standalone` mode only |
 | `/preview/…` | Preview showcase (dev only) | Dev profile only |
 
 The web layer derives everything from the same services and selectors as the API; it must
@@ -150,7 +164,7 @@ not add business rules.
 ## 11. Error codes (complete list)
 `validation_error` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
 `unsupported_type` 400 · `unauthorized` 401 · `account_inactive` 403 · `forbidden` 403 ·
-`lesson_locked` 403 · `not_found` 404 · `idempotency_conflict` 409 · `draft_exists` 409 ·
+`lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `idempotency_conflict` 409 · `draft_exists` 409 ·
 `version_published` 409 · `course_published_locked` 409 · `upload_missing` 409 ·
 `checksum_mismatch` 409 · `retry_limit_reached` 409 · `media_not_ready` 409 ·
 `lesson_not_eligible` 409 · `enrollment_incomplete` 409 · `acknowledgment_not_required` 409 ·

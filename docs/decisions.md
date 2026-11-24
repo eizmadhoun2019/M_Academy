@@ -1,9 +1,8 @@
 # DECISIONS — Single Decision Register
 
 **Status:** Canonical. This is the only place where deferred decisions live.
-**New decisions continue at `D-023`** — the retired numbers D-018…D-022 are listed for
-history only and are never reused.
-**Last updated:** 2026-11-22
+**New decisions continue after `D-030`**. D-018…D-022 are retired legacy numbers and are never reused.
+**Last updated:** 2026-11-23
 **Owner of this file:** Project owner (decisions cannot be closed by the agent alone).
 
 ## How to use
@@ -34,7 +33,7 @@ history only and are never reused.
 | D-008 | Brand font and wordmark asset | Defaulted | Noto Sans Arabic hosted locally; no wordmark asset in Phase 1 (text logotype). | Management | Final branding | UI ships with the fallback font. |
 | D-009 | KPI values (`[X]` in CHARTER §9) | Open | Placeholders remain in CHARTER §9. | Project owner | Pilot (T-024) | Success measures cannot be evaluated; blocks nothing in the build. |
 | D-010 | Hub implementation owner, test URL, delivery date | Open | Academy builds and verifies against the loopback Hub fake. (Was `D-019`.) | Project owner + Hub owner | T-015 integration suite against the real Hub | Blocks live integration only; T-015 is accepted against the fake. |
-| D-011 | Navigation source | Defaulted | `ACADEMY_HUB_NAVIGATION_SOURCE=settings` with a mirrored same-origin menu. (Was `D-021`.) | Project owner | T-015 | The identity-claim variant stays available without a contract change. |
+| D-011 | Navigation source | Confirmed | Owner decision 2026-11-23: Academy owns its sidebar and personal dashboard; it **does not mirror Hub navigation**. Management sections are gated by Academy grants; integrated mode may offer Return to Hub. (Retired D-021.) The old mirrored-menu setting is legacy and must not determine H1 Academy navigation. | Project owner | H1 UI docs and implementation | Existing mirrored-menu configuration must be reconciled; do not claim it has been removed from code. |
 | D-012 | Hub ingress model | Defaulted | Option A: Hub reverse-proxies `/academy/*` on the Hub origin; Academy keeps the API-first standalone path. (Was `D-022`.) | Project owner + Hub owner | T-015 | Architecture assumes option A; option B would drop the proxy requirements but keep the adapters. |
 
 ### Adopted operational defaults
@@ -42,6 +41,16 @@ history only and are never reused.
 | ID | Decision | Status | Value / default in force | Owner | Needed by | Impact if still undecided |
 |---|---|---|---|---|---|---|
 | D-024 | Operational defaults: upload limits, HLS ladder, throttle rates, page sizes, background-task schedule, report columns, notification copy | Defaulted | Values, rationale and the message texts are in `docs/configuration.md`, `docs/background-jobs.md`, `docs/notifications.md` and `docs/reports.md`. Chosen to satisfy REQ-07/REQ-10/REQ-11/REQ-12 without new schema; reversing any value is a one-row change plus a test update. | Tech authority | T-018, T-021, T-022 | The documented values stand; nothing is blocked. |
+
+### H1 product and UX decisions confirmed by the owner
+
+| ID | Decision | Status | Approved H1 value | Owner | Needed by | Implementation caveat |
+|---|---|---|---|---|---|---|
+| D-026 | H1 operating scope and access | Confirmed | Masheed **only**; one training domain and one personal dashboard; Hub-integrated sign-in without a second Academy login and a simple production standalone local sign-in; trusted Hub-ID-to-local-account linking. No H1 multi-organization administration. | Project owner, 2026-11-23 | H1 documentation | The standalone production path is a target requirement, not verified existing code. |
+| D-027 | H1 authorization | Confirmed | `grants_only` in H1; active employees retain `academy.learn`; Academy grants authorize management. Bootstrap the first `academy.admin` via guarded setup; preserve last-admin protection. Old-department-dependent grants suspend for review after department change. | Project owner, 2026-11-23 | H1 documentation | Existing role-plus-grants compatibility tests remain; H1 defaults need deployment verification. |
+| D-028 | Academy-local suspension | Confirmed | Only authorized `academy.admin` may suspend/lift Academy access with reason/audit. Suspension is indefinite until manually lifted; stored grants are ineffective but retained. Hub deactivation blocks both modes and cancels unfinished enrollments; Hub reactivation does not revive cancelled rows or override local suspension. | Project owner, 2026-11-23 | H1 documentation | Session-open behavior and enrollment uniqueness are implementation details requiring safe resolution; no speculative extra workflow. |
+| D-029 | Linked membership synchronization | Confirmed | Signed Hub webhooks plus hourly reconciliation of **linked users only**, and after reconnection. Directory failure is not proof of deactivation; valid integrated sessions may continue safe learning while sensitive directory-dependent actions wait. | Project owner, 2026-11-23 | H1 documentation | Must align with real Hub contract before production integration. |
+| D-030 | H1 UI and delivery boundary | Confirmed | Academy-owned personal dashboard and sidebar, separately gated Training Management and System Management; preserve approved PDF style. Small H1 delivered in short demonstrable increments; advanced analytics, quiz UI, certificates, SaaS features and rare workflows deferred. | Project owner, 2026-11-23 | H1 documentation | Visual mockups for new L1–L4 screens remain to be designed against PDF. |
 
 ### Infrastructure
 

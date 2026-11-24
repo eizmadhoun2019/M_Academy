@@ -30,6 +30,7 @@ What becomes easier, what becomes harder, what must be revisited.
 |---|---|---|
 | ADR-012 | Membership comes from Hub on demand; no local membership projection | Accepted (2026-11-22) |
 | ADR-013 | Watched coverage stored as merged ranges on one progress row, no per-heartbeat rows | Accepted (2026-11-22) |
+| ADR-014 | Dual-mode H1 access (Hub-signed or local sign-in), `grants_only` default, Academy-local suspension | Accepted (2026-11-23, owner) |
 
 ADRs 001–011 are the architecture decisions summarized in `ARCHITECTURE.md` §11; their text
 there is authoritative until an expanded record is needed.
