@@ -588,6 +588,7 @@ overrides require.
   `academy` model subclasses `TenantModel`. `pytest -q` → 219 passed; `ruff check`,
   `ruff format --check`, `mypy .` and `makemigrations --check --dry-run` clean; `0003` applied,
   reversed to `0002` and re-applied on the dev database; G7 and G9 pass.
+  CI run `45352655085` on branch `task/T-008-operational-models` is green.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-008, REQ-03, `docs/domain-model.md` §2.10–§2.13, T-012 (audit trigger).
 
