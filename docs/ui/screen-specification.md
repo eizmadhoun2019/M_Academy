@@ -1,12 +1,12 @@
 # Masheed Academy — H1 Screen Specification
 
-> **Status:** Owner-directed final documentation draft, 2026-11-23. It specifies the **target**, not verified implementation.
+> **Status:** Adopted 2026-11-23 (owner-directed; charter 2.3). It specifies the **target**,
+> not verified implementation.
 > **Scope:** Masheed organization only; one shared training experience in Hub-integrated
 > and production standalone modes. This file specifies desired UI, not verified code.
 > **Visual source:** `docs/ui/reference/masheed-academy-screens.pdf` (23 pages);
 > existing A–G mappings in `docs/ui/wireframes.md` are preserved.
-> **Authority:** CHARTER > RULES > ARCHITECTURE; this package includes the updated
-> charter, decision register, and a proposed LOG entry for owner review.
+> **Authority:** CHARTER > RULES > ARCHITECTURE. Adoption is recorded in `LOG.md` (2026-11-23).
 
 ## 1. Universal shell and navigation
 
@@ -148,7 +148,7 @@ must meet contrast requirements; do not use brand gold as small text on white.
 
 ## 7. Documentation and implementation boundaries
 
-The delivered documentation package aligns `CHARTER.md`, `ARCHITECTURE.md`,
+The documentation aligns `CHARTER.md`, `ARCHITECTURE.md`,
 `docs/decisions.md`, `docs/hub-contract.md` and `docs/ui/wireframes.md`
 with these screen requirements. This is a **documentation alignment**, not
 proof that routes, screens, local account linking, suspension, or membership
@@ -162,7 +162,7 @@ pixel-perfect mockups.
 ### Implementation follow-up checklist (not a blocker to accepting documentation)
 
 - [x] Documentation package: CHARTER §§2, 6, 6.1, 10 updated for the H1 target;
-      version and draft `[CHARTER CHANGE]` entry supplied for review.
+      adopted as charter 2.3 and recorded in `LOG.md`.
 - [x] Documentation package: ARCHITECTURE §§13, 22 and 24 aligned with H1 target.
 - [x] Documentation package: `docs/decisions.md` D-011 confirmed for Academy navigation.
 - [x] `docs/domain-model.md`: re-enrollment uses a new row behind the partial unique index;
