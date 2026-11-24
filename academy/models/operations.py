@@ -8,7 +8,6 @@ action. ``AuditEvent`` gets its append-only trigger with the audit service in T-
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from django.db import models
 from django.utils import timezone
@@ -144,14 +143,6 @@ class AuditEvent(TenantModel):
             ),
             models.Index(fields=["organization_id", "occurred_at"], name="audit_org_occurred"),
         ]
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        if not self._state.adding:
-            raise ValueError("AuditEvent is append-only: an existing row cannot be updated")
-        super().save(*args, **kwargs)
-
-    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
-        raise ValueError("AuditEvent is append-only: a row cannot be deleted")
 
     def __str__(self) -> str:
         return f"{self.action} {self.object_type}:{self.object_id}"

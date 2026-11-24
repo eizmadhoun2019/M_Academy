@@ -270,9 +270,7 @@ migration.
 | `occurred_at` | timestamptz | no | — | Same instant as the caller's transaction |
 
 `UNIQUE (organization_id, event_id)`; index `(organization_id, object_type, object_id)`,
-`(organization_id, occurred_at)`; `BEFORE UPDATE OR DELETE` trigger raises (`academy_guard_audit_event`, migration `0004`).
-Rows are written only through `academy.audit.record`, which validates the action name and
-the ids-only metadata and returns the existing row for a repeated `event_id`.
+`(organization_id, occurred_at)`; `BEFORE UPDATE OR DELETE` trigger raises.
 
 ### 2.14 `PermissionGrant`
 | Field | Type | Null | Default | Constraints |
