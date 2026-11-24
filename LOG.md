@@ -566,3 +566,28 @@ overrides require.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-007, REQ-03, REQ-09, `docs/domain-model.md` §2.6–§2.9, `academy/models/progress.py`.
 
+### [2026-11-24] — T-008: quiz and operational schema
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** `academy/models/quiz.py` adds the Phase 1 schema-only quiz tables: `Quiz`
+  (version, optional lesson, pass mark, attempt cap), ordered `QuizQuestion` and `QuizChoice`,
+  numbered `QuizAttempt` per enrollment and `QuizAttemptAnswer`. No endpoint reads or writes
+  them; they exist so Phase 2 adds behaviour without a destructive migration.
+  `academy/models/operations.py` adds the idempotency layer: `ReminderLog` unique per
+  `(enrollment, kind, recipient_ref)`, `NotificationLog` unique per
+  `(organization_id, dedupe_key, channel)` with the pending/sent/failed/skipped states and the
+  rule that a `sent` row carries its timestamp, and `AuditEvent` with one event id per
+  organization plus the object and time indexes.
+- **Impact:** The last Phase 1–2 tables exist, so REQ-03's schema is complete and T-021/T-022
+  can implement reminders and notifications against their keys. The audit append-only trigger
+  is deliberately not created here: T-012 owns the audit service and its enforcement.
+- **Evidence:** `tests/test_operational_models.py` (23 tests) covers the quiz ranges and
+  uniqueness rules, the reminder and notification idempotency keys, the sent-timestamp rule and
+  the audit event id uniqueness across organizations, plus the meta-test that every registered
+  `academy` model subclasses `TenantModel`. `pytest -q` → 219 passed; `ruff check`,
+  `ruff format --check`, `mypy .` and `makemigrations --check --dry-run` clean; `0003` applied,
+  reversed to `0002` and re-applied on the dev database; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-008, REQ-03, `docs/domain-model.md` §2.10–§2.13, T-012 (audit trigger).
+
