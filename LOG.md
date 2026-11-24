@@ -562,6 +562,7 @@ overrides require.
   trigger rejecting both `UPDATE` and `DELETE` on a completion row. `pytest -q` → 196 passed;
   `ruff check`, `ruff format --check`, `mypy .` and `makemigrations --check --dry-run` clean;
   `0002` applied, reversed to `0001` and re-applied on the dev database; G7 and G9 pass.
+  CI run `45349326406` on branch `task/T-007-progress-models` is green.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-007, REQ-03, REQ-09, `docs/domain-model.md` §2.6–§2.9, `academy/models/progress.py`.
 
