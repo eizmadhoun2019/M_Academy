@@ -592,3 +592,29 @@ overrides require.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-008, REQ-03, `docs/domain-model.md` §2.10–§2.13, T-012 (audit trigger).
 
+### [2026-11-24] — T-009: authorization layer
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** `academy/authorization/` resolves effective capabilities from a `Principal`,
+  the live grants a caller supplies, and the configured mode. `Scope` separates organization
+  scope from an explicit department set, so a department grant cannot widen into an
+  organization-wide write; `Access.require` raises `Forbidden`, `AccessSuspended` or
+  `InactiveAccount` instead of returning a flag. `grants_only` (H1, D-027) keeps
+  `academy.learn` for active members and ignores Hub roles entirely, while `role_plus_grants`
+  keeps the documented role defaults as a tested compatibility mode. Expired and revoked
+  grants are excluded, an unknown capability in a grant raises instead of silently granting
+  access, and a suspension denies every capability (D-028). `AcademyPermission` and
+  `CapabilityRequiredMixin` translate a request that already carries `academy_access`; they
+  hold no policy of their own. `ACADEMY_AUTHORIZATION_MODE` is now a documented setting.
+- **Impact:** T-016 can plug its grant table into `resolve_access` without changing the
+  decision rules, and T-011/T-014 can attach the adapters to their authentication layer. No
+  view, endpoint or grant table exists yet.
+- **Evidence:** `tests/test_authorization.py` (23 tests) covers the allow/deny/scope matrix for
+  both modes, department versus organization scope, grant unions, expiry at the exact instant,
+  revocation, an unknown capability, suspension and inactivity, and both HTTP adapters.
+  `pytest -q` → 242 passed; `ruff check`, `ruff format --check`, `mypy .` (60 files) and
+  `makemigrations --check --dry-run` clean; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-009, REQ-13, D-027, D-028, `CHARTER.md` §3.1, `docs/api.md` §2.
+

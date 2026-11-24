@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-24 (T-008 schema)
+**Last updated:** 2026-11-24 (T-009 authorization)
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -33,7 +33,11 @@ CompletionRecord, with the active-enrollment and active-target partial unique in
 watched-number checks and a trigger that makes a completion row immutable. T-008 completes the
 Phase 1–2 schema with the quiz tables (no endpoint yet) and the operational logs: `ReminderLog`
 and `NotificationLog` carry the idempotency keys, and `AuditEvent` is the append-only ledger
-whose trigger arrives with the audit service in T-012. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+whose trigger arrives with the audit service in T-012. The authorization layer (T-009) resolves
+effective capabilities from a principal and the stored grants: H1 `grants_only` keeps learning
+for active members and requires a grant for every management capability, the compatibility
+`role_plus_grants` union stays testable, and an Academy-local suspension denies everything with
+`access_suspended`. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -54,8 +58,8 @@ and verified here.
 | T-005 | Domain events (signals, on-commit emitter, handlers) | `[x]` done on main (commit `0204cac`, merged 2026-11-23 on owner instruction; CI run `45162780071` on `main` green on that commit; 145 tests at merge) | Tech authority | T-003 | Events fire only after commit |
 | T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[x]` done on main (merge commit `7fe4b32`, merged 2026-11-23 on owner instruction with a merge commit because `main` had advanced with the documentation change; CI run `45346681425` on `main` green; 171 tests at merge) | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
 | T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[x]` done on main (commit `8d30403`, merged 2026-11-23 on owner instruction with a fast-forward; CI run `45350592242` on `main` green; 196 tests at merge) | Tech authority | T-006 | Constraints + indexes tested |
-| T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-008-operational-models`; `0003` applied, reversed and re-applied on the dev database; 219 tests, ruff/format/mypy/makemigrations and G7/G9 clean; CI run `45352655085` green; awaiting owner merge) | Tech authority | T-007 | Meta-test: every model is a TenantModel |
-| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[ ]` | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
+| T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[x]` done on main (commit `52798e5`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45353814514` on `main` green; 219 tests at merge) | Tech authority | T-007 | Meta-test: every model is a TenantModel |
+| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-009-authorization`; no migration needed; 242 tests, ruff/format/mypy and G7/G9 clean; awaiting owner merge) | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
 | T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[ ]` | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
 | T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[ ]` | Tech authority | T-009 | Schema builds with 0 warnings |
 | T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[ ]` | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
@@ -77,6 +81,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-24 — T-009 authorization layer: capabilities, scopes, grant-aware effective
+  access, the two documented modes, `AccessSuspended`/`InactiveAccount`, a DRF permission and
+  a web mixin; the matrix is tested without a view. See LOG.md.
 - 2026-11-24 — T-008 quiz and operational schema: five quiz tables, `ReminderLog`,
   `NotificationLog` and `AuditEvent` with their idempotency unique keys and checks; migration
   `0003` reverses cleanly. See LOG.md.
@@ -141,9 +148,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-008 (quiz and operational models) is complete on `task/T-008-operational-models` and waits
-for the owner merge; **T-009** (authorization layer: capabilities, DRF permissions, web mixin,
-scope handling) follows it.
+T-009 (authorization layer) is complete on `task/T-009-authorization` and waits for the owner
+merge; **T-010** (test foundations: factories, two-org fixtures, tenant-isolation suite)
+follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one

@@ -155,6 +155,9 @@ EMAIL_USE_TLS = env_bool("ACADEMY_EMAIL_USE_TLS", False)
 # --- Sessions, cookies, CSRF (namespaced; see environments.md §5) ------------
 SESSION_COOKIE_NAME = env("ACADEMY_SESSION_COOKIE_NAME", "m_academy_sessionid")
 SESSION_COOKIE_AGE = env_int("ACADEMY_SESSION_COOKIE_AGE", 28800)
+
+# D-027: the compatibility union is the default; H1 production sets `grants_only`.
+ACADEMY_AUTHORIZATION_MODE = env("ACADEMY_AUTHORIZATION_MODE", "role_plus_grants")
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

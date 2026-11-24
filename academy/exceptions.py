@@ -41,6 +41,18 @@ class Forbidden(AcademyError):
     code = "forbidden"
 
 
+class AccessSuspended(AcademyError):
+    """Academy-local suspension makes every capability ineffective (403, D-028)."""
+
+    code = "access_suspended"
+
+
+class InactiveAccount(AcademyError):
+    """A verified but inactive member (403, ``docs/api.md`` §1)."""
+
+    code = "account_inactive"
+
+
 class Conflict(AcademyError):
     """The current state refuses the operation (409)."""
 
