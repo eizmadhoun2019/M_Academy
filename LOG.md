@@ -685,7 +685,8 @@ overrides require.
   idempotent and conflicting `event_id`, trigger-refused UPDATE/DELETE through the queryset, and
   the model guards. `pytest -q` → 311 passed; `ruff check`, `ruff format --check`, `mypy .`
   (75 files) and `makemigrations --check --dry-run` clean; `spectacular --validate
-  --fail-on-warn` exits 0; G7 and G9 pass.
+  --fail-on-warn` exits 0; G7 and G9 pass. CI run `45374222862` on branch
+  `task/T-012-audit-trail` is green.
 - **Approved by:** Project owner (2026-11-24): «كمل».
 - **References:** T-012, REQ-04, ADR-009, `docs/domain-model.md` §2.13,
   `docs/skills/audited-action.md`, ARCHITECTURE §7.
