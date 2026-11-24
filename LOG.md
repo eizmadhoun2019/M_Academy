@@ -540,3 +540,28 @@ overrides require.
 - **Approved by:** Project owner (2026-11-23): «ادمج».
 - **References:** T-001 merge discipline (ff-only), `docs/traceability.md` §3.
 
+### [2026-11-24] — T-007: assignment, enrollment and progress schema
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** `academy/models/progress.py` adds the four §2.6–§2.9 tables. `Assignment` carries
+  the one-target shape with a `CHECK` that ties `target_ref` to `target_type` and an active-only
+  unique index over `(organization_id, course, target_type, COALESCE(target_ref, ''))`, so the
+  organization target collides too. `Enrollment` pins a learner to a version and allows exactly
+  one active row per learner and course, while a cancelled row leaves room for a new
+  enrollment after reactivation. `LessonProgress` keeps one row per lesson with the merged
+  ranges in `jsonb` and `CHECK`ed non-negative numbers that cannot exceed the last accepted
+  position. `CompletionRecord` snapshots course and version ids and is made immutable by the
+  `completion_record_immutable` trigger created in the migration.
+- **Impact:** The schema half of REQ-03 and REQ-09 now exists; the heartbeat, gating and
+  completion services (T-019, T-020) have their tables and the database enforces their
+  invariants. No endpoint or service writes these tables yet.
+- **Evidence:** `tests/test_progress_models.py` (25 tests) writes the forbidden row for every
+  check and partial index, including a cancelled assignment freeing its target, the
+  organization target being unique, a cancelled enrollment allowing re-enrollment, and the
+  trigger rejecting both `UPDATE` and `DELETE` on a completion row. `pytest -q` → 196 passed;
+  `ruff check`, `ruff format --check`, `mypy .` and `makemigrations --check --dry-run` clean;
+  `0002` applied, reversed to `0001` and re-applied on the dev database; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-007, REQ-03, REQ-09, `docs/domain-model.md` §2.6–§2.9, `academy/models/progress.py`.
+

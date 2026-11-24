@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-23 (H1 documentation alignment)
+**Last updated:** 2026-11-24 (T-007 schema)
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -27,7 +27,10 @@ or standalone local sign-in, `grants_only` management authority, an Academy-owne
 sidebar, and screens specified in `docs/ui/screen-specification.md`. Those are documented
 targets — no code implements them yet. The catalog schema exists (T-006): Course →
 CourseVersion → Section → Lesson plus MediaAsset, with every documented check, partial unique
-index, deferrable position constraint and the two freeze triggers in the database itself. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+index, deferrable position constraint and the two freeze triggers in the database itself. The
+assignment/progress schema (T-007) follows it: Assignment → Enrollment → LessonProgress →
+CompletionRecord, with the active-enrollment and active-target partial unique indexes, the
+watched-number checks and a trigger that makes a completion row immutable. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -46,8 +49,8 @@ and verified here.
 | T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[x]` done on main (commit `3b7d450`, merged 2026-11-23 on owner instruction; CI run `45154163445` on `main` green on that commit; 47 tests, ruff/format/mypy/migrations clean locally) | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
 | T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[x]` done on main (commit `928e7da`, merged 2026-11-23 on owner instruction; CI run `45159244272` green on the branch commit and `45159847845` green on `main` at that commit; 123 tests at merge) | Tech authority | T-003 | All contract suites pass |
 | T-005 | Domain events (signals, on-commit emitter, handlers) | `[x]` done on main (commit `0204cac`, merged 2026-11-23 on owner instruction; CI run `45162780071` on `main` green on that commit; 145 tests at merge) | Tech authority | T-003 | Events fire only after commit |
-| T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[~]` in progress/review (AI agent, 2026-11-23; branch `task/T-006-catalog` HEAD `9531d22`; 171 tests, ruff/format/mypy/migrations and G7/G9 clean; CI run `45174870900` green; awaiting owner merge) | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
-| T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[ ]` | Tech authority | T-006 | Constraints + indexes tested |
+| T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[x]` done on main (merge commit `7fe4b32`, merged 2026-11-23 on owner instruction with a merge commit because `main` had advanced with the documentation change; CI run `45346681425` on `main` green; 171 tests at merge) | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
+| T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-007-progress-models`; `0002` applied, reversed and re-applied on the dev database; 196 tests, ruff/format/mypy/makemigrations and G7/G9 clean; awaiting owner merge) | Tech authority | T-006 | Constraints + indexes tested |
 | T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[ ]` | Tech authority | T-007 | Meta-test: every model is a TenantModel |
 | T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[ ]` | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
 | T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[ ]` | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
@@ -71,6 +74,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-24 — T-007 assignment/progress schema: `Assignment`, `Enrollment`,
+  `LessonProgress` and `CompletionRecord` with their partial unique indexes, checks, lookup
+  indexes and the completion-immutability trigger; migration `0002` reverses cleanly. See LOG.md.
 - 2026-11-23 — T-006 catalog schema: `Course`, `CourseVersion`, `Section`, `Lesson` and
   `MediaAsset` with the documented checks, partial unique indexes, deferrable position
   constraints, and the `courseversion_immutable` / `version_content_frozen` triggers in
@@ -129,8 +135,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-006 is merged to `main`; start **T-007** (assignment and progress models:
-Assignment/Enrollment/LessonProgress/CompletionRecord per `docs/domain-model.md` §2.6–§2.9).
+T-007 (assignment and progress models per `docs/domain-model.md` §2.6–§2.9) is complete on
+`task/T-007-progress-models` and waits for the owner merge; **T-008** (quiz and operational
+models) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
