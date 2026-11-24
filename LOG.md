@@ -443,7 +443,9 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
   migration, endpoint or screen exists for `grants_only`, the standalone mode or
   `AccessSuspension`; T-009, T-014 and T-016 carry that work. No task status was changed by
   this documentation commit.
-- **Evidence:** `python scripts/check_docs.py` (G9) passes; relative links, retired identifier
+- **Evidence:** `python scripts/check_docs.py` (G9) passes locally and in CI run `45343579760`
+  on commit `fd464be` (branch `docs/h1-alignment`), where g1–g7 and g9 are green and the g8
+  journey job is skipped until T-023 activates it. Relative links, retired identifier
   patterns and required documents were re-checked. No test asserts any of the new product
   text.
 - **Approved by:** Project owner (2026-11-23), after reviewing the conflicts above.
