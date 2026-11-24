@@ -48,7 +48,7 @@ records which gates are live, and it is updated in the task that activates a gat
 | G4 | `makemigrations --check --dry-run` + migrate forward/back | T-001 | Missing or non-reversible migration |
 | G5 | OpenAPI schema build | T-001 | Any warning |
 | G6 | Security scans: `bandit`, `pip-audit`, image scan, `check --deploy` | T-001 (all four sub-checks) | Any unresolved high/critical finding without an approved exception |
-| G7 | Import boundary + tenant isolation suites | import boundary: T-001, enforcing from T-003 (`academy/` exists; `scripts/gate_imports.py` plus `tests/test_import_boundary.py` prove the gate can fail); tenant half: T-010 | `academy` imports host/`host_stub`, or any cross-org leak |
+| G7 | Import boundary + tenant isolation suites | Active from T-010. Import boundary: T-001, enforcing from T-003 (`scripts/gate_imports.py` plus `tests/test_import_boundary.py` prove the gate can fail). Tenant half: `tests/test_tenant_isolation.py` covers every `academy.models` table in two organizations and proves the detector fires on an unscoped query | `academy` imports host/`host_stub`, or any cross-org leak |
 | G8 | E2E + axe smoke | T-023 (`tests/e2e/` non-empty; a guard job decides) | Journey failure, or axe critical/serious violation |
 | G9 | Documentation check (links, IDs, required sections) | T-001 | Broken reference or missing required document section |
 
@@ -58,7 +58,7 @@ records which gates are live, and it is updated in the task that activates a gat
 |---|---|---|
 | REQ-01 | T-001 | CI run on the merge commit; `/healthz` 200 |
 | REQ-02 | T-004 | Adapter contract suites (4) |
-| REQ-03 | T-006, T-007, T-008 | Migration apply/reverse; isolation suite |
+| REQ-03 | T-006, T-007, T-008, T-010 | Migration apply/reverse; isolation suite over every table in two organizations |
 | REQ-04 | T-005, T-012 | On-commit tests; trigger blocks UPDATE/DELETE |
 | REQ-05 | T-013 | Renders at 3 viewports in ar/en; axe |
 | REQ-06 | T-017 | Publish validation + immutability tests |

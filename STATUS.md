@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-24 (T-009 authorization)
+**Last updated:** 2026-11-24 (T-010 test foundations)
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -37,7 +37,9 @@ whose trigger arrives with the audit service in T-012. The authorization layer (
 effective capabilities from a principal and the stored grants: H1 `grants_only` keeps learning
 for active members and requires a grant for every management capability, the compatibility
 `role_plus_grants` union stays testable, and an Academy-local suspension denies everything with
-`access_suspended`. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+`access_suspended`. The test foundation (T-010) is generic: one factory per table builds a
+valid row, and the isolation suite writes each table in two organizations, asserts that
+`for_org` returns only its own row, and proves the detector fails on an unscoped query. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -59,8 +61,8 @@ and verified here.
 | T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[x]` done on main (merge commit `7fe4b32`, merged 2026-11-23 on owner instruction with a merge commit because `main` had advanced with the documentation change; CI run `45346681425` on `main` green; 171 tests at merge) | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
 | T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[x]` done on main (commit `8d30403`, merged 2026-11-23 on owner instruction with a fast-forward; CI run `45350592242` on `main` green; 196 tests at merge) | Tech authority | T-006 | Constraints + indexes tested |
 | T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[x]` done on main (commit `52798e5`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45353814514` on `main` green; 219 tests at merge) | Tech authority | T-007 | Meta-test: every model is a TenantModel |
-| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-009-authorization`; no migration needed; 242 tests, ruff/format/mypy and G7/G9 clean; CI run `45356215354` green; awaiting owner merge) | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
-| T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[ ]` | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
+| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[x]` done on main (commit `a48768c`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45357518339` on `main` green; 242 tests at merge) | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
+| T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-010-test-foundations`; `tests/factories.py` covers every table, `tests/conftest.py` exposes the two-org fixtures, `tests/test_tenant_isolation.py` has 39 cases; 281 tests, ruff/format/mypy and G7/G9 clean; awaiting owner merge) | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
 | T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[ ]` | Tech authority | T-009 | Schema builds with 0 warnings |
 | T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[ ]` | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
 | T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[ ]` | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
@@ -81,6 +83,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-24 — T-010 test foundations: one factory per table, two-organization
+  fixtures, and a generic tenant-isolation suite that also proves the leak detector fires.
+  G7's tenant half is now active. See LOG.md.
 - 2026-11-24 — T-009 authorization layer: capabilities, scopes, grant-aware effective
   access, the two documented modes, `AccessSuspended`/`InactiveAccount`, a DRF permission and
   a web mixin; the matrix is tested without a view. See LOG.md.
@@ -148,9 +153,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-009 (authorization layer) is complete on `task/T-009-authorization` and waits for the owner
-merge; **T-010** (test foundations: factories, two-org fixtures, tenant-isolation suite)
-follows it.
+T-010 (test foundations) is complete on `task/T-010-test-foundations` and waits for the owner
+merge; **T-011** (API skeleton: versioned routes, auth, error format, pagination, OpenAPI,
+`/healthz`) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one

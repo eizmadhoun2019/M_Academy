@@ -619,3 +619,23 @@ overrides require.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-009, REQ-13, D-027, D-028, `CHARTER.md` §3.1, `docs/api.md` §2.
 
+### [2026-11-24] — T-010: test foundations and the tenant-isolation suite
+
+- **Type:** Test
+- **Status:** Implemented
+- **Summary:** `tests/factories.py` builds one valid minimal row for every table in `academy`
+  and exposes `assert_only_own_rows`, the detector that fails when a query returns a row from
+  another organization. `tests/conftest.py` provides the two fixed organization IDs and a
+  small course graph built through the factories. `tests/test_tenant_isolation.py` is generic:
+  it requires a factory for every model declared under `academy.models`, writes each table in
+  both organizations, asserts that `for_org` returns exactly its own row, and deliberately
+  feeds an unscoped query to the detector so the detector itself is proven to fire.
+- **Impact:** G7's tenant half is now active (`docs/traceability.md` §3), so a future query that
+  bypasses `for_org` has an executable witness instead of only a review rule. The factories are
+  the single place a schema change updates for test data.
+- **Evidence:** `pytest -q` → 281 passed, of which `tests/test_tenant_isolation.py` is 39 cases
+  over 17 tables; `ruff check`, `ruff format --check`, `mypy .` (63 files) and
+  `makemigrations --check --dry-run` clean; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-010, REQ-03, `docs/traceability.md` §3 (G7), `docs/domain-model.md` §1.1.
+
