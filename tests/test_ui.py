@@ -154,7 +154,8 @@ def test_the_stylesheet_and_font_ship_with_the_application() -> None:
     font = finders.find("fonts/noto-sans-arabic-arabic.woff2")
 
     assert stylesheet and font
-    css = open(stylesheet, encoding="utf-8").read()
+    with open(stylesheet, encoding="utf-8") as handle:
+        css = handle.read()
     assert "--color-brand-gold: #e8aa23" in css
     assert "--color-navy: #101820" in css
     assert "--tap-target: 44px" in css

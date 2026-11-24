@@ -691,3 +691,32 @@ overrides require.
 - **References:** T-012, REQ-04, ADR-009, `docs/domain-model.md` §2.13,
   `docs/skills/audited-action.md`, ARCHITECTURE §7.
 
+### [2026-11-24] — T-013: design tokens, the shell and the component showcase
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** One shell now serves every Academy page: a header, a canvas and an
+  Academy-owned sidebar that is a native disclosure on phones and sticky from 1024 px, in
+  Arabic (RTL) or English (LTR) from the same markup. `static/css/academy.css` holds the tokens
+  sampled from the approved PDF, using logical properties only, 44 px targets and a visible
+  focus ring; the Arabic face is a locally hosted Noto Sans Arabic subset with its OFL licence.
+  `academy/ui/` renders `/academy/preview/ar|en/` with the tokens, type, buttons, statuses,
+  cards, a table that becomes labelled cards under 768 px, labelled fields with a validation
+  message, the disclosure dialog pattern and the five sample states, plus the 403, 404 and 500
+  pages. Every string goes through gettext; the Arabic catalogue is compiled from the tracked
+  `.po` by `scripts/compile_messages.py`, which the image entrypoint and CI run, so no binary
+  catalogue is committed and no build machine needs GNU `msgfmt`.
+- **Impact:** T-016…T-022 inherit one shell, one token set and one set of patterns instead of
+  restating them; the preview is the place to review RTL/LTR and the states before those
+  screens land.
+- **Evidence:** `tests/test_ui.py` (20 tests) covers the Arabic RTL and English LTR documents,
+  the redirect, the five sample states, unknown language/state, the preview being absent
+  outside a development profile, the 404/403/500 pages, absence of inline style and script,
+  a label for every form control, navigation anchors that exist, and the shipped stylesheet and
+  font. `pytest -q` → 331 passed; `ruff check`, `ruff format --check`, `mypy .` (81 files) and
+  `makemigrations --check --dry-run` clean; `spectacular --validate --fail-on-warn` exits 0;
+  G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-24): «كمل».
+- **References:** T-013, REQ-05, `docs/ui/screen-specification.md` §1, §5, §7,
+  `docs/ui/wireframes.md` §Visual language, §Preview routes, `docs/api.md` §10, RULES §UI.
+

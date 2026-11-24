@@ -64,7 +64,10 @@ The layout mirrors for Arabic RTL and supports English LTR, keyboard operation, 
 
 ## Preview routes
 
-In development, open `/academy/preview/`. Use the menu and language switch to view the showcase and A–G in Arabic and English. Screen G is at `/academy/preview/ar/permissions/` and `/academy/preview/en/permissions/`. Append `?state=loading`, `?state=empty`, `?state=error`, `?state=forbidden`, or `?state=slow` to see the corresponding sample. Use `?dialog=grant&state=validation` for the field error. The grant and revoke dialogs also have links for browsing without JavaScript. Preview actions use sample data and write nothing.
+In development, open `/academy/preview/`. T-013 ships the shell, the design tokens, the component
+patterns and the sample states at `/academy/preview/ar/` and `/academy/preview/en/`; the A–G,
+L1–L4 and S1 screens arrive with the tasks that implement them. Use the menu and language switch
+to move between the sections and the two reading directions. Screen G is at `/academy/preview/ar/permissions/` and `/academy/preview/en/permissions/`. Append `?state=loading`, `?state=empty`, `?state=error`, `?state=forbidden`, or `?state=slow` to see the corresponding sample. Use `?dialog=grant&state=validation` for the field error. The grant and revoke dialogs also have links for browsing without JavaScript. Preview actions use sample data and write nothing.
 
 ## Account screens
 
