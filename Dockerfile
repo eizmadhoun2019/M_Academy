@@ -42,11 +42,17 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
+# Compiles the tracked Arabic catalogue on start; `.mo` files are never committed.
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 0755 /usr/local/bin/entrypoint.sh
+
 RUN useradd --create-home --shell /usr/sbin/nologin app \
     && mkdir -p /data/media \
     && chown -R app:app /app /data
 
 USER app
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8000
 

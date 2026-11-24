@@ -1,6 +1,6 @@
 """Root URL configuration.
 
-Operational routes plus the versioned Academy API. Web pages arrive with T-013.
+Operational routes, the versioned Academy API, the i18n switch and the Academy web pages.
 """
 
 from django.urls import include, path
@@ -11,6 +11,9 @@ from config.health import healthz
 
 urlpatterns = [
     path("healthz", healthz, name="healthz"),
+    # The language switch posts here (django.conf.urls.i18n) and redirects back.
+    path("i18n/", include("django.conf.urls.i18n")),
+    path("academy/", include("academy.ui.urls")),
     path("api/v1/academy/", include("academy.api.urls")),
     # Development/staging only; the production profile disables this route (docs/api.md §9).
     path(
@@ -19,3 +22,7 @@ urlpatterns = [
         name="openapi-schema",
     ),
 ]
+
+handler403 = "academy.ui.errors.forbidden"
+handler404 = "academy.ui.errors.not_found"
+handler500 = "academy.ui.errors.server_error"

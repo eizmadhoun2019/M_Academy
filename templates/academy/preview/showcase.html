@@ -1,0 +1,208 @@
+{% extends "academy/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Component showcase" %} — {% translate "Masheed Academy" %}{% endblock %}
+
+{% block content %}
+  <section class="section" id="shell">
+    <h1 class="section-title">{% translate "Shell" %}</h1>
+    <p class="section-lead">
+      {% translate "One shell serves every screen: a header, a canvas and an Academy-owned sidebar. The sidebar becomes a disclosure on phones and fixes in place from 1024 px." %}
+    </p>
+    <p class="hint">
+      {% translate "Reading direction follows the language: Arabic is right to left, English is left to right." %}
+    </p>
+    <p>
+      <a class="link" href="/academy/preview/{{ other_language }}/">
+        {% translate "Open this page in the other language" %}
+      </a>
+    </p>
+  </section>
+
+  <section class="section" id="tokens">
+    <h2 class="section-title">{% translate "Design tokens" %}</h2>
+    <p class="section-lead">
+      {% translate "The palette comes from the approved reference. Text colours are darker than the brand fill so every label meets AA contrast." %}
+    </p>
+    <ul class="grid" role="list">
+      <li class="card"><span class="badge badge--neutral">{% translate "Brand gold" %}</span><code>#E8AA23</code></li>
+      <li class="card"><span class="badge badge--neutral">{% translate "Navy" %}</span><code>#101820</code></li>
+      <li class="card"><span class="badge badge--neutral">{% translate "Canvas" %}</span><code>#F8FAFC</code></li>
+      <li class="card"><span class="badge badge--neutral">{% translate "Surface" %}</span><code>#FFFFFF</code></li>
+      <li class="card"><span class="badge badge--neutral">{% translate "Border" %}</span><code>#E2E8F0</code></li>
+      <li class="card"><span class="badge badge--success">{% translate "Success" %}</span><code>#047857</code></li>
+      <li class="card"><span class="badge badge--warning">{% translate "Warning" %}</span><code>#92400E</code></li>
+      <li class="card"><span class="badge badge--danger">{% translate "Danger" %}</span><code>#B91C1C</code></li>
+    </ul>
+  </section>
+
+  <section class="section" id="typography">
+    <h2 class="section-title">{% translate "Typography" %}</h2>
+    <p class="section-lead">
+      {% translate "Noto Sans Arabic is hosted with the application, so the Arabic text renders the same on every machine." %}
+    </p>
+    <h3>{% translate "Course management" %}</h3>
+    <p>{% translate "Training that fits the working day: short lessons, clear progress and a due date everyone can see." %}</p>
+    <p class="muted">{% translate "Secondary text carries context without competing with the record itself." %}</p>
+    <p lang="en" dir="ltr">Masheed Academy — 320 / 768 / 1280</p>
+  </section>
+
+  <section class="section" id="buttons">
+    <h2 class="section-title">{% translate "Buttons" %}</h2>
+    <p class="section-lead">{% translate "Every action is at least 44 by 44 pixels and keeps a visible focus ring." %}</p>
+    <p class="grid">
+      <button class="button button--primary" type="button">{% translate "Save course" %}</button>
+      <button class="button button--secondary" type="button">{% translate "Cancel" %}</button>
+      <button class="button button--quiet" type="button">{% translate "Preview" %}</button>
+      <button class="button button--danger" type="button">{% translate "Archive course" %}</button>
+      <button class="button button--primary" type="button" disabled>{% translate "Publish" %}</button>
+    </p>
+    <p class="hint">{% translate "Publish stays disabled until the course has at least one lesson." %}</p>
+  </section>
+
+  <section class="section" id="statuses">
+    <h2 class="section-title">{% translate "Statuses" %}</h2>
+    <p class="section-lead">{% translate "Status is written in words, so colour is never the only signal." %}</p>
+    <ul class="grid" role="list">
+      <li><span class="badge badge--neutral">{% translate "Draft" %}</span></li>
+      <li><span class="badge badge--success">{% translate "Published" %}</span></li>
+      <li><span class="badge badge--neutral">{% translate "Archived" %}</span></li>
+      <li><span class="badge badge--neutral">{% translate "Not started" %}</span></li>
+      <li><span class="badge badge--warning">{% translate "In progress" %}</span></li>
+      <li><span class="badge badge--success">{% translate "Completed" %}</span></li>
+      <li><span class="badge badge--danger">{% translate "Overdue" %}</span></li>
+    </ul>
+  </section>
+
+  <section class="section" id="cards">
+    <h2 class="section-title">{% translate "Course card" %}</h2>
+    <div class="grid">
+      <article class="card" aria-labelledby="sample-course-title">
+        <h3 class="card-title" id="sample-course-title">{% translate "Introduction to workplace safety" %}</h3>
+        <p class="muted">{% translate "Due 12 December" %}</p>
+        <p><span class="badge badge--warning">{% translate "In progress" %}</span></p>
+        <progress class="progress" value="40" max="100">{% translate "40 percent complete" %}</progress>
+        <p class="muted">{% translate "40 percent complete" %}</p>
+      </article>
+      <article class="card" aria-labelledby="sample-overdue-title">
+        <h3 class="card-title" id="sample-overdue-title">{% translate "Data protection essentials" %}</h3>
+        <p class="muted">{% translate "Was due 3 November" %}</p>
+        <p><span class="badge badge--danger">{% translate "Overdue" %}</span></p>
+        <p class="hint">{% translate "The due date is part of the text; the red badge only reinforces it." %}</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="tables">
+    <h2 class="section-title">{% translate "Table that becomes cards" %}</h2>
+    <table class="table">
+      <caption>{% translate "Team training sample" %}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Employee" %}</th>
+          <th scope="col">{% translate "Course" %}</th>
+          <th scope="col">{% translate "Status" %}</th>
+          <th scope="col">{% translate "Due date" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="{% translate 'Employee' %}">u-1042</td>
+          <td data-label="{% translate 'Course' %}">{% translate "Introduction to workplace safety" %}</td>
+          <td data-label="{% translate 'Status' %}"><span class="badge badge--success">{% translate "Completed" %}</span></td>
+          <td data-label="{% translate 'Due date' %}">{% translate "12 December" %}</td>
+        </tr>
+        <tr>
+          <td data-label="{% translate 'Employee' %}">u-1043</td>
+          <td data-label="{% translate 'Course' %}">{% translate "Data protection essentials" %}</td>
+          <td data-label="{% translate 'Status' %}"><span class="badge badge--danger">{% translate "Overdue" %}</span></td>
+          <td data-label="{% translate 'Due date' %}">{% translate "3 November" %}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="hint">{% translate "Below 768 px each row reads as a labelled card; no column is clipped." %}</p>
+  </section>
+
+  <section class="section" id="forms">
+    <h2 class="section-title">{% translate "Fields and validation" %}</h2>
+    <div class="field">
+      <label for="sample-title">{% translate "Course title" %}</label>
+      <input id="sample-title" name="sample-title" type="text" value="{% translate 'Introduction to workplace safety' %}" aria-describedby="sample-title-hint">
+      <p class="hint" id="sample-title-hint">{% translate "Up to 200 characters." %}</p>
+    </div>
+    <div class="field">
+      <label for="sample-department">{% translate "Owner department" %}</label>
+      <select id="sample-department" name="sample-department">
+        <option value="">{% translate "General course" %}</option>
+        <option value="training">{% translate "Training" %}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sample-due">{% translate "Due date" %}</label>
+      <input id="sample-due" name="sample-due" type="date" aria-invalid="true" aria-describedby="sample-due-error">
+      <p class="field-error" id="sample-due-error">{% translate "Enter a date in the future." %}</p>
+    </div>
+  </section>
+
+  <section class="section" id="dialogs">
+    <h2 class="section-title">{% translate "Dialog pattern" %}</h2>
+    <p class="section-lead">{% translate "The granted dialog opens without a script, so it keeps working when the connection is slow." %}</p>
+    <details class="dialog-sample">
+      <summary>{% translate "Grant access" %}</summary>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="sample-user">{% translate "User reference" %}</label>
+          <input id="sample-user" name="sample-user" type="text" value="u-1042">
+        </div>
+        <div class="field">
+          <label for="sample-capability">{% translate "Capability" %}</label>
+          <select id="sample-capability" name="sample-capability">
+            <option>{% translate "Manage content" %}</option>
+            <option>{% translate "Assign training" %}</option>
+            <option>{% translate "View reports" %}</option>
+          </select>
+        </div>
+        <p class="grid">
+          <button class="button button--primary" type="button">{% translate "Grant access" %}</button>
+          <button class="button button--secondary" type="button">{% translate "Cancel" %}</button>
+        </p>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="states">
+    <h2 class="section-title">{% translate "Screen states" %}</h2>
+    <p class="section-lead">{% translate "Every screen renders loading, empty, retryable error, forbidden and slow states." %}</p>
+    <div class="state state--{{ state }}" data-state-sample="{{ state }}">
+      {% if state == "empty" %}
+        <p class="section-title">{% translate "Nothing here yet" %}</p>
+        <p class="muted">{% translate "No training is assigned to you at the moment." %}</p>
+      {% elif state == "loading" %}
+        <p class="section-title">{% translate "Loading" %}</p>
+        <p class="muted">{% translate "Fetching the newest numbers." %}</p>
+        <span class="state-spinner" aria-hidden="true"></span>
+      {% elif state == "error" %}
+        <p class="section-title">{% translate "This part did not load" %}</p>
+        <p class="muted">{% translate "Try again. If it keeps failing, tell your administrator what you were doing." %}</p>
+        <p><button class="button button--secondary" type="button">{% translate "Retry" %}</button></p>
+      {% elif state == "forbidden" %}
+        <p class="section-title">{% translate "You cannot open this" %}</p>
+        <p class="muted">{% translate "Your account does not carry the capability this action needs." %}</p>
+      {% elif state == "slow" %}
+        <p class="section-title">{% translate "This is taking longer than usual" %}</p>
+        <p class="muted">{% translate "The page is still working. Wait, or retry when the connection settles." %}</p>
+      {% else %}
+        <p class="section-title">{% translate "Ready" %}</p>
+        <p class="muted">{% translate "Add a state to the URL to preview a sample." %}</p>
+      {% endif %}
+    </div>
+    <ul class="grid" role="list">
+      {% for option in state_options %}
+        <li>
+          <a class="link" href="?state={{ option }}">{% blocktranslate %}Preview the {{ option }} state{% endblocktranslate %}</a>
+        </li>
+      {% endfor %}
+      <li><a class="link" href="?">{% translate "Back to the ready state" %}</a></li>
+    </ul>
+  </section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load i18n static %}{% get_current_language as current_language %}{% get_current_language_bidi as language_bidi %}<!doctype html>
+<html lang="{{ current_language }}" dir="{% if language_bidi %}rtl{% else %}ltr{% endif %}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ status_code }} — {% translate "Masheed Academy" %}</title>
+    <link rel="stylesheet" href="{% static 'css/academy.css' %}">
+  </head>
+  <body class="account-body" data-state="error">
+    <main class="account-card" id="main">
+      <p class="account-code">{ {{ status_code }} }</p>
+      <h1 class="account-title">{{ title }}</h1>
+      <p class="account-text">{{ message }}</p>
+      <a class="button button--primary" href="/">{% translate "Back to the start page" %}</a>
+    </main>
+  </body>
+</html>

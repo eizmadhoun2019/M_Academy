@@ -1,0 +1,47 @@
+{% load i18n static %}{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% translate "Masheed Academy" %}{% endblock %}</title>
+    <link rel="preload" href="{% static 'fonts/noto-sans-arabic-arabic.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/academy.css' %}">
+  </head>
+  <body data-state="{{ state|default:'ready' }}">
+    <a class="skip-link" href="#main">{% translate "Skip to main content" %}</a>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <p class="wordmark">{% translate "Masheed Academy" %}</p>
+        <details class="nav-disclosure">
+          <summary class="nav-summary">{% translate "Menu" %}</summary>
+          <nav aria-label="{% translate 'Showcase sections' %}">
+            {% for heading, anchors in nav_sections %}
+              <p class="nav-heading">{{ heading }}</p>
+              <ul class="nav-list">
+                {% for anchor, label in anchors %}
+                  <li>
+                    <a class="nav-link" href="#{{ anchor }}"{% if forloop.parentloop.first and forloop.first %} aria-current="true"{% endif %}>
+                      {{ label }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endfor %}
+          </nav>
+        </details>
+        <p class="sidebar-note">{% translate "Product destinations appear with the screens that need them; this page shows the shell and its parts." %}</p>
+      </aside>
+      <div class="canvas">
+        <header class="topbar">
+          <p class="page-title">{% block page_title %}{% translate "Component showcase" %}{% endblock %}</p>
+          <div class="topbar-actions">
+            <a class="link" href="/academy/preview/{{ other_language }}/">{% translate "Switch language" %}</a>
+          </div>
+        </header>
+        <main id="main" class="content">
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

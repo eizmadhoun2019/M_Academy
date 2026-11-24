@@ -69,6 +69,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install ".[dev]"
+      # The Arabic catalogue is source (`.po`); the compiled `.mo` is built here and on start.
+      - run: python scripts/compile_messages.py locale/ar
       - run: pytest -q --cov --cov-report=term --cov-report=json
       - run: python scripts/gate_coverage.py
       - uses: actions/upload-artifact@v4

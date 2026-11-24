@@ -181,6 +181,8 @@ TIME_ZONE = "UTC"
 USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Source styles, the locally hosted Arabic font and its licence (RULES §UI and frontend).
+STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = env("ACADEMY_MEDIA_ROOT", "/data/media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

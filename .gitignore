@@ -23,6 +23,8 @@ coverage.xml
 
 # Django
 db.sqlite3
+# Compiled catalogues are built from the tracked .po files.
+*.mo
 /staticfiles/
 /media/
 local_media/
