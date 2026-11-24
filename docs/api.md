@@ -137,7 +137,7 @@ in tests (no N+1 over enrollments).
 |---|---|---|---|
 | POST | `/internal/hub/webhooks/` | `member_changed`, `member_deactivated` | Signed per hub-contract §4; not exposed at the Hub |
 | GET | `/healthz` | Liveness/readiness | Checks DB, Redis, storage; 200/503 only |
-| GET | `/api/v1/academy/schema/` | OpenAPI 3 document | Dev/staging only; disabled in production |
+| GET | `/api/schema` | OpenAPI 3 document | Development/staging route; the production deployment keeps it disabled (T-024 check) |
 
 ## 10. Web pages (server-rendered, same services)
 
@@ -164,7 +164,7 @@ not add business rules.
 ## 11. Error codes (complete list)
 `validation_error` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
 `unsupported_type` 400 · `unauthorized` 401 · `account_inactive` 403 · `forbidden` 403 ·
-`lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `idempotency_conflict` 409 · `draft_exists` 409 ·
+`lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·
 `version_published` 409 · `course_published_locked` 409 · `upload_missing` 409 ·
 `checksum_mismatch` 409 · `retry_limit_reached` 409 · `media_not_ready` 409 ·
 `lesson_not_eligible` 409 · `enrollment_incomplete` 409 · `acknowledgment_not_required` 409 ·

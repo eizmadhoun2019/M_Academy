@@ -193,6 +193,12 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_VERSIONING_CLASS": None,
+    # docs/api.md §1: one error envelope, page/page_size pagination and a 401 without identity.
+    "EXCEPTION_HANDLER": "academy.api.errors.academy_exception_handler",
+    "DEFAULT_AUTHENTICATION_CLASSES": ["academy.api.authentication.AcademyAccessAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "academy.api.pagination.AcademyPagination",
+    "PAGE_SIZE": 25,
 }
 
 SPECTACULAR_SETTINGS = {

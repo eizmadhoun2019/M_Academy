@@ -640,3 +640,26 @@ overrides require.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-010, REQ-03, `docs/traceability.md` §3 (G7), `docs/domain-model.md` §1.1.
 
+### [2026-11-24] — T-011: API skeleton and error conventions
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** `/api/v1/academy/` now exists with the conventions of `docs/api.md` §1 in one
+  place: `academy_exception_handler` renders Academy and DRF failures as
+  `{code, detail, fields}` with the documented status, `AcademyPagination` fixes `page` and
+  `page_size` (25, maximum 100), and `AcademyAccessAuthentication` refuses a request that
+  carries no resolved `academy_access`. The only wired endpoint is
+  `GET me/capabilities/`, which returns the caller's effective capabilities and scopes with
+  `private, no-store`; every other inventory route waits for the service it calls. A
+  drf-spectacular extension documents the `X-Masheed-Identity` header, and the generated
+  OpenAPI document validates with no warnings.
+- **Impact:** REQ-01's API skeleton exists, T-014/T-015 have the one place to attach identity,
+  and every later endpoint inherits the envelope and pagination instead of restating them.
+- **Evidence:** `tests/test_api_skeleton.py` (8 tests) covers the 401 envelope, the capability
+  payload for both scope kinds, the schema path, Academy and DRF error mapping, pagination
+  limits and the untouched-500 path. `pytest -q` → 289 passed; `ruff check`,
+  `ruff format --check`, `mypy .` (72 files) and `makemigrations --check --dry-run` clean;
+  `manage.py spectacular --validate --fail-on-warn` exits 0; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-011, REQ-01, `docs/api.md` §1, §3, §9, §11, `docs/hub-contract.md` §2.
+

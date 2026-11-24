@@ -85,6 +85,15 @@ class Principal:
     is_active: bool = True
     suspended: bool = False
 
+    @property
+    def is_authenticated(self) -> bool:
+        """DRF's ``IsAuthenticated`` reads this; identity itself is verified by T-014/T-015."""
+        return True
+
+    @property
+    def is_anonymous(self) -> bool:
+        return False
+
 
 @dataclass(frozen=True, slots=True)
 class Grant:

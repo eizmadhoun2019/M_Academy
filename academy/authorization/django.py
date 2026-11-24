@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.http import HttpRequest, HttpResponseBase
-from rest_framework.permissions import BasePermission  # type: ignore[import-untyped]
+from rest_framework.permissions import BasePermission
 
 from academy.authorization.core import Access, Capability
 from academy.exceptions import Forbidden
