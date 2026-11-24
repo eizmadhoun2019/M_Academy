@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-24 (T-011 API skeleton)
+**Last updated:** 2026-11-24 (T-012 audit trail)
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -33,7 +33,7 @@ CompletionRecord, with the active-enrollment and active-target partial unique in
 watched-number checks and a trigger that makes a completion row immutable. T-008 completes the
 Phase 1–2 schema with the quiz tables (no endpoint yet) and the operational logs: `ReminderLog`
 and `NotificationLog` carry the idempotency keys, and `AuditEvent` is the append-only ledger
-whose trigger arrives with the audit service in T-012. The authorization layer (T-009) resolves
+whose trigger and `audit.record` service arrived with T-012. The authorization layer (T-009) resolves
 effective capabilities from a principal and the stored grants: H1 `grants_only` keeps learning
 for active members and requires a grant for every management capability, the compatibility
 `role_plus_grants` union stays testable, and an Academy-local suspension denies everything with
@@ -42,7 +42,10 @@ valid row, and the isolation suite writes each table in two organizations, asser
 `for_org` returns only its own row, and proves the detector fails on an unscoped query. The API
 skeleton (T-011) now serves `/api/v1/academy/` with one error envelope, page/page_size
 pagination, a 401 without identity, the `me/capabilities/` route backed by the authorization
-layer, and a generated OpenAPI document that validates with zero warnings. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+layer, and a generated OpenAPI document that validates with zero warnings. The audit service
+(T-012) is the accountability floor: `audit.record` appends one row inside the caller's
+transaction, validates the action name and ids-only metadata, and returns an existing row when
+the same `event_id` arrives twice, while a PostgreSQL trigger refuses every UPDATE and DELETE. `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -66,8 +69,8 @@ and verified here.
 | T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[x]` done on main (commit `52798e5`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45353814514` on `main` green; 219 tests at merge) | Tech authority | T-007 | Meta-test: every model is a TenantModel |
 | T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[x]` done on main (commit `a48768c`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45357518339` on `main` green; 242 tests at merge) | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
 | T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[x]` done on main (commit `968ee4a`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45361612343` on `main` green; 281 tests at merge) | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
-| T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-011-api-skeleton`; no migration needed; 289 tests, ruff/format/mypy and G7/G9 clean; `spectacular --validate --fail-on-warn` reports 0 warnings; CI run `45366886199` green; awaiting owner merge) | Tech authority | T-009 | Schema builds with 0 warnings |
-| T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[ ]` | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
+| T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[x]` done on main (commit `bdab55e`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45367468113` on `main` green; 289 tests at merge) | Tech authority | T-009 | Schema builds with 0 warnings |
+| T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[~]` in progress/review (AI agent, 2026-11-24; branch `task/T-012-audit-trail`; migration `0004` adds the trigger; 311 tests, ruff/format/mypy and G7/G9 clean; CI run `45374222862` green; awaiting owner merge) | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
 | T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[ ]` | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
 | T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[ ]` | Tech authority | T-004 | Unauthenticated/inactive/role-change tests; access modes `hub`/`standalone` (local sign-in, D-026) and `AccessSuspension` enforcement (D-028) |
 | T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[ ]` | Tech authority | T-004, T-014 | Contract + integration suites pass vs fake |
@@ -86,6 +89,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-24 — T-012 audit trail: `audit.record` joins the caller's transaction,
+  rejects free-text metadata and duplicate-inconsistent `event_id`s, and migration `0004`
+  makes `AuditEvent` append-only in PostgreSQL. See LOG.md.
 - 2026-11-24 — T-011 API skeleton: `/api/v1/academy/` with the documented error
   envelope, pagination, an access-context authenticator, `me/capabilities/` and a clean
   OpenAPI document. See LOG.md.
@@ -159,8 +165,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-011 (API skeleton) is complete on `task/T-011-api-skeleton` and waits for the owner merge;
-**T-012** (audit trail: model, append-only trigger, `audit.record`) follows it.
+T-012 (audit trail) is complete on `task/T-012-audit-trail` and waits for the owner merge;
+**T-013** (UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic
+font) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
