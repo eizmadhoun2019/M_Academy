@@ -635,7 +635,8 @@ overrides require.
   the single place a schema change updates for test data.
 - **Evidence:** `pytest -q` → 281 passed, of which `tests/test_tenant_isolation.py` is 39 cases
   over 17 tables; `ruff check`, `ruff format --check`, `mypy .` (63 files) and
-  `makemigrations --check --dry-run` clean; G7 and G9 pass.
+  `makemigrations --check --dry-run` clean; G7 and G9 pass. CI run `45359422981` on branch
+  `task/T-010-test-foundations` is green.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-010, REQ-03, `docs/traceability.md` §3 (G7), `docs/domain-model.md` §1.1.
 
