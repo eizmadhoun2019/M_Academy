@@ -16,6 +16,7 @@ class TenantProbe(TenantModel):
     """Concrete model used only in this module; it has no migration and no app of its own."""
 
     label = models.CharField(max_length=20)
+    objects: TenantManager[TenantProbe] = TenantManager()  # type: ignore[assignment]
 
     class Meta:
         app_label = "academy"

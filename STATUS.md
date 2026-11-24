@@ -26,6 +26,9 @@ target** (charter 2.3; decisions D-026…D-030): Masheed only, one record set wi
 or standalone local sign-in, `grants_only` management authority, an Academy-owned dashboard and
 sidebar, and screens specified in `docs/ui/screen-specification.md`. Those are documented
 targets — no code implements them yet. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
+targets — no code implements them yet. The catalog schema exists (T-006): Course →
+CourseVersion → Section → Lesson plus MediaAsset, with every documented check, partial unique
+index, deferrable position constraint and the two freeze triggers in the database itself. The build specifications are complete: `docs/domain-model.md` (schema, constraints, progress algorithm),
 `docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
 `docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
 (compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
@@ -69,6 +72,13 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-23 — T-006 catalog schema: `Course`, `CourseVersion`, `Section`, `Lesson` and
+  `MediaAsset` with the documented checks, partial unique indexes, deferrable position
+  constraints, and the `courseversion_immutable` / `version_content_frozen` triggers in
+  `academy/migrations/0001_initial.py`; the migration applies, reverses and re-applies. See
+  LOG.md.
+- 2026-11-23 — T-005 merged to `main`: the on-commit event emitter and its handler registry.
+  See LOG.md.
 - 2026-11-23 — T-005 domain events: `academy.events` emits through `transaction.on_commit`, so a
   rolled-back write dispatches nothing; handlers subscribe by event name, a failing handler is
   logged without stopping the rest, and the envelope is frozen with a JSON payload. See LOG.md.
@@ -120,9 +130,9 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-006 (catalog models + migrations) is complete on `task/T-006-catalog` (HEAD `9531d22`,
-CI `45174870900`) and waits for the owner merge; start **T-007** (assignment/progress models per
-`docs/domain-model.md`) after it. The H1 documentation alignment is merged to `main`
+T-006 is merged to `main`; start **T-007** (assignment and progress models:
+Assignment/Enrollment/LessonProgress/CompletionRecord per `docs/domain-model.md` §2.6–§2.9).
+The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
 task/checkpoint, commits, pushes, reports evidence, stops.

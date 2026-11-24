@@ -422,6 +422,78 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **References:** T-005, REQ-04, ADR-007, `docs/skills/service.md` step 4, `ARCHITECTURE.md` §4,
   `academy/events/`.
 
+### [2026-11-23] — T-005 merged to main
+
+- **Type:** Feature
+- **Status:** Merged
+- **Summary:** The owner merged `task/T-005-events` into `main` (fast-forward, no rewrite) on
+  the standing instruction «كمل», so the on-commit emitter and the handler registry are
+  mainline.
+- **Impact:** Services can emit events from inside their transactions; T-018 and T-021 add their
+  task-enqueueing handlers against a stable emitter.
+- **Evidence:** `main` = `0204cac`; CI run `45162780071` green on that exact commit (g1–g7 and
+  g9 pass, g8-e2e skipped by its guard); `python scripts/check_docs.py` passes.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-005, REQ-04, ADR-007, `academy/events/`.
+
+### [2026-11-23] — T-006: catalog schema (Course, CourseVersion, Section, Lesson, MediaAsset)
+
+- **Type:** Feature
+- **Status:** Implemented
+- **Summary:** The catalog of `docs/domain-model.md` §2.1–§2.5 now exists as a migration. Every
+  entity is a `TenantModel`; the documented rules live in the database rather than in the
+  promise of a future service: status enums with `CheckConstraint`s, non-blank titles,
+  positive positions, `required_watch_percent` between 50 and 100, the `pdf`-needs-a-body rule,
+  `UNIQUE(course, version_number)`, the partial unique index that allows at most one
+  `published` version per course (with `published_at`/`published_by_ref` required by a check),
+  the partial `(organization_id) WHERE status='published'` index, and the media rules
+  (`ready` needs a `storage_key`, a `ready` video needs a positive duration, `failed` needs an
+  `error_code`). Section and lesson positions use `UNIQUE ... DEFERRABLE INITIALLY DEFERRED` so
+  a reorder can move several rows in one transaction, and the two freeze rules are PostgreSQL
+  triggers: `courseversion_immutable` (a published version keeps its content, only
+  `published → archived`, and an archived version never returns) and `version_content_frozen`
+  (inserts, updates and deletes under a published version are refused for sections and
+  lessons).
+- **Impact:** T-007, T-017, T-018 and T-019 build on a schema whose invariants cannot be
+  bypassed by a script, a shell or a second writer. `academy/models/base.py` now binds the
+  tenant manager per model (`TenantManager[Course]`) so the type checker keeps model precision
+  and still reports any read that bypassed `for_org`.
+- **Evidence:** `python manage.py migrate` → `Applying academy.0001_initial... OK`;
+  `python manage.py migrate academy zero` → `Unapplying academy.0001_initial... OK`; then
+  forward again OK (triggers drop and recreate with the tables). `tests/test_catalog_models.py`
+  (26 tests) writes the rows each rule forbids — blank titles, unknown statuses, version 0,
+  duplicate version numbers, a second published version, an unstamped publish, position 0,
+  duplicate positions (checked with `SET CONSTRAINTS ... IMMEDIATE`), out-of-range watch
+  percent, unknown content types, a PDF without body, a `ready` asset without a key, a `ready`
+  video with zero duration, a `failed` asset without an error code — and proves the freeze
+  triggers reject content changes, inserts and deletes on published versions while drafts stay
+  editable. `pytest -q` → 171 passed; `ruff check`, `ruff format --check`, `mypy .` (51 files)
+  and `makemigrations --check --dry-run` clean; G7 and G9 pass.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-006, REQ-03, `docs/domain-model.md` §2.1–§2.5, §4–§5,
+  `academy/models/catalog.py`, `academy/models/media.py`, `academy/migrations/0001_initial.py`.
+
+### [2026-11-23] — T-006: g2 found a type-checker-only defect on a clean interpreter
+
+- **Type:** Fix
+- **Status:** Verified
+- **Summary:** The first T-006 push failed gate G2 while the same `mypy .` passed in the
+development image. The error was reproducible only from a clean `python:3.12-slim` with a fresh
+`pip install ".[dev]"`: `Cannot override class variable ... with instance variable [misc]` on
+every `objects: TenantManager[Model]` line. The abstract base declared `objects` as a bare
+class attribute while the concrete models re-declare it as an annotated instance variable; the
+type checker refuses that mix once the model's own annotation is present. The base now declares
+`objects: Any = TenantManager()` with a comment, which is the declaration the per-model
+overrides require.
+- **Impact:** G2 is green again. The lesson is recorded because the development image had
+  already installed the package and did not reproduce it, so an image-local green is not
+  evidence for G2 — the clean-interpreter run is.
+- **Evidence:** CI run `45168784765` (failed, g2) and run `45173786647` (green on
+  `9deb22e`, all jobs except the by-design skipped g8-e2e); the clean-room reproduction printed
+  the six errors at `academy/models/{media,catalog}.py` and `tests/test_tenant_model.py`.
+- **Approved by:** Project owner (2026-11-23): «كمل».
+- **References:** T-006, `docs/traceability.md` §3 G2, `academy/models/base.py`.
+
 
 ### [2026-11-23] — Documentation: H1 target adopted selectively (charter 2.3)
 
