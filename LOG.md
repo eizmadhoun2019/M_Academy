@@ -659,7 +659,8 @@ overrides require.
   payload for both scope kinds, the schema path, Academy and DRF error mapping, pagination
   limits and the untouched-500 path. `pytest -q` → 289 passed; `ruff check`,
   `ruff format --check`, `mypy .` (72 files) and `makemigrations --check --dry-run` clean;
-  `manage.py spectacular --validate --fail-on-warn` exits 0; G7 and G9 pass.
+  `manage.py spectacular --validate --fail-on-warn` exits 0; G7 and G9 pass. CI run
+  `45366886199` on branch `task/T-011-api-skeleton` is green.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-011, REQ-01, `docs/api.md` §1, §3, §9, §11, `docs/hub-contract.md` §2.
 
