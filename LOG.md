@@ -715,7 +715,7 @@ overrides require.
   a label for every form control, navigation anchors that exist, and the shipped stylesheet and
   font. `pytest -q` → 331 passed; `ruff check`, `ruff format --check`, `mypy .` (81 files) and
   `makemigrations --check --dry-run` clean; `spectacular --validate --fail-on-warn` exits 0;
-  G7 and G9 pass.
+  G7 and G9 pass. CI run `45382616992` on `main` is green.
 - **Approved by:** Project owner (2026-11-24): «كمل».
 - **References:** T-013, REQ-05, `docs/ui/screen-specification.md` §1, §5, §7,
   `docs/ui/wireframes.md` §Visual language, §Preview routes, `docs/api.md` §10, RULES §UI.
