@@ -614,7 +614,8 @@ overrides require.
   both modes, department versus organization scope, grant unions, expiry at the exact instant,
   revocation, an unknown capability, suspension and inactivity, and both HTTP adapters.
   `pytest -q` → 242 passed; `ruff check`, `ruff format --check`, `mypy .` (60 files) and
-  `makemigrations --check --dry-run` clean; G7 and G9 pass.
+  `makemigrations --check --dry-run` clean; G7 and G9 pass. CI run `45356215354` on branch
+  `task/T-009-authorization` is green.
 - **Approved by:** Project owner (2026-11-23): «كمل».
 - **References:** T-009, REQ-13, D-027, D-028, `CHARTER.md` §3.1, `docs/api.md` §2.
 
