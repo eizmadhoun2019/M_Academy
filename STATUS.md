@@ -122,8 +122,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
 ## Next action
 T-006 (catalog models + migrations) is complete on `task/T-006-catalog` (HEAD `9531d22`,
 CI `45174870900`) and waits for the owner merge; start **T-007** (assignment/progress models per
-`docs/domain-model.md`) after it. The H1 documentation alignment lands on `docs/h1-alignment`
-and changes no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
+`docs/domain-model.md`) after it. The H1 documentation alignment is merged to `main`
+(commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
 task/checkpoint, commits, pushes, reports evidence, stops.
 

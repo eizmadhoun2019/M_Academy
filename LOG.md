@@ -451,3 +451,20 @@ or the `renditions` example in `docs/domain-model.md` §2.5.
 - **Approved by:** Project owner (2026-11-23), after reviewing the conflicts above.
 - **References:** CHARTER §§1, 3.1, 4, 5; ARCHITECTURE §§7, 11; `docs/decisions.md`
   D-011, D-026…D-030; `docs/ui/screen-specification.md`; `docs/domain-model.md` §2.7, §2.15.
+
+### [2026-11-23] — H1 documentation alignment merged to main
+
+- **Type:** Documentation
+- **Status:** Merged
+- **Summary:** The owner instructed «ادمج». `docs/h1-alignment` was fast-forwarded into
+  `main` (no force-push, no rewritten history) and pushed. Charter 2.3, decisions D-011 and
+  D-026…D-030, `docs/ui/screen-specification.md` and the aligned architecture, API,
+  configuration, schema, job, Hub-contract, wireframe and traceability documents are now on
+  `main`.
+- **Impact:** Documentation only. No task status changed; T-009, T-014 and T-016 carry the
+  implementation of `grants_only`, the access modes and `AccessSuspension`.
+- **Evidence:** CI run `45345097262` on `main` at commit `fa75e87` — g1–g7 and g9 green, g8
+  journey job skipped until T-023 activates it.
+- **Approved by:** Project owner (2026-11-23): «ادمج».
+- **References:** T-001 merge discipline (ff-only), `docs/traceability.md` §3.
+
