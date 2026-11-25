@@ -2,7 +2,8 @@
 
 **Status:** Canonical migration plan for T-026…T-028 and T-032/T-034.
 **Last updated:** 2026-11-25
-**Decisions:** D-032 (tenancy), D-033 (local identity), D-034 (RBAC), D-038 (company settings).
+**Decisions:** D-032 (tenancy), D-033 (local identity), D-034 (RBAC), D-038 (company settings),
+D-043 (one company membership per account).
 **Related:** `docs/domain-model.md`, `docs/security.md` §6, `docs/operations/environments.md` §10.
 
 ---
@@ -12,7 +13,7 @@
 |---|---|---|
 | Company | one fixed `ACADEMY_ORGANIZATION_ID`, no table | `Organization` row per company; FKs everywhere |
 | Department | opaque `department_ref` strings | `Department` per company, FK, tree |
-| User | opaque `user_ref`; identity from Hub or dev login | `User` (UUID, email login) + `Membership` per company |
+| User | opaque `user_ref`; identity from Hub or dev login | `User` (UUID, email login) + at most one `Membership`, with `UNIQUE (user_id)` |
 | Roles | fixed capability bundles + `PermissionGrant` on `user_ref` | `Permission`/`Role`/`RoleAssignment` + scoped grants on membership |
 | Audit actor | `actor_ref` string | `actor_user_id` + `actor_membership_id` (nullable for platform/system) |
 | Notifications | recipient `user_ref`, Hub directory lookup | `recipient_user_id` + `recipient_membership_id`, local address |
@@ -38,6 +39,9 @@ their rows and primary keys.
    and a second time on staging before production.
 7. **Rollback is restore-based** for the cutover: code rollback is supported for one release;
    data rollback uses the pre-migration backup because identifiers are rewritten.
+8. **No duplicate membership survives.** Any imported user resolving to more than one company is
+   a hard preflight failure: the report names each collision and cutover stops for manual owner
+   resolution; the migration never picks a company or drops one silently (D-043).
 
 ## 3. Schema mapping
 | Legacy value | New owner | Rule |
@@ -52,8 +56,9 @@ their rows and primary keys.
 
 ## 4. Steps
 **M0 — preflight (T-026).** Freeze writes; take and verify the backup; record row counts for
-every table; export `legacy_user_ref` distinct values and department refs; confirm storage
-reachability; record the current commit and image digest.
+every table; export `legacy_user_ref` distinct values and department refs; run the cross-company
+duplicate-membership query and abort on any hit; confirm storage reachability; record the current
+commit and image digest.
 
 **M1 — schema expand.** Add `Organization`, `Department`, `User`, `Membership`; add nullable
 `organization_id` FKs (or reuse the existing column where it is already a UUID) and nullable
@@ -63,7 +68,8 @@ columns. No read path changes yet.
 **M2 — seed and map.** Create the company, departments and accounts from the CSV. Write a
 mapping table (report, not a permanent model) of `legacy_ref → new id`. Reconcile counts:
 distinct legacy user refs = accounts created; distinct department refs = departments created;
-every enrollment/progress row has a resolvable learner.
+every enrollment/progress row has a resolvable learner. Assert one membership per account and
+zero accounts with memberships in two companies; any violation aborts with a report.
 
 **M3 — backfill.** In batches (5,000 rows, one transaction per batch): set `organization_id`,
 `user_id`, `membership_id`, `department_id`. Abort on any unresolved row; never guess.
@@ -89,7 +95,9 @@ only in the audit metadata, not in live foreign keys.
   same roster; a report produces the same totals for the seeded company (allowing for the
   documented time-zone interpretation change).
 - **Isolation:** two-company suite passes; a forged company id cannot read the seeded company.
-- **Auth:** every mapped account can be invited and signed in; a disabled placeholder cannot.
+- **Auth:** every mapped account can be invited and signed in; a disabled placeholder cannot; a
+  second invitation to another company is rejected; login lands directly on the permitted
+  dashboard with no company chooser.
 - **Audit:** historical events remain readable and attributable; new events use UUIDs.
 - **Rollback:** restore the pre-migration dump in a scratch environment, boot the previous
   release and confirm the legacy journey works; record the duration.
@@ -109,4 +117,6 @@ the same restore plus an incident review; the legacy columns are not a second so
 
 ## 7. Out of scope
 No H2 features, no billing, no company self-registration, no Hub activation, no table
-partitioning or RLS during this migration. Those have their own trigger and decision.
+partitioning or RLS during this migration. Multi-company user moves and multiple memberships
+are out of scope (D-043); enabling them later requires a new decision and migration. Those items
+have their own trigger and decision.

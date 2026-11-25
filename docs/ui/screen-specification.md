@@ -1,20 +1,25 @@
 # Masheed Academy — H1.5 Screen Specification
 
-> **Status:** Adopted 2026-11-25 (charter 2.4). Specifies the **target**, not verified
-> implementation.
+> **Status:** Adopted 2026-11-25 (charter 2.5). Specifies the **target**, not verified
+> implementation. Mobile first and the official visual reference are binding (D-044).
 > **Scope:** standalone-first multi-company platform: public site on `/`, protected application
 > under `/academy/`. Masheed is the first company, not the only one.
-> **Visual source:** `docs/ui/reference/masheed-academy-screens.pdf` (23 pages) for A–G;
-> `docs/ui/wireframes.md` for the wireframe map and layout rules.
+> **Visual source:** approved identity set: Primary `#101820`, Brand Gold `#E8AA23`, Rubik, the
+> official Masheed logo and gold geometric element, dark geometric backgrounds and light internal
+> surfaces with dark navigation and gold accents. The final screen/token package is **not yet
+> delivered**; the interim `docs/ui/reference/masheed-academy-screens.pdf` covers A–G only.
+> `docs/ui/wireframes.md` holds the layout map and design-gate record. No document claims the
+> final package is approved.
 > **Authority:** CHARTER > RULES > ARCHITECTURE > this file. Routes and API are in
 > `docs/api.md`; permissions in `docs/access-control.md`.
 
 ## 1. Universal shell
 - **Public shell** (`/`): academy name, programme links, contact, language switch, **Sign in**
   (`/academy/login/`). No session, no application data, no UUID.
-- **Application shell** (`/academy/`): academy/company name, page title, company switcher (only
-  when the user has more than one active membership), language switch, notifications, user menu
-  (profile, security, sign out).
+- **Application shell** (`/academy/`): academy/company name (read-only, from the single
+  membership), page title, language switch, notifications, user menu (profile, security, sign
+  out). There is no company switcher or company chooser. A platform-only account sees platform
+  navigation and an explicit company selector only inside company-scoped platform screens.
 - **One Academy-owned sidebar**, never a Hub navigation mirror. Groups and items are rendered
   from effective permissions; hiding is not authorization.
 - Learner: **لوحتي / Dashboard**, **دوراتي / My Courses**, **إنجازاتي / Achievements**.
@@ -48,8 +53,7 @@
 | X3 | Reset confirm `/academy/password/reset/<token>/` | New password + confirmation | token |
 | X4 | Verify email `/academy/verify/<token>/` | Result and continue | token |
 | X5 | Accept invitation `/academy/invite/<token>/` | Name, password, company name (read-only) | token |
-| X6 | Choose company `/academy/select-company/` | Active memberships only; disabled/suspended companies are not selectable | authenticated, >1 membership |
-| X7 | Access denied `/academy/denied/` | Reason code, safe return, sign out | authenticated or blocked |
+| X6 | Access denied `/academy/denied/` | Reason code, safe return, sign out | authenticated or blocked |
 
 ### Learner
 | ID | Screen | Main content | Primary action | Permission |
@@ -95,9 +99,10 @@ billing, self-registration and white-label screens are out of H1.5.
 - Blocks: welcome with display name, overdue/next-due assignments, in-progress courses, completion
   summary, one primary **Continue** action.
 - Empty: explains that no training is assigned and links to My Courses; never fabricates content.
-- Shows only the caller's enrollments in the active company. Switching company reloads with that
-  company's data; no cross-company counts.
-- A learner with no active membership lands on X7 with `membership_inactive`.
+- Shows only the caller's enrollments in the company derived from their single membership; no
+  cross-company counts and no company switch.
+- A learner with no active membership lands on X6 with `membership_inactive`; a platform-only
+  user is routed to the platform area instead.
 
 ### L2 — My Courses
 - Cards: title, state (`not_started`, `in_progress`, `completed`, `cancelled` where relevant),
@@ -192,7 +197,7 @@ billing, self-registration and white-label screens are out of H1.5.
 Every screen implements these states explicitly; no blank page and no false success:
 `loading` (skeleton/spinner), `empty` (explanation + next action), `success` (confirmed by the
 server), `validation_error` (field-level, preserves non-sensitive input), `unauthorized` (X1),
-`forbidden` (X7 with reason), `not_found`, `rate_limited` (retry-after), `server_error`
+`forbidden` (X6 with reason), `not_found`, `rate_limited` (retry-after), `server_error`
 (correlation id), `timeout`, `offline` (retry), `disabled` (reason visible), `confirmation`
 (names the object and effect), `unknown_outcome` (verify before retry; never claim success).
 - Never show success before the response; disable submit while in flight; a repeated submit is
@@ -200,31 +205,63 @@ server), `validation_error` (field-level, preserves non-sensitive input), `unaut
 - Errors never include stack traces, SQL, tokens, emails or another company's data.
 - Destructive actions require confirmation and, for admin actions, a reason.
 
-## 6. Responsive, language and accessibility
-| Context | Required behavior |
+## 6. Mobile-first responsive, language and accessibility
+Design and implementation order is **Mobile → Tablet → Desktop → Large Desktop**. Every screen,
+including public, auth, dashboards, platform/company administration, learning, reports and
+settings, is first designed and built at Mobile. Desktop is never the base design shrunk down.
+
+| Reference width | Required behavior |
 |---|---|
-| 360–767 px | One column; drawer navigation; management rows become labelled cards; no horizontal page scroll |
-| 768–1023 px | Flexible grid; no clipped controls or tables without a scroll container |
-| 1024 px+ | Persistent sidebar; wide tables; player outline beside video |
-| Arabic (RTL) | Right-to-left navigation, mirrored directional icons, correct mixed-direction text and numbers |
-| English (LTR) | Same functions and translated labels, natural left-to-right layout |
-| Keyboard | Visible focus, logical order, labelled fields, accessible dialogs, Escape closes, 44×44 px targets |
-| Screen reader | Landmarks, headings, table captions, status announcements, alt text for meaningful images |
-| Contrast | WCAG AA (4.5:1 text, 3:1 large text/UI); never colour alone; brand gold is not small text on white |
+| **320 px minimum** | Supported intermediate width; no clipped content, controls or unusable tables |
+| **Mobile 390 px** | One column; drawer/bottom navigation; management rows become labelled cards; actions stay reachable; no unjustified page-level horizontal scroll |
+| **Tablet 768 px** | Flexible grid; wider forms and tables; no clipped controls; a table may scroll inside its own labelled container |
+| **Desktop 1440 px** | Persistent sidebar; wide tables; player outline beside video; same functions as Mobile |
+| **Large Desktop >1440 px** | Content max-width and spacing scale; no stretched line lengths or empty over-wide panels |
 
-Visual tokens: navy `#101820`, gold `#E8AA23`, canvas `#F8FAFC`, white `#FFFFFF`, border
-`#E2E8F0`, 12 px rounded panels, 4 px spacing scale, Tahoma/Arial for Arabic.
+| Requirement | Acceptance |
+|---|---|
+| Reflow | Content is reorganized per width, not merely scaled; no lost core function on Mobile |
+| Overflow | No unjustified page-level horizontal scrolling at 320/390/768/1440 px in ar/en |
+| Touch | Minimum 44×44 px targets with adequate spacing; no hover-only action |
+| RTL / LTR | Arabic RTL and English LTR mirror direction, icons, mixed text and numbers correctly |
+| Keyboard | Visible focus, logical order, labelled fields, accessible dialogs, Escape closes |
+| Screen reader | Landmarks, headings, table captions, status announcements, meaningful alt text |
+| Contrast | WCAG AA (4.5:1 text, 3:1 large text/UI); never colour alone; gold is not small text on white |
+| Content | Clear labels and one primary action per task; tables/forms/reports remain comprehensible on Mobile |
 
-## 7. Essential journeys
+Approved identity constants are Primary `#101820`, Brand Gold `#E8AA23` and **Rubik** (Arabic +
+Latin, locally hosted). The final package supplies the complete tokens (spacing, type scale,
+radii, elevation, component states); until then the interim values in `docs/ui/wireframes.md`
+apply and are not a final-brand claim.
+
+## 7. Visual-reference gate (per screen group)
+1. **Grouping:** P1–P5; X1–X6; application shell + L1–L4/E; A–D/F; N1–N4/S1; N5–N8/S2. A group is
+   implemented only after its approved screen references are recorded in `docs/ui/wireframes.md`.
+2. **Required package:** Screen Designs, Design Tokens, Typography, Colors, Spacing, Components,
+   Responsive Layouts (320/390/768/1440), Interaction States, Accessibility Requirements and
+   Visual Acceptance Criteria. Images alone are not an engineering specification.
+3. **Approval:** the owner approves the group in writing (date + package version) or records an
+   explicit waiver. The waiver is not a claim of pixel compliance.
+4. **Binding:** approved designs are implementation specifications. No redesign, identity change or
+   element rearrangement without owner approval.
+5. **Verification:** visual regression compares rendered screens with the approved references at
+   the supported widths; T-034 requires the comparison evidence. Backend tasks proceed without
+   waiting for a design group.
+6. **Status:** the final package has **not** been delivered. A–G use the interim PDF; all other
+   groups use the token system and documented patterns and must pass the gate before UI work.
+
+## 8. Essential journeys
+
 1. **Learner:** `/academy/login/` → L1 → L2/L3 → E → completion → L4.
 2. **Training manager:** L1 → A → B → C → publish → D → F, each step gated by its permission.
 3. **Company Admin:** N1 invite → N2 role → N3 department → N4 settings → S1 audit.
 4. **Super Admin:** N5 → N6 create company + first admin → audited read-only access → S2.
 5. **Public visitor:** P1 → P3 → Sign in; no session and no application data.
 
-## 8. Boundaries
+## 9. Boundaries
 This document aligns CHARTER, ARCHITECTURE, decisions, API and wireframes; it is **not** proof
 that routes or screens exist. Before coding, check current routes, migrations and permissions.
-L1–L4, N1–N8, S1–S2, P1–P5 and X1–X7 do not all have owner-approved pixel-perfect mockups; A–G
-use the PDF, the rest use the token system and existing patterns. Quiz, certificates, billing,
+L1–L4, N1–N8, S1–S2, P1–P5 and X1–X6 do not all have final owner-approved references; A–G use
+the interim PDF, the rest use the token system and documented patterns, and every group must pass
+the §7 gate before implementation. No design package is claimed as delivered or approved. Quiz, certificates, billing,
 self-registration, advanced analytics, mobile apps and AI are deferred.

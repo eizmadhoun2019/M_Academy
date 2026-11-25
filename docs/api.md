@@ -15,10 +15,12 @@
   **403 `organization_suspended`**; locally suspended membership → **403 `access_suspended`**.
   Hub-signed identity is accepted only when the optional integration is explicitly enabled
   (`ACADEMY_HUB_ENABLED=true`) and is verified per `docs/hub-contract.md` §2.
-- **Company context:** server-side, taken from the session's selected company and validated
-  against an active membership (or an audited platform-access session). Endpoints never accept
-  `organization_id` as authority; a body/query value is ignored or rejected. Requests that need a
-  company without a valid context → **409 `organization_context_required`**.
+- **Company context:** server-side and derived from the caller's single active membership
+  (`UNIQUE (user_id)`, D-043). Endpoints never accept `organization_id` as authority; a body/query
+  value is ignored or rejected, and there is no switch endpoint. Platform-only accounts have no
+  membership: platform routes carry an explicit company id and require a `platform.*` permission
+  (writes inside read-only platform access → 403). A tenant request with no active membership →
+  **403 `membership_inactive`**.
 - **Authorization:** each operation declares one permission from `docs/access-control.md` §2 and
   its allowed scopes. Denied → **403 `forbidden`**. Objects outside the caller's company or scope
   → **404 `not_found`** (never 403), so existence does not leak.
@@ -44,7 +46,7 @@ infer authority from role names.
 ```json
 {
   "user": {"id": "uuid", "display_name": "...", "email": "...", "preferred_language": "ar"},
-  "active_organization": {"id": "uuid", "name": "...", "timezone": "Asia/Riyadh", "status": "active"},
+  "organization": {"id": "uuid", "name": "...", "timezone": "Asia/Riyadh", "status": "active"},
   "membership": {"id": "uuid", "status": "active", "department_id": "uuid"},
   "permissions": [{"code": "academy.report.view", "scope": "DEPARTMENT", "department_ids": ["uuid"]}],
   "platform_permissions": ["platform.organization.view"],
@@ -54,11 +56,13 @@ infer authority from role names.
 ```
 `permissions` is the union after role, grant, scope and suspension evaluation; an empty list is
 valid. `platform_access` is true only inside an audited read-only platform-access session.
+`organization` and `membership` are `null` for a platform-only account; platform screens use the
+explicit company id in their route and never fabricate a membership.
 
 ## 3. Authentication and account endpoints (`/api/v1/academy/auth/`)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| POST | `login/` | Email + password (+ `mfa_code`) | 200 with session; 401 `mfa_required` + `challenge_id` when TOTP is needed; generic 401 `invalid_credentials`; 429 `throttled` |
+| POST | `login/` | Email + password (+ `mfa_code`) | 200 with session and `redirect` (the first dashboard the permissions allow); 401 `mfa_required` + `challenge_id` when TOTP is needed; generic 401 `invalid_credentials`; 429 `throttled` |
 | POST | `mfa/verify/` | Complete an MFA challenge | 5-minute single-use challenge; 401 `mfa_invalid` |
 | POST | `logout/` | End the session | Idempotent; audited |
 | POST | `password/reset/request/` | Send reset mail | Always 202 `accepted` (no account enumeration) |
@@ -66,7 +70,7 @@ valid. `platform_access` is true only inside an audited read-only platform-acces
 | POST | `password/change/` | Change own password | Current password required; revokes other sessions |
 | POST | `email/verify/request/` | Resend verification | Throttled; 202 always |
 | POST | `email/verify/confirm/` | Consume verification token | 400 `token_invalid` |
-| POST | `invitations/accept/` | Accept company invitation | Token + password + display name; creates/activates account and membership; 400 `invitation_invalid` |
+| POST | `invitations/accept/` | Accept company invitation | Token + password + display name; creates/activates account and membership; 400 `invitation_invalid`; 409 `already_member` if the account already belongs to another company |
 | GET | `sessions/` | List own sessions | Device family, last seen, current flag |
 | DELETE | `sessions/{id}/` | Revoke one session | Ownership rechecked; audited |
 | POST | `mfa/enroll/` | Start TOTP enrolment | Password re-entry; returns secret + otpauth URI once |
@@ -77,12 +81,14 @@ valid. `platform_access` is true only inside an audited read-only platform-acces
 self-service profile writes. Email change is a separate verified flow (`POST /me/email/change/`
 → confirm token) and revokes other sessions.
 
-## 4. Company context and memberships
+## 4. Company context (read-only)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `me/memberships/` | Companies the caller may enter | Active/suspended with company name and department names; no other members |
-| POST | `me/active-organization/` | Select/switch company | Body `{organization_id}`; validates active membership; audited `context.switched` |
-| GET | `me/organizations/` | Alias kept for clients | Same as memberships |
+| GET | `me/organization/` | The caller's single company | Company name, status, time zone and the caller's department names; `null` for a platform-only account. Never lists other companies or members. |
+
+There is no company-selection, switching or membership-list endpoint for a normal user. The
+session stores only the user; the server resolves the company from the membership on every
+request. Platform administrators choose a company only inside `platform/organizations/{id}/…`.
 
 ## 5. Learner endpoints (`academy.learn`, SELF)
 | Method | Path | Purpose | Notes |
@@ -163,12 +169,12 @@ out-of-scope filter is 403, never an empty list. `from > to` → 400 `invalid_ra
 | Method | Path | Purpose | Permission |
 |---|---|---|---|
 | GET | `manage/members/` | Members, filters `status`, `department_id`, `q` | `academy.member.view` |
-| POST | `manage/invitations/` | Invite by email with role(s) + department | `academy.member.manage` |
+| POST | `manage/invitations/` | Invite by email with role(s) + department | `academy.member.manage`; 409 `already_member` when the email already has any membership |
 | POST | `manage/invitations/{id}/resend/` | Re-issue (invalidates previous token) | `academy.member.manage` |
 | DELETE | `manage/invitations/{id}/` | Revoke | `academy.member.manage` |
 | GET | `manage/members/{id}/` | Membership detail | `academy.member.view` |
 | PATCH | `manage/members/{id}/` | Department/status (activate/suspend) | `academy.member.manage`; reason required for suspension |
-| DELETE | `manage/members/{id}/` | Remove membership | `academy.member.manage`; 409 `last_admin`; cancels enrollments |
+| DELETE | `manage/members/{id}/` | Remove membership | `academy.member.manage`; 409 `last_admin`; cancels enrollments; row retained (same-company restore only before anonymization) |
 | GET/POST | `manage/members/{id}/roles/` | List/assign roles | `academy.role.manage`; no escalation |
 | DELETE | `manage/members/{id}/roles/{assignment_id}/` | Revoke | `academy.role.manage`; 409 `last_admin` |
 | GET/POST | `manage/departments/` | Tree/create | `academy.member.view` / `academy.department.manage` |
@@ -219,9 +225,8 @@ start/end is audited with the company id.
 | `/` | P1 · Public home | public |
 | `/about/`, `/programmes/`, `/contact/`, `/privacy/`, `/terms/` | P2–P5 · Public pages | public |
 | `/academy/login/`, `/academy/password/reset/`, `/academy/password/reset/{token}/`, `/academy/verify/{token}/`, `/academy/invite/{token}/` | X1, X3–X5 | public (rate-limited) |
-| `/academy/denied/` | X7 · Access denied | any authenticated/blocked state |
-| `/academy/` | Application entry → L1 dashboard | `academy.learn` |
-| `/academy/select-company/` | X6 · Company selection | authenticated |
+| `/academy/denied/` | X6 · Access denied | any authenticated/blocked state |
+| `/academy/` | Application entry → redirect to the first dashboard permitted (L1 or platform) | authenticated |
 | `/academy/dashboard/` | L1 · My dashboard | `academy.learn` |
 | `/academy/my/courses/` | L2 · My courses | `academy.learn` |
 | `/academy/my/courses/{course_id}/` | L3 · Course details | `academy.learn` + enrolled |
@@ -257,7 +262,7 @@ business rules.
 `upload_missing` 409 · `checksum_mismatch` 409 · `retry_limit_reached` 409 ·
 `media_not_ready` 409 · `lesson_not_eligible` 409 · `enrollment_incomplete` 409 ·
 `acknowledgment_not_required` 409 · `last_admin` 409 · `role_system` 409 ·
-`course_not_published` 409 · `organization_context_required` 409 · `escalation_denied` 403 ·
+`course_not_published` 409 · `already_member` 409 · `escalation_denied` 403 ·
 `publish_invalid` 422 · `target_empty` 422 · `throttled` 429 · `unavailable` 503.
 
 ## 15. Compatibility and test obligations

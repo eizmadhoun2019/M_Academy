@@ -4,7 +4,7 @@
 - **Date:** 2026-11-25
 - **Deciders:** Project owner
 - **Supersedes:** ADR-010 (Hub reverse proxy as the public origin), ADR-014 (Hub entry)
-- **References:** D-035; REQ-24, REQ-26
+- **References:** D-035, D-043; REQ-24, REQ-26
 
 ## Context
 The Hub proxy previously owned the public origin and Academy lived behind `/academy` with no
@@ -14,7 +14,8 @@ home/SEO presence, and tied TLS, cookies and CSRF to another deployment.
 ## Decision
 Academy serves its own origin: a public website at `/` (home, about, programmes, contact,
 privacy/terms) and the authenticated application under `/academy/`. Login, reset, verification,
-invitation acceptance and company selection are Academy pages. The Hub reverse-proxy topology
+invitation acceptance are Academy pages; after login the server derives the single company and
+redirects to the permitted dashboard. There is no company-selection page. The Hub reverse-proxy topology
 remains documented but is optional and dormant; enabling it requires both owners and the D-035
 review.
 
@@ -31,7 +32,7 @@ review.
 
 ## Consequences
 - Positive: independent TLS/DNS, public site, simple session cookies (`Path=/academy/`), clear
-  cache boundaries.
+  cache boundaries and one unambiguous post-login destination.
 - Negative: Academy owns certificate renewal, HSTS, CDN and DNS operations.
 - The Hub proxy, if ever enabled, must preserve the prefix; `FORCE_SCRIPT_NAME` remains supported.
 - Revisit: custom domains and white-label in H2.

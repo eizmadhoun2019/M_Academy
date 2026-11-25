@@ -91,7 +91,9 @@ Indexes: `UNIQUE (slug)`, `(status)`. No hard delete while any tenant row exists
 
 Constraints: `CHECK (status IN (...))`, unique lower(email) (citext). Index `(status)`.
 `email` is replaced with `anon+<uuid>@invalid` on anonymization; `display_name` with
-`Deleted user`. One account may hold many memberships; the account is never company-scoped.
+`Deleted user`. One account holds at most one membership; the account is never company-scoped.
+A platform-only account (`PlatformRoleAssignment`) may have **zero** memberships and needs no
+synthetic company row.
 
 #### 2.0.3 `Membership` (tenant)
 | Field | Type | Null | Default | Constraints / notes |
@@ -103,10 +105,14 @@ Constraints: `CHECK (status IN (...))`, unique lower(email) (citext). Index `(st
 | `invited_by_id` | uuid FK → User | yes | `NULL` | `SET NULL` |
 | `department_id` | uuid FK → Department | yes | `NULL` | Composite tenant FK; primary department |
 
-Constraints: `UNIQUE (organization_id, user_id)`, `UNIQUE (organization_id, id)`,
+Constraints: **`UNIQUE (user_id)`** (D-043 — one company per account; this is the authoritative
+cardinality constraint), `UNIQUE (organization_id, id)`,
 `CHECK (status='removed') = (removed_at IS NOT NULL)`, `CHECK (status<>'active' OR joined_at IS NOT NULL)`.
 Indexes: `(organization_id, status)`, `(organization_id, department_id)`.
-Membership history survives removal; training rows keep pointing at it with `PROTECT`.
+Membership history survives removal; training rows keep pointing at it with `PROTECT`. The unique
+index also makes the per-request company lookup a single indexed row, so the simplification adds
+no query or join. The service checks before insert and maps a database `IntegrityError` to **409 `already_member`**; tests cover
+both the API and a direct duplicate insert. Platform administrators have no row here.
 
 #### 2.0.4 `Department` (tenant)
 | Field | Type | Null | Default | Constraints / notes |
@@ -191,7 +197,9 @@ Index `(organization_id, expires_at) WHERE revoked_at IS NULL`.
 
 Constraints: `UNIQUE (organization_id, email) WHERE accepted_at IS NULL` (one live invite),
 `CHECK (expires_at > created_at)`, index `(token_hash)` unique. Acceptance creates/reactivates
-the `User` and `Membership` and active assignments.
+the `User` and `Membership` and applies active assignments. Acceptance **rejects an email that
+already has a membership in another company**; for the same company it restores the removed row
+instead of inserting a second one (`already_member` otherwise).
 
 #### 2.0.10 `AccountToken` (global)
 `user_id` FK, `purpose` (`verify_email|reset_password|unlock`), `token_hash` unique,
@@ -500,7 +508,7 @@ acknowledge an event whose effects rolled back.
 ## 3. Relationships
 
 ```
-Organization 1─n Membership n─1 User
+Organization 1─n Membership 1─1 User  (H1.5: Membership.user_id is UNIQUE; platform-only users have 0 memberships)
 Organization 1─n Department 1─n Department (parent)
 Organization 1─n Role (custom) ; Role n─n Permission
 Membership 1─n RoleAssignment n─1 Role
@@ -528,7 +536,8 @@ Organization 0..1─n AuditEvent (platform events have no organization)
 |---|---|
 | Tenant isolation on every read | `for_org` (service/selector) + meta-test + composite FKs |
 | No relation crosses companies | Composite foreign keys |
-| One membership per account per company | Unique index |
+| One company membership per account (H1.5) | Table-level `UNIQUE (user_id)` (D-043) |
+| No cross-company membership or second membership | Unique index + service + tests |
 | One published version per course | Partial unique index |
 | Published version content is frozen | Triggers on `CourseVersion`/`Section`/`Lesson` |
 | Assignment target arity | `CHECK` + partial unique indexes |
@@ -553,9 +562,12 @@ Suspension blocks tenant access for every member; archive is read-only for the p
 **User:** `unverified → active → suspended → active`, `active|suspended → deactivated`;
 deactivation revokes sessions. Anonymization is a separate irreversible step after retention.
 
-**Membership:** `invited → active → suspended → active`, `active|suspended → removed` (no
-reverse; re-invitation creates a new membership row only after removal history is kept).
-Removal cancels unfinished enrollments; suspension does not.
+**Membership:** `invited → active → suspended → active`, `active|suspended → removed`. Removal
+cancels unfinished enrollments; suspension does not. A removed membership is retained, and a
+same-company restore (`removed → active`) may reuse that exact row before account anonymization;
+it never revives cancelled enrollments. A second membership row, a cross-company re-invitation,
+or moving an account between companies is rejected (D-043). `removed` is terminal for tenant
+access unless the same-company restore is explicitly authorized and audited.
 
 **CourseVersion:** `draft → published → archived`. `published` requires §4 publish checks.
 No reverse transitions.

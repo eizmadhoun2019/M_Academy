@@ -84,7 +84,7 @@ Rules for «كمل»:
 - Stay inside the approved scope. Out-of-scope work becomes a proposed plan row awaiting an
   owner-assigned requirement.
 - **Tenant rule:** every tenant model has an `organization` FK; every runtime query goes through
-  a manager/selector scoped by the active company; a task, cache key, storage key, export and
+  a manager/selector scoped by the derived company; a task, cache key, storage key, export and
   audit row carries the company. No unscoped default-manager read in runtime code.
 - **Identity rule:** users are identified by UUID (`User`), never by email. Business rows point
   at `Membership`, not at a raw ref string. Email is a login attribute only.
@@ -115,6 +115,7 @@ Rules for «كمل»:
 | New dependency, external service or paid resource | Technical authority + security scan; owner when it creates cost or a vendor commitment |
 | Production deploy, publish, phase gate, merge to `main` | Project owner |
 | Mandatory-requirement exception | Project owner, recorded per Exceptions |
+| Removing or weakening an approved capability, or changing an approved screen design/identity | Project owner, recorded in `docs/decisions.md` and the capability matrix |
 
 ## Task lifecycle
 `[ ]` todo · `[~]` in progress/review (owner, date) · `[!]` blocked (reason) · `[x]` done on
@@ -122,6 +123,14 @@ Rules for «كمل»:
 
 A phase gate closes only when every task in the gate and its acceptance criteria are verified.
 Reopening a completed task requires a recorded reason in `STATUS.md` and `LOG.md`.
+
+**Capability preservation:** one company membership per account is an H1.5 architectural constraint,
+not a reduction of training functions. No capability approved before H1.5 (authoring/publishing,
+department-head authoring, assignment to member/department/role/company, mandatory/optional,
+due dates, auto-enrolment, recipient preview, duplicate prevention, progress/completion,
+reminders/escalation, scoped reports/export, exceptional grants and learning rules) may be
+removed or weakened without an explicit owner decision. `docs/traceability.md` carries the
+capability matrix that must be verified at GATE-1.
 
 `LOG.md` status values (event states): Proposed | Approved | Implemented | Tested | Verified |
 Merged | Released | Rejected | Superseded. Implemented, Tested, Verified, Merged and Released
@@ -149,7 +158,7 @@ refers to this table.
 | Task state, current phase, blockers, next action | `STATUS.md` |
 | Task definitions, dependencies, checkpoints, gate composition | `docs/plan.md` |
 | Completed or approved work | `LOG.md` (append-only) |
-| IDs, gates, requirement coverage, sources of truth | `docs/traceability.md` |
+| IDs, gates, requirement coverage, capability preservation, sources of truth | `docs/traceability.md` |
 | Permission catalogue, roles, scopes, enforcement | `docs/access-control.md` (+ tests) |
 | Security control, PII field, retention, session policy | `docs/security.md` |
 | Schema, constraints, integrity, state machines, progress algorithm | `docs/domain-model.md` |
@@ -158,7 +167,7 @@ refers to this table.
 | Background job, schedule, retry, idempotency | `docs/background-jobs.md` |
 | Report metric, column, CSV format | `docs/reports.md` |
 | Notification copy, channel, locale, link | `docs/notifications.md` |
-| Screen, navigation, UI state, accessibility rule | `docs/ui/screen-specification.md` |
+| Screen, navigation, UI state, mobile-first, visual gate, accessibility rule | `docs/ui/screen-specification.md`, `docs/ui/wireframes.md` |
 | Ports, containers, buckets, environments, deploy, backup, alerts | `docs/operations/environments.md` |
 | Migration mapping, cutover, rollback | `docs/migration-h1.5.md` |
 | Hub wire contract, activation state | `docs/hub-contract.md` |
@@ -170,7 +179,10 @@ A task is `[x]` only when:
 2. The gates active for it pass on the merge commit; none is bypassed, skipped or silenced.
 3. The owning documents are updated and `python scripts/check_docs.py` passes.
 4. `ruff`, `mypy`, the migration check and the tests covering the change pass locally.
-5. `LOG.md` has one entry with evidence; `STATUS.md` carries the commit and CI link.
+5. `LOG.md` has one entry with evidence. `STATUS.md` cites the latest **content** commit SHA and
+   the CI run for that commit. A trailing evidence-only commit may update those citations without
+   citing its own SHA; the closing report names the final branch head and CI run. Never amend a
+   content commit to embed its own hash, and never claim CI for a commit that has not run it.
 6. No orphan TODO and no superseded statement left in force.
 
 ## Commit messages
@@ -185,10 +197,19 @@ commit secrets, `.env`, generated artifacts or unrelated files.
 - RTL first: logical properties (`margin-inline-start`, `padding-block`, `inset-inline-start`).
 - Every user-visible string comes from gettext (`ar` default RTL, `en` secondary); no literal
   copy in templates or scripts.
-- Brand: locally hosted Noto Sans Arabic; text logotype until D-008 is decided.
+- Brand: locally hosted **Rubik** (Arabic + Latin), Primary `#101820`, Brand Gold `#E8AA23`, the
+  official Masheed logo and gold geometric element from the approved package. Do not invent or
+  redraw the mark, and do not substitute a font.
+- **Mobile first is binding:** every screen is designed and built Mobile 390 → Tablet 768 →
+  Desktop 1440 → Large Desktop, and tested from 320 px; desktop-first shrinking is prohibited.
 - WCAG 2.2 AA: labelled controls, visible focus, keyboard-reachable controls, 44×44 px targets,
   no colour-only meaning, no unjustified horizontal scroll, no raw UUID shown when a name exists.
-- Every screen implements the state contract in `docs/ui/screen-specification.md` §6; never show
+- **Visual-reference gate:** a screen group is implemented only after its approved reference
+  (or an explicit owner waiver) is recorded in `docs/ui/wireframes.md`; approved designs are
+  binding specifications and are not redesigned or rearranged without owner approval. Visual
+  regression compares rendered screens with approved references where they exist. No final
+  package is claimed as delivered before the owner delivers it.
+- Every screen implements the state contract in `docs/ui/screen-specification.md` §5; never show
   success before the server confirms it.
 
 ## Dependencies

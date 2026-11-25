@@ -4,13 +4,14 @@
 - **Date:** 2026-11-25
 - **Deciders:** Project owner
 - **Supersedes:** ADR-011 (Academy grants combined with Hub role defaults), ADR-014 (grants-only default)
-- **References:** D-034; REQ-13, REQ-23
+- **References:** D-034, D-043; REQ-13, REQ-23
 
 ## Context
 The old model mapped a Hub role (`platform_admin`/`department_manager`/`employee`) to a fixed
 capability bundle and stored exceptional grants against an opaque `user_ref`. It could not express
-platform vs company vs department scope, custom company roles, multiple memberships, or a clean
-separation between identity and authority. Hub role names were also leaking into Academy
+platform vs company vs department scope, custom company roles, or a clean separation between
+identity and authority. (It also assumed multiple memberships; H1.5 now limits one per account,
+D-043.) Hub role names were also leaking into Academy
 authorization.
 
 ## Decision
@@ -20,7 +21,8 @@ Academy owns a permission catalogue and resolves effective access from:
 exceptions; `PlatformRoleAssignment` for platform authority. Default roles are Super Admin,
 Company Admin, Training Manager, Learner, Auditor. The engine is deny-by-default, least-privilege,
 scope-aware and enforced in services and routes; the UI only reflects it. Escalation and
-last-admin protections are transactional.
+last-admin protections are transactional. Authorization derives the company from the single
+membership; platform authority is a separate assignment and never creates a membership.
 
 ## Rationale
 - Real companies need custom roles and departmental delegation.
@@ -34,7 +36,8 @@ last-admin protections are transactional.
 - **ABAC/policy engine (OPA/Casbin):** deferred; overkill for 22 permissions and five default roles.
 
 ## Consequences
-- Positive: precise access, auditable changes, multi-company administration, testable matrix.
+- Positive: precise access, auditable changes, multi-company administration without multi-membership
+  users, testable matrix.
 - Negative: more tables and migration work; every route must declare a permission.
 - Existing grants migrate through the legacy capability mapping; unmapped grants are reported.
 - Revisit: policy engine only if rules become attribute-heavy; do not grow permissions per screen.

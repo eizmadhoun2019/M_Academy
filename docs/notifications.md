@@ -5,7 +5,7 @@ message is produced; this file owns what it says.
 **Last updated:** 2026-11-25
 **Visual template:** `docs/ui/emails/escalation-digest.html` and `.txt` (approved artifacts:
 navy `#101820` header, gold `#E8AA23` brand line, white card on `#F8FAFC`, 12 px radius,
-Tahoma/Arial, RTL).
+Rubik for application UI; the email sample uses Tahoma/Arial as a client-safe fallback, RTL).
 
 ---
 

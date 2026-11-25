@@ -10,7 +10,7 @@ semantics and authorization rules. Charter: REQ-21…REQ-25, REQ-28. Schema:
 |---|---|---|
 | Account | A person who can authenticate. One per person, independent of any company. | `User` |
 | Company | A tenant. Has its own settings, departments, members and data. | `Organization` |
-| Membership | The link between one account and one company; carries its own state, department and roles. | `Membership` |
+| Membership | The link between one account and its **single** company in H1.5; carries its own state, department and roles. `UNIQUE (user_id)` (D-043). | `Membership` |
 | Role | A named bundle of permissions, system-provided or company-defined. | `Role` |
 | Permission | A functional capability code, e.g. `academy.content.publish`. | `Permission` |
 | Scope | Where a permission applies: `PLATFORM`, `COMPANY`, `DEPARTMENT`, `SELF`. | assignment/grant |
@@ -18,8 +18,10 @@ semantics and authorization rules. Charter: REQ-21…REQ-25, REQ-28. Schema:
 | Exceptional grant | Adds one permission at one scope outside roles, with reason and expiry. | `PermissionGrant` |
 
 Account state, membership state and company state are independent. An active account with no
-active membership can sign in but reaches only company selection/“no access”. A suspended
-company blocks all of its memberships' tenant access while platform administration still works.
+active membership can sign in but has no tenant context: a platform-only user reaches the
+platform area, while an account with neither a membership nor platform permission reaches the
+“no access” screen (X6). It never sees a company chooser. A suspended company blocks all of its
+members' tenant access while platform administration still works.
 
 ## 2. Permission catalogue (22 codes)
 Codes are stable API. Prefix `academy.` = tenant capability; `platform.` = platform capability.
@@ -80,17 +82,19 @@ Notes:
 ## 4. Scope semantics
 | Scope | Applies to | Resolution |
 |---|---|---|
-| `PLATFORM` | Platform permissions only | No company. Company data only via `platform.organization.access` + explicit selected company. |
-| `COMPANY` | The whole company | `organization_id` must equal the active company. |
+| `PLATFORM` | Platform permissions only | No membership. Company data only via `platform.organization.access` with an explicit company id in the authorized platform route. |
+| `COMPANY` | The whole company | `organization_id` must equal the company derived from the caller's single membership. |
 | `DEPARTMENT` | One department and its descendants | the department scopes on the membership's role assignments and grants (explicit list, descendants included by default); a department from another company is invalid. |
-| `SELF` | The caller's own membership/records | `membership_id` must equal the caller's membership in the active company. |
+| `SELF` | The caller's own membership/records | `membership_id` must equal the caller's single membership in the derived company. |
 
 Rules:
 - Scopes are **not** a hierarchy that silently widens: a permission lists the scopes it accepts
   (§2). A `COMPANY` assignment of `academy.member.manage` does not grant anything at
   `DEPARTMENT`; a `DEPARTMENT` assignment of a company-only permission is rejected at write time.
-- Company selection is server-side. The client may send `organization_id` only as a switch
-  request; the server verifies an active membership (or platform access) before using it.
+- There is **no company selection or switching** for a normal user. The server derives the
+  company from the single active membership; `organization_id` from the client is never
+  authority. A platform route may carry an explicit company id under `platform.*` permission and
+  audit, not a membership.
 - Department scope never includes another department's content/assignments/reports just because
   the caller is a manager elsewhere.
 - Objects are re-checked: a department-scoped manager cannot read a company-wide course unless
@@ -98,6 +102,8 @@ Rules:
   readable, editable only with `COMPANY` scope).
 - A platform access session is read-only even if the user also holds a company role; writes
   require leaving platform-access mode and using the membership.
+- A platform administrator needs no membership and gets no synthetic one; platform scope and
+  company membership are separate grants.
 
 ## 5. Legacy mapping (migration input)
 | Legacy capability | Becomes |
@@ -132,7 +138,9 @@ code in T-028.
   company must hold `academy.member.manage` + `academy.role.manage`. The operation that would
   remove the last one is rejected with `LAST_ADMIN` and audited.
 - Invitations carry the intended role(s), department(s) and expiry; acceptance creates the
-  membership, never grants more than the invitation states.
+  membership, never grants more than the invitation states. An email that already has a
+  membership in any company is rejected with `already_member`; the same company may restore its
+  removed row instead of creating a second membership. A second row is impossible at the DB.
 
 ## 7. Enforcement points (all required)
 1. **Route/view:** declares `permission` and allowed scopes; unauthenticated → login;
@@ -143,7 +151,7 @@ code in T-028.
    rechecks the permission and object scope before any write.
 4. **Selector:** always requires `organization_id`; department filters come from the principal's
    effective scope, never from the query string alone.
-5. **Model/query:** tenant manager filters by active company; cross-company FKs are impossible
+5. **Model/query:** tenant manager filters by the derived company; cross-company FKs are impossible
    by constraint.
 6. **Template/JS:** navigation, buttons and actions are rendered from effective permissions;
    hidden UI is not a security control.
@@ -155,7 +163,7 @@ code in T-028.
 | Entity | States | Effect |
 |---|---|---|
 | Account (`User`) | unverified → active → suspended → deactivated | Suspended/deactivated cannot authenticate; existing sessions revoked; audit retained. |
-| Membership | invited → active → suspended → removed | Only `active` yields tenant access; suspension keeps history and roles but suppresses permissions; removal ends access, retains training history, and cancels unfinished enrollments. |
+| Membership | invited → active → suspended → removed; same-company restore `removed → active` before anonymization | Only `active` yields tenant access; suspension keeps history and roles but suppresses permissions; removal ends access, retains training history, and cancels unfinished enrollments. Restore reuses the row and never revives cancelled enrollments. No second membership exists. |
 | Company | active → suspended → archived | Suspended blocks tenant access for all members (platform admins can still manage it); archived is read-only for the platform and hidden from members; no hard delete while history exists. |
 
 Transitions are audited and permission-checked: membership changes need `academy.member.manage`,
@@ -166,7 +174,7 @@ plus a reason. Self-service profile changes are limited to display name, languag
 `auth.login_succeeded`, `auth.login_failed`, `auth.logout`, `auth.password_changed`,
 `auth.password_reset`, `auth.email_verified`, `auth.mfa_enabled`, `auth.mfa_disabled`,
 `auth.session_revoked`, `membership.invited`, `membership.activated`, `membership.suspended`,
-`membership.removed`, `membership.roles_changed`, `grant.created`, `grant.revoked`,
+`membership.removed`, `membership.restored`, `membership.roles_changed`, `grant.created`, `grant.revoked`,
 `role.created`, `role.updated`, `organization.created`, `organization.suspended`,
 `organization.reactivated`, `organization.archived`, `platform.access_started`,
 `platform.access_ended`, `report.exported`, `authorization.denied` (sampled), `settings.changed`.
@@ -185,7 +193,8 @@ not “done” until its allow and deny cases exist.
 | Escalation | Company Admin cannot grant platform rights, a permission they lack, or broader scope; self-escalation blocked. |
 | Tenant isolation | Two companies with identical data: list/detail/report/export/audit/media never cross; cache keys and task payloads carry the company. |
 | Scope | DEPARTMENT includes descendants, excludes siblings; SELF sees only own enrollment; general course rules. |
-| Lifecycle | Suspension suppresses access immediately; removal cancels enrollments; company suspension blocks all members; reactivation restores only valid states. |
+| Lifecycle | Suspension suppresses access immediately; removal cancels enrollments and is terminal except same-company restore; company suspension blocks all members; reactivation restores only valid states. |
+| Single membership | A second membership insert for the same user fails at the DB; invitation to another company returns `already_member`; no `/me/active-organization` or switcher exists; platform admins have no membership. |
 | Last admin | Removing/demoting the last platform/company admin returns `LAST_ADMIN` and changes nothing. |
 | UI | Navigation and actions match effective permissions for each default role; direct URL access still denied by the server. |
 | Audit | Every §9 event is written once with the right actor/company; denied attempts are recorded; audit cannot be updated/deleted. |

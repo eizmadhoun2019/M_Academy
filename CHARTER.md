@@ -1,7 +1,8 @@
 # CHARTER — Project Purpose, Scope and Success
 
-**Charter version:** 2.4 (multi-company standalone target; H1.5 inside GATE-1; Hub becomes an
-optional, dormant integration; identity, tenancy and RBAC promoted to requirements)
+**Charter version:** 2.5 (multi-company standalone target; one company membership per account;
+H1.5 inside GATE-1; Hub optional and dormant; mobile-first and the official visual reference are
+binding)
 **Approved by:** Project owner
 **Last reviewed:** 2026-11-25
 
@@ -28,7 +29,8 @@ optional, dormant integration; identity, tenancy and RBAC promoted to requiremen
   need and a recorded engineering rationale.
 
 ## 2. Goals
-- G1 Deliver video-based courses through one account that works across companies.
+- G1 Deliver video-based courses through one local account that belongs to **at most one**
+  company in H1.5; platform roles never create synthetic memberships.
 - G2 Enforce sequential learning with server-verified progress (the browser is never trusted).
 - G3 Isolate every company's data at every layer, with audited platform oversight.
 - G4 Give managers scoped dashboards, reports and CSV export without manual chasing.
@@ -53,8 +55,9 @@ The permission catalogue, default roles, scopes and enforcement rules live **onl
 
 ## 4. Scope
 ### In scope (H1.5)
-- Organizations as first-class entities; memberships; company departments; one account, many
-  memberships; one active company per request context.
+- Organizations as first-class entities; company departments; **one organization membership per
+  account** (unique `user_id`), so a normal user has exactly one company context derived
+  server-side. Platform administrators hold `PlatformRoleAssignment` and need no company row.
 - Local identity: email + password, verification, password reset/change, invitations, session
   management, TOTP MFA for sensitive administrative accounts, recovery codes, login abuse
   protection, security audit. Custom User with Django Auth; no hand-written auth engine.
@@ -63,13 +66,14 @@ The permission catalogue, default roles, scopes and enforcement rules live **onl
   least privilege, last-admin protection.
 - Public website on `/` (Arabic and English): introduction, vision, features, programmes,
   how to use, contact, privacy and terms, login entry point.
-- Application under `/academy/`: independent sign-in and account screens, company selection,
-  dynamic dashboard and sidebar, platform and company administration, training management,
-  learning screens, reports, notifications, settings.
+- Application under `/academy/`: independent sign-in and account screens, direct entry to the
+  dashboard permitted by the user's roles, dynamic dashboard and sidebar, platform and company
+  administration, training management, learning screens, reports, notifications, settings. No
+  company-selection or company-switching screen or control exists.
 - Course authoring with immutable versions, sections, lessons (video Phase 1; pdf/text Phase 2).
 - Media upload + HLS processing (360p/720p, 6 s segments), optional captions, controlled playback.
 - Assignment to membership/department/role/whole company, due dates, mandatory flag, auto-enroll
-  on membership change.
+  when a membership becomes active.
 - Server-authoritative progress, sequential locking, completion records.
 - Notifications and reminders through a local, swappable mail transport (SMTP default).
 - Reports and CSV export, scoped by company and department; audited platform aggregation.
@@ -94,7 +98,7 @@ manual checks before a gate closes. Detailed task mapping: `docs/plan.md`; cover
 | REQ-02 | Adapter layer + host stub with contract suites | Must | Identity/organization/notify/storage contracts pass for stub and HTTP fakes | Tech authority |
 | REQ-03 | Full schema with migrations, tenant and identity integrity | Must | Every tenant table scoped; composite FKs prevent cross-company relations; migrations apply/reverse; isolation suite passes | Tech authority |
 | REQ-04 | Domain events on commit + append-only audit | Must | Events fire only after commit; audit rows immutable at DB level; platform actions audited | Tech authority |
-| REQ-05 | Bilingual RTL/LTR design system for public site and application | Must | Tokens, components, shells committed; 360/768/1280 px in ar+en; no horizontal overflow | Tech authority |
+| REQ-05 | Bilingual mobile-first design system for public site and application | Must | Tokens, components and shells committed; 320/390/768/1440 px in ar+en; no unjustified horizontal overflow; Mobile → Tablet → Desktop → Large Desktop order | Tech authority |
 | REQ-06 | Course authoring, versions, publish | Must | ≥2 sections/lessons, publish validation, immutability, prior version archived | Tech authority |
 | REQ-07 | Media upload → HLS processing → secure playback | Must | Presigned PUT; ffmpeg→HLS `ready`; failures retryable; playback authorized per learner and company | Tech authority |
 | REQ-08 | Assignment + auto-enroll on membership change | Must | Target matrix, due date, mandatory flag; join/leave enrols and cancels | Tech authority |
@@ -104,17 +108,17 @@ manual checks before a gate closes. Detailed task mapping: `docs/plan.md`; cover
 | REQ-12 | Scoped reports + CSV | Must | Completion %, overdue, average time per course/department; formula-safe CSV; cross-scope refused | Tech authority |
 | REQ-13 | Permission grants and scoped authorization | Must | Allow/deny/scope matrix tested in API and web; denial audited; no client-supplied authority | Project owner |
 | REQ-14 | Learner + management web UI | Must | Screens L1–L4, E, A–C, D, F, S1 per `docs/ui/screen-specification.md`; manual checks recorded | Tech authority |
-| REQ-15 | Journey/E2E, accessibility, responsiveness | Must | Full journey test; Playwright at 3 viewports in ar+en; axe zero critical/serious | Tech authority |
+| REQ-15 | Journey/E2E, accessibility, responsiveness | Must | Full journey test; Playwright at 320/390/768/1440 px in ar+en; axe zero critical/serious; visual regression against approved references | Tech authority |
 | REQ-16 | Operations | Must | Staging deploy from CI; daily backup; recorded restore drill; monitored `/healthz` with alerts | Tech authority |
 | REQ-17 | Performance at design capacity | Must | Targets in `docs/performance-profile.yaml` met, or an owner-accepted deviation recorded | Project owner |
 | REQ-18 | Security review | Must | OWASP ASVS L1 checklist complete; dependency and image scans clean; CSP and session controls verified | Tech authority |
 | REQ-19 | Privacy tooling | Must | Account/membership export, anonymization and retention tested; every PII column registered | Project owner |
 | REQ-20 | Pilot + management demo | Must | Pilot company completes a real course; feedback recorded and triaged | Project owner |
-| REQ-21 | Companies, memberships and departments | Must | Create/suspend/archive company; one account in many companies; membership states separate from account; cross-company read/write refused in every layer | Project owner |
+| REQ-21 | Companies, memberships and departments | Must | Create/suspend/archive company; one account has at most one membership (DB unique + service + tests); membership states separate from account; company context derived from membership; cross-company read/write refused in every layer | Project owner |
 | REQ-22 | Local identity and account lifecycle | Must | Email verification, reset, change, invitations, session listing/revocation, TOTP MFA for admin roles, enumeration-safe errors, Argon2, no secret in logs | Project owner |
 | REQ-23 | Dynamic scoped RBAC | Must | Permission catalogue, system + custom roles, multiple roles, `PLATFORM`/`COMPANY`/`DEPARTMENT(S)`/`SELF`, deny by default, escalation blocked, last platform/company admin protected, changes audited | Project owner |
-| REQ-24 | Public website + application portal separation | Must | `/` public ar/en without session; app under `/academy/`; independent login; no UUIDs shown; language switch persists | Project owner |
-| REQ-25 | Platform and company administration | Must | Super Admin manages companies/users/roles; Company Admin manages only their company; every screen and action permission-driven | Tech authority |
+| REQ-24 | Public website + application portal separation | Must | `/` public ar/en without session; app under `/academy/`; independent login; direct post-login dashboard; no company chooser; no UUIDs shown; language switch persists | Project owner |
+| REQ-25 | Platform and company administration | Must | Super Admin manages companies/users/roles and targets a company by explicit id without membership; Company Admin manages only their company; every screen and action permission-driven | Tech authority |
 | REQ-26 | Mail and notifications without Hub | Must | SMTP transport; verification/reset/invitation/reminder mail delivered; no Hub dependency to run the platform | Tech authority |
 | REQ-27 | Observability and operational readiness | Must | Metrics, tracing correlation, error reporting, slow-query visibility; alert thresholds implemented; runbooks exist | Tech authority |
 | REQ-28 | Migration and backward compatibility | Must | Existing organization/training/progress/completion/audit records preserved; legacy user references mapped to accounts; API compatibility policy applied | Tech authority |
@@ -126,7 +130,10 @@ concurrent viewers / 50 concurrent administrators; API p95 < 300 ms (heartbeat p
 LCP ≤ 2.5 s, CLS ≤ 0.1, INP ≤ 200 ms on a mid-range phone over 4G; availability 99.5% monthly;
 RPO ≤ 24 h, RTO ≤ 4 h; OWASP ASVS L1 + WCAG 2.2 AA; latest two versions of Chrome, Edge,
 Firefox, Safari and Samsung Internet; ar (default, RTL) + en; coverage ≥ 85% on business-logic
-packages.
+packages. **Mobile first is mandatory for every screen:** design and implement Mobile (390 px),
+then Tablet (768 px), Desktop (1440 px) and Large Desktop, and test intermediate widths from
+320 px. Desktop is never the base design shrunk down; core functions, forms, tables and reports
+must remain usable and accessible with no unjustified page-level horizontal scrolling.
 
 ## 7. Project profile
 ### Scale
@@ -180,9 +187,10 @@ Canonical location: `docs/performance-profile.yaml` (owned by this charter).
 | Hub contract or availability changes | Hub dormant and optional; adapters and contract tests; reactivation gate | Project owner + Hub owner |
 | Video storage/bandwidth cost growth | Rendition policy; storage adapter; production provider decision D-001 | Project owner |
 | Clients bypass skip protection | Server-authoritative heartbeat (REQ-09); abuse counter and report comparison | Tech authority |
-| Accessibility/mobile found late | UI foundation early; axe and responsive checks in T-029/T-034 | Tech authority |
+| Accessibility/mobile found late | Mobile-first from the first screen; 320/390/768/1440 checks and axe in T-029/T-030/T-031/T-034 | Tech authority |
 | Base-image vulnerabilities block CI | Time-boxed owner-approved exception process (`RULES.md` → Exceptions) | Project owner |
 | Operator error on a shared host destroys another stack | Isolation table and prohibitions in `docs/operations/environments.md`; project-scoped commands only | Tech authority |
+| A change silently drops a previously approved capability | Capability-preservation matrix in `docs/traceability.md`; no removal without an explicit owner decision; regression evidence before GATE-1 | Project owner |
 
 ## 11. Change control
 Charter changes only when (a) the project owner asks, or (b) a blocking contradiction is found.
@@ -197,3 +205,4 @@ silently.
 | Project owner | (owner) | Approved | 2026-11-22 |
 | Project owner | (owner) | Approved charter 2.3: H1 target — dual-mode access, `grants_only`, Academy-owned navigation | 2026-11-23 |
 | Project owner | (owner) | Approved charter 2.4: standalone multi-company H1.5, local identity, dynamic scoped RBAC, public site, Hub dormant (D-031…D-040) | 2026-11-25 |
+| Project owner | (owner) | Approved charter 2.5: one company membership per account, no company selection/switching, mobile-first and binding visual reference (D-043, D-044) | 2026-11-25 |

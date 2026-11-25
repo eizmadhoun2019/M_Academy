@@ -207,7 +207,7 @@ Every process writes one JSON object per line to stdout.
 | `env` | `ACADEMY_ENV` |
 | `message` | Rendered message; never a token, cookie, email, name or media URL |
 | `request_id` | Inside a request |
-| `company_id` | Active company when known (UUID) |
+| `company_id` | Company context derived from the single membership, when known (UUID); platform route id when explicit |
 | `user_id` | Actor UUID when known (never email) |
 | `route` | URL name, not the raw path with ids |
 | `duration_ms` | Request duration |

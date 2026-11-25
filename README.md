@@ -1,6 +1,6 @@
 # Masheed_Academy
 
-**Status:** Active H1.5 foundation (documentation baseline established 2026-11-22; charter 2.4)
+**Status:** Active H1.5 foundation (documentation baseline established 2026-11-22; charter 2.5)
 **Repository:** `https://github.com/eizmadhoun2019/M_Academy` — own history, no legacy imports.
 The legacy `Masheed-Academy` repository and its running deployment are reference only and must
 stay untouched.
@@ -18,7 +18,9 @@ supports. The Hub integration is retained but **dormant and optional** (`docs/hu
 nothing on the launch path depends on it.
 
 ## Main capabilities (H1.5 target)
-- Company, department, user and membership model with server-side active-company context.
+- Company, department, user and membership model with **at most one company membership per
+  normal account**; platform roles need no company. Company context is server-derived (no company
+  chooser or switcher).
 - Local authentication: email verification, password reset, invitations, sessions, TOTP MFA.
 - Dynamic scoped RBAC: platform / company / department / self, default roles and exceptional
   grants, last-admin protection.

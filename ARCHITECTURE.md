@@ -9,8 +9,9 @@ Security controls: `docs/security.md`.
 Masheed Academy is a **modular monolith**: one Django + PostgreSQL service, one deployable
 image, with explicit internal module boundaries. It serves a **public website** on `/` and an
 authenticated **application** on `/academy/`, for **multiple companies** over one database.
-Every company-owned row is scoped to an `Organization`; every request resolves exactly one
-active company context before any tenant query.
+Every company-owned row is scoped to an `Organization`; every tenant query resolves exactly one
+company context from the caller's single membership (or, for platform-only routes, from an
+explicit authorized company id) before it runs.
 
 The platform is standalone-first: local accounts, local memberships, local authorization,
 local mail. Hub is an optional integration behind adapters and a feature flag; it is disabled
@@ -22,7 +23,9 @@ the start; documentation-driven delivery.
 
 ## 2. Context and actors
 - **Visitor** → public site `/` (no session): content, languages, contact, login entry.
-- **Account holder** → `/academy/` sign-in, verification, reset, company selection.
+- **Account holder** → `/academy/` sign-in, verification and reset; after authentication the
+  single membership selects the company server-side and the user lands on the dashboard their
+  permissions allow. No company chooser or switcher is part of H1.5.
 - **Member** → company-scoped app: learning, management or administration by permission.
 - **Platform administrator** → company lifecycle, platform users/roles, platform audit,
   audited read access to company data with explicit company context.
@@ -47,7 +50,7 @@ Django app per row. No circular imports; a module may use only the layers below 
 | Module | Responsibility | May depend on |
 |---|---|---|
 | `academy.models` | Schema, constraints, indexes, state fields | Django, PostgreSQL |
-| `academy.tenancy` (target, `academy/organizations/`) | Organization, Department, Membership, active-company context, company settings | models |
+| `academy.tenancy` (target, `academy/organizations/`) | Organization, Department, Membership, server-derived company context, company settings | models |
 | `academy.accounts` (target) | User, invitations, verification/reset, sessions, MFA, login security | models, tenancy, adapters.notify |
 | `academy.authorization` | Permission catalogue, roles, scopes, effective access, guards | tenancy, models |
 | `academy.catalog` (`academy/services`, `selectors` for content) | Courses, versions, sections, lessons, publish rules | models, authorization |
@@ -83,15 +86,19 @@ Rules:
 - Every tenant table has an `organization` FK (`PROTECT`). Cross-entity consistency is enforced
   with composite foreign keys `(organization_id, id)`, so a child can never point at another
   company's parent.
-- One active company per request. The context is resolved server-side from the session
-  (company selection) and validated against an active membership; a client-supplied
-  organization id is only a *request to switch*, never authority. Behind Hub, the verified
-  assertion would be the source; that mode is optional.
-- One account may hold many memberships; the UI auto-selects a company only when exactly one
-  valid membership exists. Platform roles are separate from company roles.
+- One company context per request. For a normal user it is derived server-side from the single
+  `Membership` (`UNIQUE (user_id)`); no client-supplied organization id is accepted and there is
+  no switching path. A platform-only account has no membership and no tenant context; platform
+  routes carry an explicit company id and are separately authorized and audited. Behind Hub, a
+  verified assertion may map to that same single membership; Hub never creates a second one.
+- Platform roles live in `PlatformRoleAssignment` and are separate from company roles; platform
+  administrators never receive a synthetic membership or a company row.
 - Account and membership lifecycle: invitation → active → suspended/removed; company status
-  active/suspended/archived. Removing a membership preserves training history; company
-  archival never deletes records.
+  active/suspended/archived. There is at most one membership row per account. Removal preserves
+  training history and is terminal for that account's tenant access; re-adding the same person
+  in the same company reuses and restores that row only before anonymization, while a move to a
+  different company is out of scope (D-043). A second membership is rejected at the database,
+  service and test layers.
 - Users are identified by UUID, never by email. Email is a unique, changeable login attribute;
   relations use the user/membership FK (`docs/domain-model.md`).
 
@@ -105,8 +112,8 @@ effective permission set, and the server rechecks every request. A hidden button
 control.
 
 ## 7. Data and information flows
-**Canonical schema: `docs/domain-model.md`.** Summary: Organization → Membership → Role/
-Permission assignments; Department tree; Course → Version (immutable once published) → Section
+**Canonical schema: `docs/domain-model.md`.** Summary: Organization → at most one Membership
+per User → Role/Permission assignments; Department tree; Course → Version (immutable once published) → Section
 → Lesson; MediaAsset; Assignment → Enrollment → LessonProgress → CompletionRecord; quiz tables
 (schema only); ReminderLog, NotificationLog; AuditEvent; optional Hub webhook receipts.
 
@@ -225,7 +232,7 @@ reports/CSV; 590 tests, CI gates G1–G9 green on `main`.
   without FK and comes from `ACADEMY_ORGANIZATION_ID`;
 - local sign-in is a development stub that accepts any password and a self-selected role;
 - roles and identity come from Hub claims; five coarse capabilities, department-only scopes;
-- no public website, no platform/company administration, no company switcher;
+- no public website and no platform/company administration;
 - Arabic catalogue only; no metrics, tracing or implemented alerting; no staging/CD;
 - Hub is enabled by default in settings and its routes are always mounted.
 

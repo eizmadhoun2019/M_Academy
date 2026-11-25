@@ -1,8 +1,13 @@
 # Academy wireframes
 
-Previous baseline (1.png / 2.jpeg) superseded by the PDF.
+**Status:** interim functional reference, 2026-11-25. The final visual package has **not** been
+delivered and no final design is claimed as approved (D-044).
 
-The source is the owner's `docs/ui/reference/masheed-academy-screens.pdf`. The [approved Masheed page renders](reference/pages/) are tracked. Pages 1–2 inform brand mood. Page 3 informs placement in Masheed Hub. Functional requirements come from CHARTER and ARCHITECTURE.
+Previous baseline (1.png / 2.jpeg) is superseded by the owner's
+`docs/ui/reference/masheed-academy-screens.pdf`; the [tracked page renders](reference/pages/) are
+interim. Pages 1–2 inform brand mood. Page 3 informs Hub placement. Functional requirements come
+from CHARTER and ARCHITECTURE. Mobile first and the visual-reference gate are in
+`screen-specification.md` §6–§7.
 
 ## Visual language
 
@@ -22,9 +27,9 @@ Values sampled from flat pixels in the Poppler renders. The color roles below re
 | Draft/neutral background | `#F1F5F9` | 5, 11, 22 | PDF sample |
 | Player | `#0B1117` | 21 | PDF sample |
 
-Rounded panels use a 12 px radius, a thin border, and a regular 4 px spacing scale. The dark theme derives from the sampled navy with lighter foregrounds. Noto Sans Arabic is hosted locally under the D-008 branding default. The archived color values were used only for the cross-check column.
+Rounded panels use a 12 px radius, a thin border, and a regular 4 px spacing scale. The dark theme derives from the sampled navy with lighter foregrounds. **Rubik** (Arabic + Latin, hosted locally) is the approved brand font (D-008/D-044). The sampled values are an interim token basis, not the final design system; the final package supplies the complete tokens. The archived color values are cross-checks only.
 
-## A–F reference wireframes (A is course management, not the personal dashboard)
+## A–F interim wireframes (A is course management, not the personal dashboard)
 
 Each row describes the reading order and panel placement. RTL reverses inline placement. On phones the sidebar uses a drawer and table rows read as labeled cards.
 
@@ -59,6 +64,26 @@ Scoped admins only see departments they can administer. The UI mirrors for Arabi
 English LTR and keyboard operation at the three widths. The current T-016 preview remains sample
 data only; production writes are defined by `docs/api.md` and enforced server-side.
 
+## Design-gate record (D-044)
+
+The final package is delivered per screen group, not assumed from the interim PDF. A group may be
+implemented only when this table records an owner approval date + package version, or an explicit
+owner waiver. A waiver does not claim pixel compliance; visual regression still runs where a
+reference exists.
+
+| Group | Interim basis | Final reference |
+|---|---|---|
+| P1–P5 public | token system + public layout | **not delivered — gate pending** |
+| X1–X6 auth | account pattern from PDF | **not delivered — gate pending** |
+| Shell + L1–L4/E | PDF card/player language | **not delivered — gate pending** |
+| A–D/F training management | PDF pages 5/11/16/17/21/22 | **interim only — final package pending** |
+| N1–N4/S1 company admin | PDF table/dialog patterns | **not delivered — gate pending** |
+| N5–N8/S2 platform admin | PDF table/dialog patterns | **not delivered — gate pending** |
+
+Required at approval: Screen Designs, Design Tokens, Typography, Colors, Spacing, Components,
+Responsive Layouts (320/390/768/1440), Interaction States, Accessibility Requirements and Visual
+Acceptance Criteria. Images alone are not an engineering specification.
+
 ## Model gaps
 
 | Visual item | Current schema or contract | Decision |
@@ -88,7 +113,8 @@ rename or replace** the PDF reference screens A–G; it adds public, auth, learn
 and platform screens.
 
 - **P1–P5 Public:** home, about, programmes, contact, privacy/terms on `/`, no session.
-- **X1–X7 Auth:** login, forgot/reset, verify, accept invitation, choose company, access denied.
+- **X1–X6 Auth:** login, forgot/reset, verify, accept invitation, access denied. There is no
+  company-selection screen.
 - **L1–L4 + E Learner:** dashboard, my courses, course details, achievements, player.
 - **N1–N4 + S1 Company administration:** members, roles & grants, departments, settings, audit.
 - **N5–N8 + S2 Platform administration:** overview, companies, platform users, platform settings,
@@ -102,20 +128,21 @@ Settings, Audit). A group is hidden when it has no visible child, every item is 
 and server checks remain mandatory. On phones the sidebar is an accessible drawer. The public
 header uses simple links and a Sign in button; there is no application sidebar.
 
-**Design source:** continue with the approved PDF's navy, gold, white cards, RTL/LTR patterns and
-responsive layouts. The new specification defines content, behavior and states; it does **not**
-claim new mockups are approved or built. Preview routes under `/academy/preview/` remain sample
-data and are extended by T-029 (public/auth/shell) and T-030 (administration).
+**Design source:** the interim PDF's navy, gold and white-card language plus the approved identity
+(Primary `#101820`, Gold `#E8AA23`, Rubik, official logo and geometric element). Every screen is
+designed Mobile 390 → Tablet 768 → Desktop 1440 and tested from 320 px. The new specification
+defines content, behavior and states; it does **not** claim new mockups are approved or built.
+Preview routes under `/academy/preview/` are sample data and are extended by T-029/T-030.
 
 ## Screen-by-screen wireframe coverage
 | Screen | Wireframe source | Status |
 |---|---|---|
-| A–F | PDF pages 5, 11, 16, 17, 21, 22 | approved reference |
+| A–F | PDF pages 5, 11, 16, 17, 21, 22 | interim reference; final package pending |
 | N2 (was G) | PDF page 5/17 patterns, above | specified |
 | L1–L4, E | PDF cards/player language | specified; no pixel mockup |
 | P1–P5 | token system, public layout | specified; no pixel mockup |
-| X1–X7 | existing account screen pattern | specified; X1/X7 implemented in T-013/T-014 |
-| N1, N3–N8, S1–S2 | PDF table/dialog patterns | specified; no pixel mockup |
+| X1–X6 | existing account screen pattern | specified; X1/X6 implemented in T-013/T-014; final reference pending |
+| N1, N3–N8, S1–S2 | PDF table/dialog patterns | specified; final reference pending |
 
 ## Model gaps
 

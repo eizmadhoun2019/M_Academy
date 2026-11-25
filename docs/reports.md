@@ -24,7 +24,7 @@ endpoint (§7). A query never aggregates two companies into one row.
 | **Last activity** | `MAX(LessonProgress.last_heartbeat_at)` for the enrollment. |
 | **Progress %** | Completed lessons ÷ lessons in the pinned version × 100, one decimal. Archived versions are counted as they were. |
 | **Filter window** | `from`/`to` apply to the date named by the endpoint (completion rows: `completed_at`; overdue rows: `due_at`; summary: the enrollment's `created_at`). Absent bounds mean all time. `from > to` → `400 invalid_range`. Dates are interpreted in the company time zone. |
-| **Company scope** | Every row belongs to the active company. A platform user must select a company or use the platform endpoint; there is no implicit “all companies merged” company report. |
+| **Company scope** | Every row belongs to the company derived from the single membership. A platform user passes an explicit company id to the platform endpoint (no membership is created); there is no implicit “all companies merged” company report. |
 
 ## 2. `GET /manage/reports/summary/`
 Query: `group_by=course|department` (default `course`), `course`, `department`, `from`, `to`.
@@ -94,7 +94,7 @@ Format rules:
   identifiers, no email), throttled at 5/hour per user and company.
 
 ## 6. Scope, performance and tests
-- `academy.report.view` with **COMPANY** scope sees the active company; **DEPARTMENT(S)** scope sees only
+- `academy.report.view` with **COMPANY** scope sees the derived company; **DEPARTMENT(S)** scope sees only
   enrollments whose course `owner_department_id` is in the granted set, plus courses with
   `owner_department_id IS NULL` (general courses). A manager never sees a department they cannot
   administer. Cross-company ids return 404/403 before any query runs.

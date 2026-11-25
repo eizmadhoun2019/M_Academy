@@ -29,7 +29,9 @@ destructive operator error on a shared host.
 - Password reset uses a single-use, hashed, 60-minute token; the response is identical whether or
   not the email exists; a successful reset revokes all other sessions.
 - Invitations: single-use hashed token, 7-day expiry, bound to email + company + roles; accepting
-  sets the password and verifies the email; re-inviting invalidates the previous token.
+  sets the password and verifies the email; re-inviting invalidates the previous token. An email
+  that already has a membership in any company is rejected (`already_member`); a platform account
+  needs no invitation or membership.
 - Login errors are generic (`INVALID_CREDENTIALS`); timing does not reveal account existence.
 - Throttling: 5 failures per email+IP per 15 min and 20 per IP per 15 min, exponential backoff
   and a temporary lock; counters in Redis; each failure and lock is audited with a truncated IP.
@@ -62,10 +64,12 @@ destructive operator error on a shared host.
   The storage host is configuration; templates emit no inline style/script.
 
 ## 4. Authorization and tenant isolation
-Canonical: `docs/access-control.md`. Non-negotiables: deny by default; server-side company
-context; route permission + service recheck + object scope + query filter + DB constraint;
-platform access is read-only and audited; no authority accepted from request bodies; hidden UI
-is not a control; permission changes and denials are audited (denials sampled).
+Canonical: `docs/access-control.md`. Non-negotiables: deny by default; company context derived from the caller's single membership
+(or an explicit authorized platform company id); `UNIQUE (user_id)` prevents a second membership;
+route permission + service recheck + object scope + query filter + DB constraint;
+platform access is read-only and audited; no authority accepted from request bodies and no
+company-selection/switching path exists; hidden UI is not a control; permission changes and
+denials are audited (denials sampled).
 
 ## 5. Input, output and uploads
 - All input validated by DRF serializers/forms; enums and ids validated against the active

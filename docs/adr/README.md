@@ -58,9 +58,9 @@ Owning documents.
 | ADR-014 | Dual-mode H1 access, `grants_only`, local suspension | Superseded by ADR-023/024/025 |
 | ADR numbers 15–22 | Reserved legacy numbers — never reuse | Retired |
 | [ADR-023](ADR-023-standalone-local-identity.md) | Standalone-first platform with local accounts and minimal stored PII | Accepted (2026-11-25) |
-| [ADR-024](ADR-024-public-origin-and-path-layout.md) | Public site on `/`, application under `/academy/`, Academy-owned origin | Accepted (2026-11-25) |
-| [ADR-025](ADR-025-dynamic-scoped-rbac.md) | Dynamic scoped RBAC replacing Hub roles and coarse capabilities | Accepted (2026-11-25) |
-| [ADR-026](ADR-026-organizations-memberships-departments.md) | First-class organizations, memberships, departments with composite FKs | Accepted (2026-11-25) |
+| [ADR-024](ADR-024-public-origin-and-path-layout.md) | Public site on `/`, application under `/academy/`, Academy-owned origin | Accepted (2026-11-25; direct post-login routing, D-043) |
+| [ADR-025](ADR-025-dynamic-scoped-rbac.md) | Dynamic scoped RBAC replacing Hub roles and coarse capabilities | Accepted (2026-11-25; single-membership context, D-043) |
+| [ADR-026](ADR-026-organizations-memberships-departments.md) | First-class organizations, memberships, departments with composite FKs | Accepted (2026-11-25); amended by D-043 |
 | [ADR-027](ADR-027-row-level-security-deferred.md) | PostgreSQL RLS assessed and deferred | Accepted (2026-11-25) |
 | [ADR-028](ADR-028-transactional-outbox-deferred.md) | Transactional outbox assessed and deferred | Accepted (2026-11-25) |
 

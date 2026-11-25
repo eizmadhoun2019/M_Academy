@@ -55,7 +55,7 @@ Example decoded claims for GET /academy/api/v1/academy/?view=compact:
 }
 ```
 
-All fields above are required. Use integer Unix seconds for iat and exp, and generate a fresh cryptographically random nonce for each forwarded request, including retries. Encode 24 random bytes as unpadded base64url for the nonce. target is the decoded internal URL path after removing the prefix, followed by ? and the original query string when present. For example, preserve query order and encoding exactly. Sign the actual forwarded method and target. Hub must derive the organization, user status and claims from trusted sources. Academy maps the asserted Hub organization and user reference to an existing local `Organization` and `Membership`; an unmapped organization or user is rejected. Hub claims never create companies, accounts or permissions implicitly.
+All fields above are required. Use integer Unix seconds for iat and exp, and generate a fresh cryptographically random nonce for each forwarded request, including retries. Encode 24 random bytes as unpadded base64url for the nonce. target is the decoded internal URL path after removing the prefix, followed by ? and the original query string when present. For example, preserve query order and encoding exactly. Sign the actual forwarded method and target. Hub must derive the organization, user status and claims from trusted sources. Academy maps the asserted Hub organization and user reference to an existing local `Organization` and its single `Membership`; an unmapped organization or user is rejected. A Hub assertion that would place an already-affiliated user in a second company is rejected (`already_member`). Hub claims never create companies, accounts, memberships or permissions implicitly.
 
 Use a stable opaque user_ref up to 64 characters, a display name up to 200 characters, language ar or en, and a current membership status. Supply exactly one of platform_admin, department_manager, or employee. Academy maps the signed role to its own configured defaults. T-016 adds Academy-local grants to that calculation, and the token contract remains the same. department_refs contains up to 50 opaque strings (up to 64 characters each), with the primary department first. When the identity navigation source is selected, optionally include navigation as an array of up to 30 objects, for example [{"label":"Home","url":"/"}]. The labels are plain text and links are absolute paths on the Hub origin.
 
@@ -180,7 +180,8 @@ Reactivation requires, in order:
    and proxy trust (D-004/D-010).
 3. A confirmed Hub contract version and test endpoint from the Hub owner.
 4. Mapping rules: Hub organization → local `Organization`; Hub user reference → local `User` +
-   `Membership`; Hub roles **never** become Academy permissions (D-034).
+   its **single** `Membership`; a second company is rejected (D-043); Hub roles **never** become
+   Academy permissions (D-034).
 5. The full contract suite plus end-to-end sign-in, webhook, mail-off and outage tests on
    staging.
 6. `ACADEMY_HUB_ENABLED=true` set only for that environment, with monitoring and an audit entry.

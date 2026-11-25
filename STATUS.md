@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-025 documentation consolidation)
+**Last updated:** 2026-11-25 (T-025 H1.5 architecture amendment)
 **Updated by:** AI agent (T-025), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — documentation/governance consolidation; no application code changed in T-025
+**Overall status:** Active — T-025 documented the H1.5 correction (one membership, Mobile First, visual gate); no application code changed
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -17,34 +17,39 @@ T-001's bucket evidence and T-013's English/accessibility completion. The code i
 **single-company** (fixed `ACADEMY_ORGANIZATION_ID`, opaque `user_ref`/`department_ref`) and its
 production identity path is Hub-oriented; that is the gap T-026…T-033 close.
 
-The canonical target is now charter 2.4: standalone-first, multi-company, local identity and
-dynamic scoped RBAC, with the Hub integration dormant and optional. T-025 rewrote the charter,
+The canonical target is now charter 2.5: standalone-first, multi-company, **one company membership
+per account**, local identity and dynamic scoped RBAC, with the Hub integration dormant and
+optional. Mobile First and the binding visual-reference gate are recorded in D-044. T-025 rewrote the charter,
 architecture, rules, decisions, access control, security, domain model, API, configuration,
 plan, traceability, UI, notifications, reports, jobs, Hub contract, operations, performance,
-migration, README, skills and ADRs to make «كمل» sufficient. **No code, template, migration, API
-contract, Hub activation, infrastructure or dependency changed in T-025.** Implementation starts
-at T-026 after the owner merges this branch.
+migration, README, skills and ADRs to make «كمل» sufficient. The architecture correction removed
+the company chooser/switcher and multi-membership paths, added `UNIQUE (user_id)`, platform-only
+administration and the capability-preservation matrix, and fixed the evidence policy. **No code,
+template, migration, API contract, Hub activation, infrastructure or dependency changed in T-025.**
+Implementation starts at T-026 after the owner merges this branch.
 
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-025 | Documentation and governance consolidation | `[~]` — committed `96f78d2`, awaiting review | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation` |
+| T-025 | Documentation and governance consolidation | `[~]` — H1.5 amendment on branch, awaiting review and CI | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation`; content SHA/CI in the follow-up evidence entry |
 | T-026 | Tenancy and account foundation | `[ ]` next | AI agent after T-025 merge | T-025 | `docs/plan.md` §4 T-026 |
 | T-033 | Hub quarantine | `[ ]` parallel candidate | AI agent | T-026 | `docs/plan.md` §4 T-033 |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
 | T-023 | Learner + management UI (old scope) | `[–]` superseded by **T-031** | — | — | historical only |
 | T-024 | Hardening + E2E + ops (old scope) | `[–]` superseded by **T-034** | — | — | historical only |
-| GATE-1 | H1.5 gate | `[ ]` | Project owner | T-025…T-034 | `docs/plan.md` §5 |
+| GATE-1 | H1.5 gate | `[ ]` | Project owner | T-025…T-034 | `docs/plan.md` §5; capability matrix verified |
 
 Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-015 is completed code
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
-- 2026-11-25 — T-025 documentation consolidation: one plan (T-025…T-034), charter 2.4,
-  standalone/multi-company architecture, local identity and RBAC specifications, Hub marked
-  dormant, per-company jobs/mail/reports/operations, migration and ADR-023…028; no code changed.
-  Commit `96f78d2`; `check_docs` G9 passed; CI pending on push.
+- 2026-11-25 — T-025 H1.5 amendment: one company membership per account with `UNIQUE (user_id)`,
+  no company chooser/switcher/selection APIs or screens, platform administration without a
+  membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
+  with 320+ testing and the binding visual-reference gate. Prior package commits `96f78d2`,
+  `eb19fd1`, `15e0e53`; `check_docs` G9 passed (38 files); CI for the amended head is not yet
+  verified, so T-025 stays `[~]` and is not merge-ready.
 - 2026-11-25 — T-022 reports: one selector module defines every number, department scope includes
   general courses and refuses a cross-department read, streamed BOM CSV with formula-safe cells
   and an audited export. See `LOG.md`.
@@ -68,6 +73,7 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 | D-009 KPI values | Blocks success measurement, not the build | Project owner | Set before the pilot | T-034 |
 | T-001 bucket evidence | Holds T-001 `[~]` | Tech authority | Re-run the bucket check with the resolved MinIO image | T-034 |
 | Legacy identity mapping file (`legacy_user_ref,email,display_name`) | T-026 cannot activate real accounts without it | Project owner/HR | Provide a verified file before T-027 | T-026/T-027 |
+| CI for the amended T-025 head | Gate/merge evidence is incomplete until a run is observed | AI agent / owner | Check GitHub Actions after push; if unavailable, record it and keep T-025 `[~]` | T-025 |
 | Two stacks on one host | Port/volume/cookie collision or legacy damage | Tech authority | Isolation rules enforced; only `m-academy-*` commands | ongoing |
 | Public repository (D-023) | Leaking internal material | Project owner | No secrets in tracked files; assume every commit is public | ongoing |
 | Hub contract (D-004/D-010) | No H1.5 impact; Hub dormant | Project owner + Hub owner | Revisit only at a reactivation decision | H2 |
@@ -75,19 +81,21 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 ## Decisions
 Single register: [`docs/decisions.md`](docs/decisions.md). This file does not duplicate values.
 - **Open:** D-001, D-005, D-009, D-010 (deferred H2).
-- **Confirmed (2026-11-25):** D-031…D-042 (standalone/Hub dormant, tenancy, local identity, RBAC,
+- **Confirmed (2026-11-25):** D-031…D-044 (standalone/Hub dormant, tenancy, local identity, RBAC,
   public origin, mail, PII, settings, observability, environments, UUID strategy, outbox deferral,
-  performance profile). Older confirmed decisions remain unless marked superseded.
+  performance profile, one membership per account, Mobile First and visual reference). Older
+  confirmed decisions remain unless marked superseded.
 - **Resolved:** D-025 (local MinIO image).
 - **Superseded:** D-002→D-038, D-013/D-026→D-032, D-027→D-034; ADR-002/010/011/012/014 replaced by
   ADR-023…026.
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-T-025 is ready for owner review and merge. After merge, start **T-026 CP1** (tenancy schema
-expand) exactly as `docs/plan.md` §4 defines it; T-033 may run in parallel once T-026 CP1 lands.
-Do not merge to `main` without the owner's approval. Say «كمل» to authorize the next checkpoint;
-the agent does one checkpoint, commits, pushes, reports evidence and stops.
+T-025 is ready for **owner review**, not yet merge-ready: CI on the final branch head must be
+observed, or recorded as unavailable, and the owner must approve. After merge, start **T-026 CP1**
+(tenancy schema expand) exactly as `docs/plan.md` §4 defines it; T-033 may run in parallel once
+T-026 CP1 lands. Do not merge to `main` without the owner's approval. Say «كمل» to authorize the
+next checkpoint; the agent does one checkpoint, commits, pushes, reports evidence and stops.
 
 ## Update rules
 - Update when project state changes. Do not turn this file into a diary (`LOG.md` owns history).
