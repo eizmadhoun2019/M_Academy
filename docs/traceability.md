@@ -117,6 +117,7 @@ every row against the new tenancy/RBAC model before GATE-1.
 | Additional grants for a specific user | REQ-13, T-016 | `PermissionGrant` on the single membership with reason/expiry | T-028 | Grant/revoke matrix |
 | Audit trail and attribution | REQ-04, T-012 | `actor_user_id` + `actor_membership_id`; platform events nullable | T-026, T-028 | Append-only and audit assertions |
 | Account, session, MFA and invitation lifecycle | REQ-22, T-014 | Local auth; one membership; invitation rejects second company | T-027 | Auth matrix + second-membership test |
+| Company administration: users, invitations, departments, roles and settings | REQ-21, REQ-25, CHARTER G5 | Company Admin manages one company through scoped permissions; platform targets it by explicit id | T-026, T-027, T-028, T-030 | Administration scope matrix and isolation tests |
 | Platform administration without a company row | REQ-25 | `PlatformRoleAssignment`; explicit company id; audited read-only access | T-028, T-030 | Platform permission/access tests |
 | Public site and permission-aware navigation | REQ-24, T-013 | Public P1–P5; direct dashboard routing; dynamic sidebar | T-029 | Route/nav matrix |
 
