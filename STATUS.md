@@ -74,7 +74,7 @@ and verified here.
 | T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[~]` in progress/review (AI agent, 2026-11-24; `static/css/academy.css` tokens, `templates/academy/`, preview at `/academy/preview/{ar,en}/`, `/academy` error pages, local Noto Sans Arabic with OFL licence, gettext catalogue compiled by `scripts/compile_messages.py`; 331 tests, ruff/format/mypy and G7/G9 clean; no migration; CI run `45382616992` green on `main`) | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
 | T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[x]` done on main (commit `cb1edda`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45568418999` on `main` green at that commit; `AccessSuspension` migration `0005`, `academy.access` middleware, X1 sign-in and X2 access-denied pages, fingerprint-keyed capability cache, documented DRF scopes; 360 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004 |
 | T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[x]` done on main (commit `f4eea00`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45573329413` on `main` green at that commit; 399 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-014 |
-| T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[~]` in progress/evidence (AI agent, 2026-11-25; `PermissionGrant` migration `0007`, grant/revoke services with audit rows, middleware reads grants into effective access, `manage/grants/` list/create/revoke with idempotency, `provision_admin` command, last-admin guard; 22 new tests (423 total), ruff/format/mypy and G7/G9 clean locally; CI run `45576806853` green on the branch at `1cc1467`) | Tech authority | T-009 | REQ-13 matrix tests in DRF + web, both modes; H1 `grants_only`, suspended grants ineffective but retained |
+| T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[x]` done on main (commit `17fe415`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45577563757` on `main` green at that commit; `PermissionGrant` migration `0007`, grant/revoke services with audit, `manage/grants/` API with idempotency, `provision_admin`, last-admin guard; 423 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-009 |
 | T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[ ]` | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
 | T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[ ]` | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
 | T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[ ]` | Tech authority | T-017 | REQ-08, sequential-lock matrix |
@@ -89,6 +89,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-25 — T-016 permission grants: `PermissionGrant` with its scope checks, audited
+  grant/revoke services, last-admin protection, the `manage/grants/` API and a request path
+  that now unions live grants into effective capability. See LOG.md.
 - 2026-11-25 — T-015 Hub HTTP integration: verified signed identity in `hub` mode, signed
   membership webhooks with durable receipts, HTTP directory and delivery transports with
   retries, circuit and cache invalidation, and a loopback Hub fake the contract suites run
@@ -179,8 +182,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-016 (permission grants) is implemented on its branch and waits for CI evidence and owner
-review; **T-017** (content services and API) follows it.
+T-016 (permission grants) is complete on `main` and waits for owner review; **T-017** (content
+services and API) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
