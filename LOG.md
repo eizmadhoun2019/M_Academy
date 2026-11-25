@@ -21,6 +21,40 @@
 
 ## Entries
 
+### [2026-11-25] — T-015 Hub HTTP integration
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** Academy now accepts the Hub proxy's signed identity in `hub` mode: the configured
+  verifier proves the HMAC signature, and the request path enforces issuer, audience, lifetime,
+  clock skew, the signed method and target, the 24-byte single-use nonce and this deployment's
+  organization UUID. A rejected assertion is treated exactly like a missing one, so the API
+  answers 401 and a valid inactive member answers 403 `account_inactive`. Membership webhooks
+  arrive at `/internal/hub/webhooks/` with the separate webhook key ring and audience
+  `masheed-academy:webhooks`, a five-minute window and `body_sha256` binding; a durable
+  `HubWebhookEvent` receipt (migration `0006`) makes a repeat with a fresh nonce a duplicate
+  and a reused event id with different bytes a conflict, and the receipt commits with the
+  directory-cache invalidation and the deactivation hook. The Hub service transports are a
+  `host_hub` package: an stdlib HTTP client with the documented 0.5 s connect/1 s read
+  timeouts, one retry with backoff, no redirects and a shared 3-failure/30-second circuit, a
+  directory adapter that caches each tenant lookup for 60 s under an invalidation generation,
+  and a notifier that carries `Idempotency-Key` on every write. A loopback fake speaks the
+  whole §3 API over real HTTP and signs identity and webhook assertions for tests.
+- **Impact:** The `ACADEMY_HUB_*` settings are documented in `docs/configuration.md` §1 and
+  `.env.example`; the production profile refuses to start without the Hub origin, service URL,
+  token and both key rings, and rejects keys shorter than 32 bytes. `docs/domain-model.md`
+  gains §2.16 for the receipt table (the previous §2.16 becomes §2.17).
+- **Evidence:** Branch `task/T-015-hub-http`; 399 tests including `tests/test_hub_identity.py`
+  (valid, tampered, expired, wrong audience, wrong tenant, misrouted, replayed, inactive),
+  `tests/test_hub_webhooks.py` (duplicate, conflict, replay, bad signature, wrong tenant,
+  malformed body, 405, 413, invalidation, deactivation hook) and
+  `tests/contracts/test_hub_transports.py` (directory and notification contract over the fake,
+  caching and invalidation, idempotency, unreachable Hub); ruff, format, mypy,
+  `makemigrations --check`, OpenAPI validation and G7/G9 green locally; CI run recorded after
+  the push.
+- **Approved by:** Project owner («كمل» instruction of 2026-11-25).
+- **References:** T-015, D-004, D-010, `docs/hub-contract.md` §1–§5.
+
 ### [2026-11-25] — T-014 sessions and auth lifecycle
 
 - **Type:** Milestone

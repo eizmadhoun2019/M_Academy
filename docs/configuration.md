@@ -36,6 +36,22 @@ never committed (`docs/operations/environments.md` §1).
 | `ACADEMY_THROTTLES_ENABLED` | `true` (test profile: `false`) | Turns the documented rate counters on or off; disabling is a test-only setting, never a production choice |
 | `ACADEMY_LOG_LEVEL` | `INFO` | JSON to stdout; never logs tokens, cookies, media URLs or emails |
 
+Hub integration values (semantics and rotation in `docs/hub-contract.md` §5):
+
+| Variable | Default | Notes |
+|---|---|---|
+| `ACADEMY_HUB_ORIGIN`, `ACADEMY_HUB_UPSTREAM_HOST`, `ACADEMY_TRUSTED_PROXY_NETWORKS` | empty | Exact public origin, private upstream host, trusted ingress CIDRs |
+| `ACADEMY_PROXY_PATH_PREFIX`, `ACADEMY_STORAGE_CORS_ORIGIN` | `/academy`, empty | Public mount prefix and bucket CORS origin |
+| `ACADEMY_HUB_API_BASE_URL`, `ACADEMY_HUB_API_TOKEN`, `ACADEMY_HUB_API_PATHS` | empty, empty, `{}` | Hub service URL, outbound bearer, optional path overrides |
+| `ACADEMY_HUB_IDENTITY_KEYS`, `ACADEMY_HUB_WEBHOOK_KEYS` | `{}` | Separate JSON `kid` → secret maps; start-up refuses keys under 32 bytes in production |
+| `ACADEMY_HUB_IDENTITY_VERIFIER` | empty | Dotted `module:callable` replacement verifier; the identity adapter is used when empty |
+| `ACADEMY_HUB_IDENTITY_HEADER`, `ACADEMY_HUB_WEBHOOK_HEADER`, `ACADEMY_HUB_WEBHOOK_PATH` | `X-Masheed-Identity`, `X-Masheed-Webhook`, `/internal/hub/webhooks/` | Must match the proxy and sender |
+| `ACADEMY_HUB_ISSUER`, `ACADEMY_HUB_AUDIENCE` | `masheed-hub`, `masheed-academy` | Webhook audience adds `:webhooks` |
+| `ACADEMY_HUB_ASSERTION_TTL`, `ACADEMY_HUB_WEBHOOK_TTL`, `ACADEMY_HUB_CLOCK_SKEW` | `60`, `300`, `5` | Seconds; preserved across key rotation |
+| `ACADEMY_HUB_CONNECT_TIMEOUT`, `ACADEMY_HUB_READ_TIMEOUT`, `ACADEMY_HUB_API_RETRIES`, `ACADEMY_HUB_RETRY_BACKOFF` | `0.5`, `1`, `1`, `0.1` | Transport behaviour of §3 |
+| `ACADEMY_HUB_CIRCUIT_FAILURES`, `ACADEMY_HUB_CIRCUIT_SECONDS`, `ACADEMY_HUB_DIRECTORY_TTL` | `3`, `30`, `60` | Shared circuit and tenant directory cache |
+| `ACADEMY_HUB_NAVIGATION_SOURCE`, `ACADEMY_HUB_NAVIGATION` | `settings`, `[]` | `settings` or `identity`, plus the settings-mode menu |
+
 Proxy/TLS, CSRF-trusted origins, path prefix and storage CORS origin: `docs/hub-contract.md` §7.
 
 ## 2. Data stores

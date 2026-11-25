@@ -119,6 +119,32 @@ class NotificationLog(TenantModel):
         return f"{self.kind} → {self.recipient_ref} ({self.status})"
 
 
+class HubWebhookEvent(TenantModel):
+    """One accepted Hub webhook delivery, keyed by its event id (§4 idempotency).
+
+    A repeated delivery with the same body is answered from this row; reusing the event id for
+    a different body is a conflict, so the receipt is the durable half of the contract that the
+    nonce cache cannot provide after a restart.
+    """
+
+    event_id = models.UUIDField()
+    event_type = models.CharField(max_length=32)
+    user_ref = models.CharField(max_length=64)
+    body_sha256 = models.CharField(max_length=64)
+    received_at = models.DateTimeField(default=timezone.now)
+    objects: TenantManager[HubWebhookEvent] = TenantManager()  # type: ignore[assignment]
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization_id", "event_id"], name="hub_webhook_event_unique"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.event_type} {self.event_id}"
+
+
 class AuditEvent(TenantModel):
     """Append-only record of one consequential action (§2.13, ADR-009)."""
 

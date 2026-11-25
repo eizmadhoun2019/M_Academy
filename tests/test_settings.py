@@ -247,7 +247,47 @@ class TestProfiles:
                 ACADEMY_ALLOWED_HOSTS="academy.example.com",
                 ACADEMY_CSRF_TRUSTED_ORIGINS="https://hub.example.com",
                 ACADEMY_DB_PASSWORD="ci",
+                ACADEMY_HUB_ORIGIN="https://hub.example.com",
+                ACADEMY_HUB_API_BASE_URL="https://hub-api.example.com",
+                ACADEMY_HUB_API_TOKEN="service-token",
+                ACADEMY_HUB_IDENTITY_KEYS='{"k1": "identity-secret-of-at-least-32-bytes"}',
+                ACADEMY_HUB_WEBHOOK_KEYS='{"w1": "webhook-secret-of-at-least-32-bytes"}',
             ),
         )
 
         assert result.returncode == 0, result.stderr
+
+    def test_production_refuses_to_start_without_hub_credentials(self) -> None:
+        result = import_profile(
+            "prod",
+            clean_env(
+                DJANGO_SETTINGS_MODULE="config.settings.prod",
+                DJANGO_SECRET_KEY="k" * 60,
+                ACADEMY_ALLOWED_HOSTS="academy.example.com",
+                ACADEMY_CSRF_TRUSTED_ORIGINS="https://hub.example.com",
+                ACADEMY_DB_PASSWORD="ci",
+            ),
+        )
+
+        assert result.returncode != 0
+        assert "ACADEMY_HUB_ORIGIN" in result.stderr
+
+    def test_production_refuses_a_short_hub_key(self) -> None:
+        result = import_profile(
+            "prod",
+            clean_env(
+                DJANGO_SETTINGS_MODULE="config.settings.prod",
+                DJANGO_SECRET_KEY="k" * 60,
+                ACADEMY_ALLOWED_HOSTS="academy.example.com",
+                ACADEMY_CSRF_TRUSTED_ORIGINS="https://hub.example.com",
+                ACADEMY_DB_PASSWORD="ci",
+                ACADEMY_HUB_ORIGIN="https://hub.example.com",
+                ACADEMY_HUB_API_BASE_URL="https://hub-api.example.com",
+                ACADEMY_HUB_API_TOKEN="service-token",
+                ACADEMY_HUB_IDENTITY_KEYS='{"k1": "short"}',
+                ACADEMY_HUB_WEBHOOK_KEYS='{"w1": "webhook-secret-of-at-least-32-bytes"}',
+            ),
+        )
+
+        assert result.returncode != 0
+        assert "ACADEMY_HUB_IDENTITY_KEYS" in result.stderr

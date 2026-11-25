@@ -6,7 +6,12 @@ from academy.models.access import AccessSuspension
 from academy.models.base import TenantManager, TenantModel, TenantQuerySet
 from academy.models.catalog import Course, CourseVersion, Lesson, Section
 from academy.models.media import MediaAsset
-from academy.models.operations import AuditEvent, NotificationLog, ReminderLog
+from academy.models.operations import (
+    AuditEvent,
+    HubWebhookEvent,
+    NotificationLog,
+    ReminderLog,
+)
 from academy.models.progress import Assignment, CompletionRecord, Enrollment, LessonProgress
 from academy.models.quiz import Quiz, QuizAttempt, QuizAttemptAnswer, QuizChoice, QuizQuestion
 
@@ -18,6 +23,7 @@ __all__ = [
     "Course",
     "CourseVersion",
     "Enrollment",
+    "HubWebhookEvent",
     "Lesson",
     "LessonProgress",
     "MediaAsset",

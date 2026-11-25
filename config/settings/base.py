@@ -6,6 +6,7 @@ there, it does not belong in this file.
 
 from __future__ import annotations
 
+import json
 import mimetypes
 import os
 from pathlib import Path
@@ -37,6 +38,18 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def env_json(name: str, default: str = "{}") -> dict[str, str]:
+    """A JSON object from the environment; an empty value is an empty mapping."""
+    raw = os.environ.get(name, "").strip() or default
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise ImproperlyConfigured(f"{name} must be a JSON object ({error})") from error
+    if not isinstance(value, dict):
+        raise ImproperlyConfigured(f"{name} must be a JSON object")
+    return {str(key): str(secret) for key, secret in value.items()}
+
+
 # --- Identity and core -------------------------------------------------------
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env_bool("ACADEMY_DEBUG", False)
@@ -65,6 +78,8 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     # After sessions and before common: Django's required order for locale selection.
     "django.middleware.locale.LocaleMiddleware",
+    # In hub mode the proxy's signed assertion supplies the identity (T-015).
+    "academy.hub.identity.HubIdentityMiddleware",
     # Resolves the caller once for the API and the pages (T-014); needs the session above.
     "academy.access.middleware.AcademyAccessMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -182,6 +197,44 @@ THROTTLE_RATES = {
     "export": "5/hour",
     "webhook": "600/min",
 }
+
+# --- Hub integration (docs/hub-contract.md §5) -------------------------------
+ACADEMY_HUB_ORIGIN = env("ACADEMY_HUB_ORIGIN")
+ACADEMY_HUB_UPSTREAM_HOST = env("ACADEMY_HUB_UPSTREAM_HOST")
+ACADEMY_TRUSTED_PROXY_NETWORKS = env_list("ACADEMY_TRUSTED_PROXY_NETWORKS")
+ACADEMY_PROXY_PATH_PREFIX = env("ACADEMY_PROXY_PATH_PREFIX", "/academy")
+ACADEMY_STORAGE_CORS_ORIGIN = env("ACADEMY_STORAGE_CORS_ORIGIN")
+ACADEMY_HUB_API_BASE_URL = env("ACADEMY_HUB_API_BASE_URL")
+ACADEMY_HUB_API_TOKEN = env("ACADEMY_HUB_API_TOKEN")
+try:
+    ACADEMY_HUB_API_PATHS: dict[str, str] = json.loads(env("ACADEMY_HUB_API_PATHS", "{}") or "{}")
+except json.JSONDecodeError as error:
+    raise ImproperlyConfigured(f"ACADEMY_HUB_API_PATHS must be a JSON object ({error})") from error
+ACADEMY_HUB_IDENTITY_KEYS = env_json("ACADEMY_HUB_IDENTITY_KEYS")
+ACADEMY_HUB_WEBHOOK_KEYS = env_json("ACADEMY_HUB_WEBHOOK_KEYS")
+ACADEMY_HUB_IDENTITY_VERIFIER = env("ACADEMY_HUB_IDENTITY_VERIFIER")
+ACADEMY_HUB_IDENTITY_HEADER = env("ACADEMY_HUB_IDENTITY_HEADER", "X-Masheed-Identity")
+ACADEMY_HUB_WEBHOOK_HEADER = env("ACADEMY_HUB_WEBHOOK_HEADER", "X-Masheed-Webhook")
+ACADEMY_HUB_WEBHOOK_PATH = env("ACADEMY_HUB_WEBHOOK_PATH", "/internal/hub/webhooks/")
+ACADEMY_HUB_ISSUER = env("ACADEMY_HUB_ISSUER", "masheed-hub")
+ACADEMY_HUB_AUDIENCE = env("ACADEMY_HUB_AUDIENCE", "masheed-academy")
+ACADEMY_HUB_ASSERTION_TTL = env_int("ACADEMY_HUB_ASSERTION_TTL", 60)
+ACADEMY_HUB_WEBHOOK_TTL = env_int("ACADEMY_HUB_WEBHOOK_TTL", 300)
+ACADEMY_HUB_CLOCK_SKEW = env_int("ACADEMY_HUB_CLOCK_SKEW", 5)
+ACADEMY_HUB_CONNECT_TIMEOUT = float(env("ACADEMY_HUB_CONNECT_TIMEOUT", "0.5"))
+ACADEMY_HUB_READ_TIMEOUT = float(env("ACADEMY_HUB_READ_TIMEOUT", "1"))
+ACADEMY_HUB_API_RETRIES = env_int("ACADEMY_HUB_API_RETRIES", 1)
+ACADEMY_HUB_RETRY_BACKOFF = float(env("ACADEMY_HUB_RETRY_BACKOFF", "0.1"))
+ACADEMY_HUB_CIRCUIT_FAILURES = env_int("ACADEMY_HUB_CIRCUIT_FAILURES", 3)
+ACADEMY_HUB_CIRCUIT_SECONDS = env_int("ACADEMY_HUB_CIRCUIT_SECONDS", 30)
+ACADEMY_HUB_DIRECTORY_TTL = env_int("ACADEMY_HUB_DIRECTORY_TTL", 60)
+ACADEMY_HUB_NAVIGATION_SOURCE = env("ACADEMY_HUB_NAVIGATION_SOURCE", "settings")
+try:
+    ACADEMY_HUB_NAVIGATION: list[dict[str, str]] = json.loads(
+        env("ACADEMY_HUB_NAVIGATION", "[]") or "[]"
+    )
+except json.JSONDecodeError as error:
+    raise ImproperlyConfigured(f"ACADEMY_HUB_NAVIGATION must be a JSON array ({error})") from error
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

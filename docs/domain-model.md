@@ -311,7 +311,24 @@ Enforcement is in the authorization layer: an active row yields no effective cap
 next request is denied with `403 access_suspended`, and the learner sees screen X2. No local
 membership row and no session store are added.
 
-### 2.16 Deliberately absent
+### 2.16 Hub webhook receipts
+`academy_hubwebhookevent` — the durable half of the webhook idempotency in
+`docs/hub-contract.md` §4. A delivery is accepted once per event id; a repeat with identical
+bytes is answered as a duplicate, and the same id with different bytes is a conflict.
+
+| Field | Type | Null | Default | Constraints |
+|---|---|---|---|---|
+| `event_id` | uuid | no | — | `UNIQUE (organization_id, event_id)` |
+| `event_type` | varchar(32) | no | — | `member_changed` or `member_deactivated` |
+| `user_ref` | varchar(64) | no | — | | 
+| `body_sha256` | char(64) | no | — | Lowercase hex of the exact request body |
+| `received_at` | timestamptz | no | `timezone.now()` | |
+
+The row is written in the same transaction as the event's effects (directory cache
+invalidation and the deactivation hook), so a crash between them cannot acknowledge an event
+whose effects were rolled back.
+
+### 2.17 Deliberately absent
 | Not stored | Why |
 |---|---|
 | Per-heartbeat rows | Volume (14 req/s → 1.2 M rows/day) and privacy; merged ranges suffice (ADR-013) |

@@ -8,6 +8,7 @@ from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView
 from rest_framework.permissions import AllowAny
 
+from academy.hub.webhooks import hub_webhook
 from config.dev_static import serve as serve_dev_static
 from config.health import healthz
 
@@ -15,6 +16,8 @@ urlpatterns = [
     path("healthz", healthz, name="healthz"),
     # The language switch posts here (django.conf.urls.i18n) and redirects back.
     path("i18n/", include("django.conf.urls.i18n")),
+    # Signed Hub webhooks; never exposed through the public proxy (hub-contract §4).
+    path("internal/hub/webhooks/", hub_webhook, name="hub-webhook"),
     path("academy/", include("academy.access.urls")),
     path("academy/", include("academy.ui.urls")),
     path("api/v1/academy/", include("academy.api.urls")),

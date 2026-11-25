@@ -21,6 +21,7 @@ from academy.models import (
     Course,
     CourseVersion,
     Enrollment,
+    HubWebhookEvent,
     Lesson,
     LessonProgress,
     MediaAsset,
@@ -34,6 +35,18 @@ from academy.models import (
     Section,
     TenantModel,
 )
+
+
+def make_webhook_event(organization_id: UUID, **overrides: Any) -> HubWebhookEvent:
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "event_id": uuid.uuid4(),
+        "event_type": "member_changed",
+        "user_ref": "u-42",
+        "body_sha256": "0" * 64,
+    }
+    values.update(overrides)
+    return HubWebhookEvent.objects.create(**values)
 
 
 def make_suspension(organization_id: UUID, **overrides: Any) -> AccessSuspension:
@@ -318,6 +331,7 @@ FACTORIES: dict[type[TenantModel], Callable[[UUID], TenantModel]] = {
     NotificationLog: make_notification,
     AuditEvent: make_audit,
     AccessSuspension: make_suspension,
+    HubWebhookEvent: make_webhook_event,
 }
 
 
