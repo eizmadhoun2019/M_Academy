@@ -41,8 +41,8 @@
 - **Evidence:** 22 new tests in `tests/test_grants.py` (service matrix, both modes, last admin,
   expiry, suspension retention, API list/create/revoke, idempotency, tenant isolation,
   provision command), plus the tenant-isolation suite over the new table; ruff, format, mypy,
-  `makemigrations --check`, OpenAPI validation and G7/G9 green locally; CI run recorded after
-  the push.
+  `makemigrations --check`, OpenAPI validation and G7/G9 green locally; CI run `45576806853`
+  green on `1cc1467`.
 - **Approved by:** Project owner («كمل» instruction of 2026-11-25).
 - **References:** T-016, D-027, D-028, `docs/domain-model.md` §2.14, `docs/api.md` §2/§7.
 
