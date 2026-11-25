@@ -21,6 +21,39 @@
 
 ## Entries
 
+### [2026-11-25] — T-035 official UI/UX reference adopted; legacy design material archived
+
+- **Type:** Change
+- **Status:** Implemented (CI evidence recorded in the following evidence commit)
+- **Summary:** The owner delivered `Masheed-Academy-Official-UI-UX-v1.0` as the official visual.
+  The archive was verified intact: 24 files, 14 reference boards, every SHA-256 and pixel dimension
+  matching `REFERENCE_INDEX.csv`. Its text specifications were merged into the owning documents
+  instead of duplicating the package: `docs/ui/design-system.md` (identity, master shell,
+  components, responsive rules, visual acceptance V01–V11), `docs/ui/design-tokens.json` (canonical
+  values), `docs/ui/design-reference.md` (provenance, fingerprints, archive, gaps),
+  `docs/ui/wireframes.md` (screen → board → task → gate) and an updated
+  `docs/ui/screen-specification.md`. D-045 records the adoption and amends D-044. The superseded
+  `Academy-UX-Handoff-v1.0.zip`, `Masheed-Academy-UX-Batch-1-Review.zip`, the interim
+  `masheed-academy-screens.pdf` with its page renders, and the local `.docs-package-backup/` were
+  removed from the active tree and preserved in `../_design-archive/` outside the repository. Boards
+  are now Git-ignored under `.design-references/`; root-level ZIPs are ignored. `RULES.md` makes
+  Mobile First (Mobile 390 → Tablet 768 → Desktop 1440 → Large Desktop), verification at
+  320/390/768/1024/1440/1920 px in ar/en, the single master shell, token-only styling, shared
+  components and rendered-baseline visual regression permanent; CHARTER REQ-05/REQ-15, plan
+  acceptance and traceability were aligned. A UI implementation/review skill was added.
+- **Impact:** One design authority and no conflicting visual reference in the active tree. **No
+  screen-group gate was closed** and no group is recorded as approved; the official logo, Rubik
+  binaries and licensed photography remain owner-supplied gaps. No code, template, stylesheet,
+  migration, API, Hub contract, dependency or infrastructure changed. T-026 CP1 has **not**
+  started and still needs «كمل» after this task merges.
+- **Evidence:** Reference hash/dimension verification output and `REFERENCE_INDEX.csv` (all 14
+  match); before/after root listing; `python scripts/check_docs.py`; `git status` showing no design
+  binary tracked; task commit and CI run recorded in the evidence commit.
+- **Approved by:** Owner delivered and approved the package (D-045); merge to `main` pending owner
+  approval.
+- **References:** T-035, D-044/D-045, `docs/plan.md` §4, `docs/ui/design-system.md`,
+  `docs/ui/design-reference.md`, `docs/ui/wireframes.md`.
+
 ### [2026-11-25] — T-025 approved, merged and closed
 
 - **Type:** Milestone

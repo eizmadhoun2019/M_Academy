@@ -151,7 +151,9 @@ per User → Role/Permission assignments; Department tree; Course → Version (i
 - REST API `/api/v1/academy/` — inventory, error codes, auth and compatibility policy:
   `docs/api.md`. Web pages share the same services.
 - Public web routes are separate from the app (`/` vs `/academy/`), with their own URL
-  namespace and templates; they share the design system.
+  namespace and templates; they share the official design system and tokens
+  (`docs/ui/design-system.md`, `docs/ui/design-tokens.json`). Internal screens use one master
+  shell; a role does not get its own shell.
 - Mail: swappable transport, SMTP default (`docs/configuration.md`). Hub mail is optional.
 - Storage adapter: presign upload/download, stat, prefix delete; player gets short-lived
   presigned HLS URLs.

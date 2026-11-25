@@ -69,7 +69,9 @@ anything. Names, ports, buckets and safety rules are in
 - [Security](docs/security.md) — controls, PII register, retention, incidents
 - [API](docs/api.md) — routes, error codes, capabilities per route
 - [Configuration](docs/configuration.md) — settings, storage, HLS, pagination, throttles
-- [UI screens](docs/ui/screen-specification.md) · [wireframes](docs/ui/wireframes.md)
+- [Design system](docs/ui/design-system.md) · [tokens](docs/ui/design-tokens.json) ·
+  [UI screens](docs/ui/screen-specification.md) · [screen map and gates](docs/ui/wireframes.md) ·
+  [design reference and archive](docs/ui/design-reference.md)
 - [Notifications](docs/notifications.md) · [Reports](docs/reports.md)
 - [Background jobs](docs/background-jobs.md) — task catalogue and per-company schedule
 - [Migration H1.5](docs/migration-h1.5.md) — legacy mapping, cutover, rollback

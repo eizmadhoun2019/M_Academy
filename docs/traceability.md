@@ -62,7 +62,7 @@ job records the reason in its log; the closing task flips the table and proves t
 | REQ-02 | T-004 | Four adapter contract suites |
 | REQ-03 | T-006, T-007, T-008, T-010, **T-026** | Migration apply/reverse; composite-FK tests; isolation suite over every tenant table |
 | REQ-04 | T-005, T-012, **T-026** | On-commit tests; trigger blocks UPDATE/DELETE; platform audit rows |
-| REQ-05 | T-013, **T-029** | Mobile-first render at 320/390/768/1440 in ar/en; axe report; no unjustified page-level overflow; approved reference or recorded waiver |
+| REQ-05 | T-013, **T-029**, T-035 | Mobile-first render at 320/390/768/1024/1440/1920 in ar/en; axe report; no unjustified page-level overflow; approved reference or recorded waiver |
 | REQ-06 | T-017, **T-031** | Publish validation + immutability tests; authoring journey |
 | REQ-07 | T-018, **T-031** | Media pipeline integration test; playback UI + presigned URL test |
 | REQ-08 | T-019, **T-026** | Assignment matrix; auto-enroll after membership change |
@@ -71,7 +71,7 @@ job records the reason in its log; the closing task flips the table and proves t
 | REQ-12 | T-022, **T-032** | Query-count/scope tests; platform aggregate; CSV formula-safe |
 | REQ-13 | T-016, **T-028** | Role×permission×scope matrix; escalation and last-admin tests |
 | REQ-14 | **T-031** (was T-023) | Playwright journey + manual check record in LOG |
-| REQ-15 | **T-034** | E2E ar/en at 320/390/768/1440; axe zero critical/serious; visual regression against approved references |
+| REQ-15 | **T-034** | E2E ar/en at 320/390/768/1024/1440/1920; axe zero critical/serious; visual regression against approved implemented baselines |
 | REQ-16 | **T-034** | Staging deploy, restore transcript, alert drill |
 | REQ-17 | **T-034** | Locust report against D-042 profile |
 | REQ-18 | **T-034** | ASVS L1 checklist; scan outputs; CSP/header verification |
@@ -139,8 +139,10 @@ every row against the new tenancy/RBAC model before GATE-1.
 | Celery task names, schedules, retries, idempotency | `docs/background-jobs.md` |
 | Report metrics, columns, CSV format | `docs/reports.md` |
 | Notification/reminder copy (ar/en), channels, dedupe keys | `docs/notifications.md` |
-| Screen requirements, navigation, UI states, mobile-first, visual gate | `docs/ui/screen-specification.md` |
-| Wireframes, visual references, per-group design approval record | `docs/ui/wireframes.md` |
+| Screen requirements, navigation, UI states, mobile-first per-screen acceptance, visual gate | `docs/ui/screen-specification.md` |
+| Identity, master shell, components, responsive rules, tokens, visual acceptance | `docs/ui/design-system.md`, `docs/ui/design-tokens.json` |
+| Screen-group reference mapping and per-group approval record | `docs/ui/wireframes.md` |
+| Design package provenance, reference fingerprints, archive and restore | `docs/ui/design-reference.md` |
 | Hub ↔ Academy wire contract and activation state | `docs/hub-contract.md` |
 | Migration mapping, cutover, rollback | `docs/migration-h1.5.md` |
 | Repository identity, stack, ports, buckets, cookies, environments, deploy, backup, alerts | `docs/operations/environments.md` |

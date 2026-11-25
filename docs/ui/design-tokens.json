@@ -1,0 +1,62 @@
+{
+  "color": {
+    "brand": "#101820",
+    "gold": "#E8AA23",
+    "canvas": "#F5F7FA",
+    "surface": "#FFFFFF",
+    "text": "#101820",
+    "muted": "#526174",
+    "border": "#DCE2EA",
+    "success": "#166534",
+    "danger": "#B91C1C",
+    "warning": "#92400E",
+    "info": "#1D4ED8",
+    "focus": "#1D4ED8",
+    "goldText": "#101820"
+  },
+  "font": {
+    "family": "Rubik, system-ui, sans-serif",
+    "body": 14,
+    "small": 12,
+    "heading": 24,
+    "metric": 28,
+    "lineHeight": 1.5
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40,
+    48,
+    64
+  ],
+  "radius": {
+    "control": 8,
+    "card": 12,
+    "pill": 999
+  },
+  "layout": {
+    "mobileMin": 320,
+    "mobileReference": 390,
+    "tabletReference": 768,
+    "desktopReference": 1440,
+    "desktopBreakpoint": 1200,
+    "tabletBreakpoint": 768,
+    "sidebar": 240,
+    "rail": 72,
+    "header": 64,
+    "mobileHeader": 56,
+    "bottomNav": 64,
+    "mobilePadding": 16,
+    "tabletPadding": 20,
+    "desktopPadding": 24,
+    "touchMin": 44,
+    "controlHeight": 44,
+    "tableRowMin": 56,
+    "contentMax": 1600
+  }
+}

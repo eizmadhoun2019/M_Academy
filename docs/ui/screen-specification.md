@@ -4,12 +4,13 @@
 > implementation. Mobile first and the official visual reference are binding (D-044).
 > **Scope:** standalone-first multi-company platform: public site on `/`, protected application
 > under `/academy/`. Masheed is the first company, not the only one.
-> **Visual source:** approved identity set: Primary `#101820`, Brand Gold `#E8AA23`, Rubik, the
-> official Masheed logo and gold geometric element, dark geometric backgrounds and light internal
-> surfaces with dark navigation and gold accents. The final screen/token package is **not yet
-> delivered**; the interim `docs/ui/reference/masheed-academy-screens.pdf` covers A–G only.
-> `docs/ui/wireframes.md` holds the layout map and design-gate record. No document claims the
-> final package is approved.
+> **Visual source:** the owner's official `Masheed-Academy-Official-UI-UX-v1.0` package, adopted
+> 2026-11-25 (D-045). Identity, the single master shell and components are in
+> `docs/ui/design-system.md`; tokens in `docs/ui/design-tokens.json`; board mapping and group gates
+> in `docs/ui/wireframes.md`; provenance and fingerprints in `docs/ui/design-reference.md`.
+> Receiving the package closed no screen-group gate: each group still needs the owner's
+> implementation-ready approval, and the official logo, Rubik binaries and licensed photographs are
+> not yet supplied as assets.
 > **Authority:** CHARTER > RULES > ARCHITECTURE > this file. Routes and API are in
 > `docs/api.md`; permissions in `docs/access-control.md`.
 
@@ -215,13 +216,14 @@ settings, is first designed and built at Mobile. Desktop is never the base desig
 | **320 px minimum** | Supported intermediate width; no clipped content, controls or unusable tables |
 | **Mobile 390 px** | One column; drawer/bottom navigation; management rows become labelled cards; actions stay reachable; no unjustified page-level horizontal scroll |
 | **Tablet 768 px** | Flexible grid; wider forms and tables; no clipped controls; a table may scroll inside its own labelled container |
-| **Desktop 1440 px** | Persistent sidebar; wide tables; player outline beside video; same functions as Mobile |
-| **Large Desktop >1440 px** | Content max-width and spacing scale; no stretched line lengths or empty over-wide panels |
+| **Small laptop 1024 px** | 64 px header, drawer or 72 px rail; two-column cards; tables readable inside their container |
+| **Desktop 1440 px** | Persistent 240 px sidebar; wide tables; player outline beside video; same functions as Mobile |
+| **Large Desktop 1920 px** | Content max 1600 px and spacing scale; no stretched line lengths or empty over-wide panels |
 
 | Requirement | Acceptance |
 |---|---|
 | Reflow | Content is reorganized per width, not merely scaled; no lost core function on Mobile |
-| Overflow | No unjustified page-level horizontal scrolling at 320/390/768/1440 px in ar/en |
+| Overflow | No unjustified page-level horizontal scrolling at 320/390/768/1024/1440/1920 px in ar/en |
 | Touch | Minimum 44×44 px targets with adequate spacing; no hover-only action |
 | RTL / LTR | Arabic RTL and English LTR mirror direction, icons, mixed text and numbers correctly |
 | Keyboard | Visible focus, logical order, labelled fields, accessible dialogs, Escape closes |
@@ -229,26 +231,31 @@ settings, is first designed and built at Mobile. Desktop is never the base desig
 | Contrast | WCAG AA (4.5:1 text, 3:1 large text/UI); never colour alone; gold is not small text on white |
 | Content | Clear labels and one primary action per task; tables/forms/reports remain comprehensible on Mobile |
 
-Approved identity constants are Primary `#101820`, Brand Gold `#E8AA23` and **Rubik** (Arabic +
-Latin, locally hosted). The final package supplies the complete tokens (spacing, type scale,
-radii, elevation, component states); until then the interim values in `docs/ui/wireframes.md`
-apply and are not a final-brand claim.
+Identity is Primary `#101820`, Brand Gold `#E8AA23`, Canvas `#F5F7FA`, Surface `#FFFFFF` and
+**Rubik** (Arabic + Latin, locally hosted). Spacing, type scale, radii, breakpoints and component
+minima come from `docs/ui/design-tokens.json`; no template uses ad-hoc visual values. Rubik
+binaries and the official logo are still missing assets, so no screen may claim brand-font or
+brand-mark compliance until the owner supplies them.
 
 ## 7. Visual-reference gate (per screen group)
-1. **Grouping:** P1–P5; X1–X6; application shell + L1–L4/E; A–D/F; N1–N4/S1; N5–N8/S2. A group is
-   implemented only after its approved screen references are recorded in `docs/ui/wireframes.md`.
-2. **Required package:** Screen Designs, Design Tokens, Typography, Colors, Spacing, Components,
-   Responsive Layouts (320/390/768/1440), Interaction States, Accessibility Requirements and
-   Visual Acceptance Criteria. Images alone are not an engineering specification.
+1. **Grouping:** P1–P5/PUB-01; X1–X6/AUTH-01…05; application shell + L1–L4/E; A–D/F; N1–N4/S1;
+   N5–N8/S2; reports/notifications/settings. A group is implemented only after its reference row in
+   `docs/ui/wireframes.md` records the owner's approval.
+2. **Delivered package:** official v1.0 supplies screen contracts, design tokens, typography,
+   colours, spacing, components, responsive layouts, interaction states, accessibility and visual
+   acceptance criteria (V01–V11 in `docs/ui/design-system.md`). Boards remain visual intent, not
+   pixel specifications.
 3. **Approval:** the owner approves the group in writing (date + package version) or records an
-   explicit waiver. The waiver is not a claim of pixel compliance.
+   explicit waiver. The waiver is not a claim of pixel compliance. Receiving the package closed no
+   gate.
 4. **Binding:** approved designs are implementation specifications. No redesign, identity change or
    element rearrangement without owner approval.
-5. **Verification:** visual regression compares rendered screens with the approved references at
-   the supported widths; T-034 requires the comparison evidence. Backend tasks proceed without
-   waiting for a design group.
-6. **Status:** the final package has **not** been delivered. A–G use the interim PDF; all other
-   groups use the token system and documented patterns and must pass the gate before UI work.
+5. **Verification:** visual regression compares rendered screens with an approved **implemented**
+   baseline at the six verification widths (320/390/768/1024/1440/1920) and both directions; never a
+   pixel comparison against generated PNGs. T-034 requires the comparison evidence. Backend tasks
+   proceed without waiting for a design group.
+6. **Status:** references are recorded and the groups above remain **pending owner approval**; the
+   missing assets in `docs/ui/design-reference.md` §5 must be supplied before final visual sign-off.
 
 ## 8. Essential journeys
 
@@ -261,7 +268,6 @@ apply and are not a final-brand claim.
 ## 9. Boundaries
 This document aligns CHARTER, ARCHITECTURE, decisions, API and wireframes; it is **not** proof
 that routes or screens exist. Before coding, check current routes, migrations and permissions.
-L1–L4, N1–N8, S1–S2, P1–P5 and X1–X6 do not all have final owner-approved references; A–G use
-the interim PDF, the rest use the token system and documented patterns, and every group must pass
-the §7 gate before implementation. No design package is claimed as delivered or approved. Quiz, certificates, billing,
+The official package is delivered and adopted, but every screen group must still pass the §7 gate
+before implementation, and no group is recorded as approved yet. Quiz, certificates, billing,
 self-registration, advanced analytics, mobile apps and AI are deferred.

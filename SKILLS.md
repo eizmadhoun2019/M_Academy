@@ -5,6 +5,7 @@
 | Skill | When to use | Path | Last verified |
 |---|---|---|---|
 | Add/change a model | Any schema or constraint change | `docs/skills/model-change.md` | 2026-11-25 |
+| Implement or review a UI screen | Any screen, shell, dialog, state or responsive change | `docs/skills/ui-screen.md` | 2026-11-25 |
 | Add a service | Any new write behavior | `docs/skills/service.md` | 2026-11-25 |
 | Add an API endpoint | New REST operation | `docs/skills/api-endpoint.md` | 2026-11-25 |
 | Tenant isolation testing | Every service/selector/endpoint/task/export | `docs/skills/tenant-isolation.md` | 2026-11-25 |

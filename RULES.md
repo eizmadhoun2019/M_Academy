@@ -13,7 +13,8 @@
 ## Precedence
 Company legal/organizational obligations > `CHARTER.md` > `RULES.md` > approved decisions
 (`docs/decisions.md`) and `ARCHITECTURE.md` > canonical specifications (`docs/domain-model.md`,
-`docs/access-control.md`, `docs/security.md`, `docs/api.md`, …) > `STATUS.md` / `docs/plan.md` >
+`docs/access-control.md`, `docs/security.md`, `docs/api.md`, `docs/ui/design-system.md`, …) >
+`STATUS.md` / `docs/plan.md` >
 `LOG.md` > `SKILLS.md`.
 
 On conflict: stop the task, record the conflict in `STATUS.md` (open decisions) and `LOG.md`,
@@ -167,7 +168,10 @@ refers to this table.
 | Background job, schedule, retry, idempotency | `docs/background-jobs.md` |
 | Report metric, column, CSV format | `docs/reports.md` |
 | Notification copy, channel, locale, link | `docs/notifications.md` |
-| Screen, navigation, UI state, mobile-first, visual gate, accessibility rule | `docs/ui/screen-specification.md`, `docs/ui/wireframes.md` |
+| Identity, master shell, components, responsive rules, design tokens, visual acceptance | `docs/ui/design-system.md`, `docs/ui/design-tokens.json` |
+| Screen, navigation, UI state, mobile-first per-screen acceptance, visual gate | `docs/ui/screen-specification.md` |
+| Screen-group reference mapping and gate status | `docs/ui/wireframes.md` |
+| Design package provenance, reference fingerprints, archive and restore | `docs/ui/design-reference.md` |
 | Ports, containers, buckets, environments, deploy, backup, alerts | `docs/operations/environments.md` |
 | Migration mapping, cutover, rollback | `docs/migration-h1.5.md` |
 | Hub wire contract, activation state | `docs/hub-contract.md` |
@@ -192,23 +196,40 @@ characters: `<type>(<scope>): <subject>`. Types: `feat`, `fix`, `docs`, `refacto
 commit secrets, `.env`, generated artifacts or unrelated files.
 
 ## UI and frontend rules
+- **Single design source:** `docs/ui/design-system.md` and `docs/ui/design-tokens.json` are the
+  only visual authority; `R05-master` governs every internal screen. One Master Base Layout
+  (charcoal sidebar, white header, light canvas, white cards, restrained gold) serves every
+  authorized role. No role-specific or page-specific shell, no photographic banner inside the
+  application; public and auth screens keep the approved architectural imagery. A second design
+  package, wireframe set or token file may not enter the repository without a decision.
 - Strict CSP without `unsafe-inline`: no inline `style=` and no inline `<script>`; styles and
   scripts ship as cacheable files.
 - RTL first: logical properties (`margin-inline-start`, `padding-block`, `inset-inline-start`).
 - Every user-visible string comes from gettext (`ar` default RTL, `en` secondary); no literal
   copy in templates or scripts.
-- Brand: locally hosted **Rubik** (Arabic + Latin), Primary `#101820`, Brand Gold `#E8AA23`, the
-  official Masheed logo and gold geometric element from the approved package. Do not invent or
-  redraw the mark, and do not substitute a font.
+- Brand: locally hosted **Rubik** (Arabic + Latin), Primary `#101820`, Brand Gold `#E8AA23`,
+  Canvas `#F5F7FA`, Surface `#FFFFFF`, and the official Masheed logo and gold geometric element
+  from the approved package. Do not invent or redraw the mark, and do not declare a substitute
+  font approved; until the assets are supplied, use the text placeholder and record the gap.
 - **Mobile first is binding:** every screen is designed and built Mobile 390 → Tablet 768 →
-  Desktop 1440 → Large Desktop, and tested from 320 px; desktop-first shrinking is prohibited.
+  Desktop 1440 → Large Desktop, never the reverse. Verify 320, 390, 768, 1024, 1440 and 1920 px in
+  Arabic RTL and English LTR: no unjustified page-level horizontal scroll, tables become labelled
+  cards or scroll only inside their own container, dialogs stay in the viewport, core functions
+  survive on mobile, and desktop-first shrinking is prohibited.
 - WCAG 2.2 AA: labelled controls, visible focus, keyboard-reachable controls, 44×44 px targets,
-  no colour-only meaning, no unjustified horizontal scroll, no raw UUID shown when a name exists.
-- **Visual-reference gate:** a screen group is implemented only after its approved reference
-  (or an explicit owner waiver) is recorded in `docs/ui/wireframes.md`; approved designs are
-  binding specifications and are not redesigned or rearranged without owner approval. Visual
-  regression compares rendered screens with approved references where they exist. No final
-  package is claimed as delivered before the owner delivers it.
+  no colour-only meaning, no raw UUID shown when a name exists, 200 % zoom and reduced motion.
+- **Components, not copies:** build on the shared app shell, partials and component patterns with
+  central tokens; no duplicated component variant per page and no ad-hoc visual values. No new UI,
+  CSS or JavaScript library and no build step without owner approval.
+- **Visual-reference gate:** a screen group is implemented only after its reference and the
+  owner's approval (or an explicit waiver) are recorded in `docs/ui/wireframes.md`; approved
+  designs are binding and are not redesigned or rearranged without owner approval. Visual
+  regression compares rendered screens with an approved **implemented** baseline at the six
+  verification widths — never a pixel comparison against generated boards. Similarity to a mockup
+  is not a visual pass.
+- **Design assets stay out of Git:** packages, boards and PDFs live outside the repository
+  (`../_design-archive/`) or in the Git-ignored `.design-references/`; only text specifications and
+  tokens are tracked. Never publish mockups, portraits or unlicensed assets to the public remote.
 - Every screen implements the state contract in `docs/ui/screen-specification.md` §5; never show
   success before the server confirms it.
 
