@@ -891,6 +891,46 @@ overrides require.
   `docs/domain-model.md` §2.5/§5, `docs/background-jobs.md` §1.
 
 
+## 2026-11-25 — T-020 heartbeat, anti-skip and the completion flow
+
+- **Why:** REQ-09 needs the server to decide what a learner has actually watched, so a player
+  cannot declare coverage it never earned, and needs completion that stays correct when the
+  same request arrives twice.
+- **What changed:** `academy/progress.py` is the whole write path of §7. `record_heartbeat`
+  locks the row, credits at most `credit_window * rate` where the window is the elapsed time
+  capped at `MAX_HEARTBEAT_GAP_SECONDS`, refuses a forward jump with the ceiling it applied,
+  and never lowers the position: rewatching credits nothing and the high-water mark stands,
+  because `frontier_seconds <= position_seconds` is a table check. The refusal commits its
+  `skip_attempts` counter (the abuse metric) without touching the clock, so a patient retry is
+  credited normally, and heartbeats are still neither audited nor stored (ADR-013).
+- **Completion:** `complete_lesson` answers 409 `lesson_not_eligible` with the coverage it
+  measured until the threshold is met, completes on confirmation for lessons without a duration,
+  and is idempotent — a second call returns the original completion and emits nothing.
+  `acknowledge` records the acknowledgement once, `complete_enrollment` refuses with
+  `enrollment_incomplete` while a required lesson is unfinished (listing the blockers) or while
+  an acknowledgement is pending, and the administrative override needs a reason, stays audited
+  once with ids-only metadata, and refuses a cancelled enrollment.
+- **API:** `enrollments/{id}/lessons/{lesson_id}/progress/` (throttle scope `heartbeat`),
+  `…/complete/`, `enrollments/{id}/acknowledge/`, `enrollments/{id}/complete/` and the
+  administrative `manage/enrollments/{id}/complete/`; every response is
+  `Cache-Control: private, no-store`, and the four new error codes are mapped in
+  `academy/api/errors.py`.
+- **Evidence:** `pytest -q` → 528 passed (32 new tests: the §9 skip matrix including the
+  600-second gap, `rate` 3.0 and 0.4, rewind, replay, a gap after the frontier, the first
+  heartbeat, the locked lesson and learner isolation; completion threshold and idempotency;
+  acknowledgement; enrollment blocking and override auditing; the HTTP matrix 200/400/401/403/409
+  and the administrative override); `ruff check` and `ruff format --check` clean, `mypy .`
+  (136 files), `makemigrations --check` (no changes), `spectacular --validate --fail-on-warn`
+  (0 warnings), G7 and G9 pass. CI run `45634497939` on
+  `task/T-020-progress-heartbeat-completion` is green; merged to `main` as `cff7c9b`.
+- **Documented:** §7.3 now states that a refusal commits its counter and that the first
+  heartbeat credits no coverage, `skippable_seconds` is defined as the ceiling that was applied,
+  §7.6 names the lesson's own media asset as the duration source, and `docs/api.md` §5 spells
+  out the override's reason, audit and cancelled-enrollment behavior.
+- **Approved by:** Project owner (2026-11-25): «كمل».
+- **References:** T-020, `docs/api.md` §1/§3/§5/§11, `docs/domain-model.md` §2.8/§7/§9,
+  `docs/configuration.md` §6, ADR-013.
+
 ## 2026-11-25 — T-019 assignments, auto-enrolment and gating
 
 - **Why:** REQ-08 needs a manager to reach a group of learners and needs a Hub membership
