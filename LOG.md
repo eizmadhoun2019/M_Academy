@@ -21,6 +21,24 @@
 
 ## Entries
 
+### [2026-11-25] — T-026 CP1 merged; reminder-test debt recorded
+
+- **Type:** Milestone / Decision
+- **Status:** Merged; debt open
+- **Summary:** The owner approved CP1. The branch (`691abc5`) passed CI run 45699655726 and merged
+  with `a5373c0`; the merge commit passed CI run 45700454330 on `main`. The pre-existing
+  failure of `tests/test_reminders.py::test_the_digest_lists_every_overdue_learner_once` (local
+  Celery is not eager when a worker is running; the suite reads Celery configuration before Django
+  test settings) is recorded as **D-046**, release-blocking technical debt that must be fixed
+  before final acceptance. The test stays enabled, unmodified and unweakened; the fix is
+  configuration-only.
+- **Impact:** CP1 is closed on `main`; T-026 remains `[~]` until CP2/CP3. No read path, API, template,
+  permission or UI changed. Screen groups remain pending owner approval.
+- **Evidence:** Merge `a5373c0`; CI on `main` 45700454330 success; CI on branch 45699655726 success;
+  `docs/decisions.md` D-046; `STATUS.md` blockers.
+- **Approved by:** Project owner (2026-11-25): “معتمد CP1، ادمج وفق الحوكمة”.
+- **References:** T-026 CP1, D-046, `docs/plan.md` §4 T-026, GATE-1.
+
 ### [2026-11-25] — T-026 CP1 schema expand implemented
 
 - **Type:** Change

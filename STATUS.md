@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-026 CP1 implemented on a branch, awaiting owner review)
+**Last updated:** 2026-11-25 (T-026 CP1 merged; reminder-test debt recorded as D-046)
 **Updated by:** AI agent (T-026 CP1), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is implemented and pushed on its branch for owner review; CP2/CP3 not started
+**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is merged as `a5373c0`; CP2/CP3 not started
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -37,7 +37,7 @@ API or UI change; CP2 (mapping/backfill) and CP3 (company context and isolation)
 |---|---|---|---|---|---|
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
 | T-035 | Official UI/UX reference adoption and repository hygiene | `[x]` — merged in `47638b0`; CI success 45694757748; owner approved 2026-11-25 | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; restore rehearsal 14/14; `check_docs` green |
-| T-026 | Tenancy and account foundation | `[~]` — CP1 on `task/T-026-tenancy-schema`, awaiting owner review; CP2/CP3 not started | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
+| T-026 | Tenancy and account foundation | `[~]` — CP1 merged `a5373c0` (CI 45700454330 success); CP2/CP3 not started | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
 | T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
@@ -49,7 +49,7 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
-- 2026-11-25 — **T-026 CP1 implemented (branch, not merged).** Four tenancy tables
+- 2026-11-25 — **T-026 CP1 merged.** Four tenancy tables
   (`Organization`, `User`, `Department`, `Membership`) with D-043 constraints (`UNIQUE (user_id)`,
   active/removed stamps, one-company membership), nullable backfill FKs on the existing tenant
   tables, database `organization_id` FKs on every tenant table plus the two composite
@@ -58,7 +58,9 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
   applied again). `pytest -q` → 606 passed, 1 failed (`test_the_digest_lists_every_overdue_learner_once`,
   pre-existing: reproduced unchanged on clean `main` with the local Celery worker running);
   `ruff check`, `ruff format --check`, `mypy .` and `makemigrations --check` clean. CP1 changes no
-  read path, API, template or UI; screen groups remain pending approval.
+  read path, API, template or UI; screen groups remain pending approval. Owner approved CP1; merge
+  commit `a5373c0` passed CI run 45700454330. The pre-existing reminder-digest failure is recorded
+  as release-blocking debt **D-046** (fix before GATE-1; the test stays enabled and unweakened).
 - 2026-11-25 — **T-035 merged (docs only).** The owner's official
   `Masheed-Academy-Official-UI-UX-v1.0` was verified (14/14 board fingerprints and dimensions), its
   text specifications and tokens were merged into `docs/ui/`, and it is now the single design
@@ -104,6 +106,7 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 | D-009 KPI values | Blocks success measurement, not the build | Project owner | Set before the pilot | T-034 |
 | T-001 bucket evidence | Holds T-001 `[~]` | Tech authority | Re-run the bucket check with the resolved MinIO image | T-034 |
 | Legacy identity mapping file (`legacy_user_ref,email,display_name`) | T-026 cannot activate real accounts without it | Project owner/HR | Provide a verified file before T-027 | T-026/T-027 |
+| Reminder-digest test fails locally with a running Celery worker (D-046) | One red test in the local suite; CI is green, but the red result invites blindness to a real notification regression | Tech authority | Make the test process eager regardless of a running worker — no skip, xfail or weakened assertion — before final acceptance | GATE-1 |
 | Two stacks on one host | Port/volume/cookie collision or legacy damage | Tech authority | Isolation rules enforced; only `m-academy-*` commands | ongoing |
 | Public repository (D-023) | Leaking internal material | Project owner | No secrets in tracked files; assume every commit is public | ongoing |
 | Hub contract (D-004/D-010) | No H1.5 impact; Hub dormant | Project owner + Hub owner | Revisit only at a reactivation decision | H2 |
@@ -111,20 +114,21 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 ## Decisions
 Single register: [`docs/decisions.md`](docs/decisions.md). This file does not duplicate values.
 - **Open:** D-001, D-005, D-009, D-010 (deferred H2).
-- **Confirmed (2026-11-25):** D-031…D-045 (standalone/Hub dormant, tenancy, local identity, RBAC,
+- **Confirmed (2026-11-25):** D-031…D-046 (standalone/Hub dormant, tenancy, local identity, RBAC,
   public origin, mail, PII, settings, observability, environments, UUID strategy, outbox deferral,
   performance profile, one membership per account, Mobile First and visual reference; D-045 adopts
-  the official package and amends D-044). Older confirmed decisions remain unless marked
-  superseded.
+  the official package and amends D-044; D-046 records the reminder-test debt as release-blocking).
+  Older confirmed decisions remain unless marked superseded.
 - **Resolved:** D-025 (local MinIO image).
 - **Superseded:** D-002→D-038, D-013/D-026→D-032, D-027→D-034; ADR-002/010/011/012/014 replaced by
   ADR-023…026.
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-**T-026 CP1** (tenancy schema expand) is the next eligible checkpoint, exactly as `docs/plan.md`
-§4 defines it, but it has **not** started. Say «كمل» to authorize it. T-033 remains `[ ]` and may
-start only after T-026 is `[x]`, in parallel with T-027/T-028; T-026 CP1 alone is not sufficient.
+**T-026 CP2** (legacy mapping/backfill and reconciliation report) is the next eligible checkpoint
+exactly as `docs/migration-h1.5.md` M2 and `docs/plan.md` §4 define it, but it has **not** started.
+Say «كمل» to authorize it. T-033 remains `[ ]` and may start only after T-026 is `[x]`, in parallel
+with T-027/T-028; T-026 CP1 alone is not sufficient. D-046 is paid before GATE-1.
 D-001, D-005 and D-009 remain open. Screen groups remain **pending owner approval**; the official
 logo, Rubik binaries and licensed photography are still missing assets, and no visual
 implementation may start before its design gate is satisfied.
