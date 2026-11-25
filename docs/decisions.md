@@ -56,7 +56,7 @@
 
 | ID | Decision | Status | Value / default in force | Owner | Needed by | Impact if still undecided |
 |---|---|---|---|---|---|---|
-| D-025 | Object-storage server for the development stack | Open | `ARCHITECTURE.md` §3 names MinIO, but no MinIO image can be pulled any more (Docker Hub repo removed, ghcr denied, quay 401 — checked 2026-11-22). The `StorageAdapter` isolates the choice and D-001 keeps the provider open. Options: (a) load a MinIO image into the local engine once, (b) approve an S3-compatible substitute for development only, (c) reach MinIO through an authenticated registry mirror. Production storage (D-001) is unaffected either way. | Project owner | T-018 | The dev stack runs without object storage; uploads, presigned URLs and bucket checks stay unverified. |
+| D-025 | Object-storage server for the development stack | Resolved | A MinIO image already present in the local engine (`masheed-academy-minio:2025-10-15`, option (a)) is now used: `.env` sets `ACADEMY_MINIO_IMAGE` to it and `docker-compose.yml` points the `minio` service at it. The image has no `curl`, so its healthcheck was changed to `/bin/true` and the live endpoint is checked from the host. Production storage (D-001) is unaffected. | Project owner | T-018 | The dev stack now runs MinIO on `127.0.0.1:9100` (console `:9101`); bucket creation and upload checks can be exercised once T-018 lands. |
 
 ### Repository and publication
 
