@@ -5,6 +5,7 @@ from __future__ import annotations
 from academy.models.access import AccessSuspension
 from academy.models.base import TenantManager, TenantModel, TenantQuerySet
 from academy.models.catalog import Course, CourseVersion, Lesson, Section
+from academy.models.grants import PermissionGrant
 from academy.models.media import MediaAsset
 from academy.models.operations import (
     AuditEvent,
@@ -28,6 +29,7 @@ __all__ = [
     "LessonProgress",
     "MediaAsset",
     "NotificationLog",
+    "PermissionGrant",
     "Quiz",
     "QuizAttempt",
     "QuizAttemptAnswer",

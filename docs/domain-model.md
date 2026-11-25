@@ -280,15 +280,15 @@ the ids-only metadata and returns the existing row for a repeated `event_id`.
 | `user_ref` | varchar(64) | no | — | |
 | `capability` | varchar(24) | no | — | `learn \| manage_content \| assign \| view_reports \| admin` |
 | `scope_type` | varchar(16) | no | — | `organization \| department` |
-| `scope_ref` | varchar(64) | yes | `NULL` | Department ref; `NULL` iff organization scope |
+| `scope_ref` | varchar(64) | no | `''` | Department ref; empty iff organization scope |
 | `granted_by_ref` | varchar(64) | no | — | |
 | `expires_at` | timestamptz | yes | `NULL` | |
 | `revoked_at` | timestamptz | yes | `NULL` | |
 | `revoked_by_ref` | varchar(64) | yes | `NULL` | |
 
 Constraints:
-- `CHECK ((scope_type = 'organization' AND scope_ref IS NULL) OR (scope_type = 'department' AND scope_ref IS NOT NULL))`
-- `UNIQUE (organization_id, user_ref, capability, scope_type, COALESCE(scope_ref, '')) WHERE revoked_at IS NULL`
+- `CHECK ((scope_type = 'organization' AND scope_ref = '') OR (scope_type = 'department' AND scope_ref <> ''))`
+- `UNIQUE (organization_id, user_ref, capability, scope_type, scope_ref) WHERE revoked_at IS NULL`
 - `CHECK (revoked_at IS NULL OR revoked_by_ref IS NOT NULL)`
 
 ### 2.15 `AccessSuspension` (Academy-local)

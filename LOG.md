@@ -21,6 +21,31 @@
 
 ## Entries
 
+### [2026-11-25] — T-016 permission grants
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** `PermissionGrant` (migration `0007`) stores one live capability per user and
+  scope, with the documented shape checks, a partial unique index that treats organization
+  scope as one value (`nulls_distinct=False`) and a revocation that must name its actor.
+  Grants are read on every request by the access middleware and passed into the authorization
+  layer, whose fingerprint-keyed cache already includes them; a blocked account skips the read
+  because its effective capability is empty anyway. The grant service appends `grant.created`
+  and `grant.revoked` audit rows in the caller's transaction, refuses duplicate live grants
+  with 409, and protects the final active administrator with 409 `last_admin`. `manage/grants/`
+  lists (tenant-scoped filters and pagination), creates (Idempotency-Key replay within 24 h,
+  conflict on a changed body) and revokes; `provision_admin` is the one guarded way to create
+  the first administrator, and a suspension keeps every grant row while removing capability.
+- **Impact:** H1 `grants_only` is now operable end to end: a Hub role alone gives nothing, a
+  grant gives exactly its scope, and `role_plus_grants` still unions role defaults with grants.
+- **Evidence:** 22 new tests in `tests/test_grants.py` (service matrix, both modes, last admin,
+  expiry, suspension retention, API list/create/revoke, idempotency, tenant isolation,
+  provision command), plus the tenant-isolation suite over the new table; ruff, format, mypy,
+  `makemigrations --check`, OpenAPI validation and G7/G9 green locally; CI run recorded after
+  the push.
+- **Approved by:** Project owner («كمل» instruction of 2026-11-25).
+- **References:** T-016, D-027, D-028, `docs/domain-model.md` §2.14, `docs/api.md` §2/§7.
+
 ### [2026-11-25] — T-015 Hub HTTP integration
 
 - **Type:** Milestone

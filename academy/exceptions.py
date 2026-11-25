@@ -59,6 +59,12 @@ class Conflict(AcademyError):
     code = "idempotency_conflict"
 
 
+class LastAdmin(AcademyError):
+    """Revoking the last active ``academy.admin`` grant (409, ``docs/api.md`` §7)."""
+
+    code = "last_admin"
+
+
 class AdapterNotConfigured(AcademyError):
     """A host seam has no configured implementation; a deployment error, never a fallback."""
 

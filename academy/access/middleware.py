@@ -13,6 +13,7 @@ from academy.access.cache import cached_access
 from academy.access.principals import current_principal
 from academy.access.suspensions import is_suspended
 from academy.authorization.core import Access
+from academy.grants.service import grants_for
 
 #: Pages that must stay reachable while an account is blocked.
 _ALLOWED_PATHS = (
@@ -34,7 +35,12 @@ class AcademyAccessMiddleware:
         if principal is not None:
             if is_suspended(principal.organization_id, principal.user_ref):
                 principal = replace(principal, suspended=True)
-            access = cached_access(principal)
+            grants = (
+                []
+                if access_blocked(principal)
+                else grants_for(principal.organization_id, principal.user_ref)
+            )
+            access = cached_access(principal, grants)
             cast(Any, request).academy_access = access
             reason = access.denied_reason
             if reason is not None and _is_blocked_page(request):
@@ -45,6 +51,11 @@ class AcademyAccessMiddleware:
                     status=403,
                 )
         return self.get_response(request)
+
+
+def access_blocked(principal: Any) -> bool:
+    """A blocked account has no effective capability, so its grants need not be read."""
+    return not principal.is_active or principal.suspended
 
 
 def _is_blocked_page(request: HttpRequest) -> bool:

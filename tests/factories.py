@@ -26,6 +26,7 @@ from academy.models import (
     LessonProgress,
     MediaAsset,
     NotificationLog,
+    PermissionGrant,
     Quiz,
     QuizAttempt,
     QuizAttemptAnswer,
@@ -35,6 +36,18 @@ from academy.models import (
     Section,
     TenantModel,
 )
+
+
+def make_grant(organization_id: UUID, **overrides: Any) -> PermissionGrant:
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "user_ref": "u-42",
+        "capability": "assign",
+        "scope_type": "organization",
+        "granted_by_ref": "u-admin",
+    }
+    values.update(overrides)
+    return PermissionGrant.objects.create(**values)
 
 
 def make_webhook_event(organization_id: UUID, **overrides: Any) -> HubWebhookEvent:
@@ -332,6 +345,7 @@ FACTORIES: dict[type[TenantModel], Callable[[UUID], TenantModel]] = {
     AuditEvent: make_audit,
     AccessSuspension: make_suspension,
     HubWebhookEvent: make_webhook_event,
+    PermissionGrant: make_grant,
 }
 
 
