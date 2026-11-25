@@ -21,7 +21,7 @@ class AccessSuspension(TenantModel):
     suspended_at = models.DateTimeField(default=timezone.now)
     suspended_by_ref = models.CharField(max_length=64)
     lifted_at = models.DateTimeField(null=True, blank=True)
-    lifted_by_ref = models.CharField(max_length=64, null=True, blank=True)
+    lifted_by_ref = models.CharField(max_length=64, blank=True, default="")
     objects: TenantManager[AccessSuspension] = TenantManager()  # type: ignore[assignment]
 
     class Meta:
@@ -32,7 +32,7 @@ class AccessSuspension(TenantModel):
                 name="suspension_one_active_per_user",
             ),
             models.CheckConstraint(
-                condition=models.Q(lifted_at__isnull=True) | models.Q(lifted_by_ref__isnull=False),
+                condition=models.Q(lifted_at__isnull=True) | ~models.Q(lifted_by_ref=""),
                 name="suspension_lift_names_its_actor",
             ),
             models.CheckConstraint(

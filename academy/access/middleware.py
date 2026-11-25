@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
+from typing import Any, cast
 
 from django.http import HttpRequest, HttpResponseBase
 from django.shortcuts import render
@@ -34,7 +35,7 @@ class AcademyAccessMiddleware:
             if is_suspended(principal.organization_id, principal.user_ref):
                 principal = replace(principal, suspended=True)
             access = cached_access(principal)
-            setattr(request, "academy_access", access)
+            cast(Any, request).academy_access = access
             reason = access.denied_reason
             if reason is not None and _is_blocked_page(request):
                 return render(
