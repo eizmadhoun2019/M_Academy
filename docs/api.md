@@ -96,6 +96,20 @@ column is the compatibility `role_plus_grants` map, not an H1 grant of authority
 | POST | `manage/enrollments/{id}/cancel/` | Cancel one enrollment | Audited |
 | POST | `manage/enrollments/{id}/complete/` | Admin override completion | `academy.admin`; `method='admin_override'`; audited with reason |
 
+Scope rules (D-015, D-017):
+- A `department` target must be inside the caller's `academy.assign` scope; a `user` target is
+  accepted when that member belongs to one of those departments. `role` and `organization`
+  targets span the tenant, so they require all-department scope (otherwise **403 `forbidden`**).
+- An out-of-scope target or assignment answers **404**, so the API never confirms that an
+  object the caller cannot reach exists.
+- The preview and the write resolve the same expansion: `department_members` (descendants
+  included), `role_members`, or — for `organization` — the union of every role's members, which
+  is how the Hub directory describes a whole tenant (hub-contract §3). A missing or archived
+  published version answers **409 `course_not_published`**.
+- The roster and the assignment list apply the same visibility rule; an enrollment that came
+  from an assignment is visible to whoever may see that assignment, and a direct enrollment
+  (no assignment) only to an all-department holder.
+
 ## 6. Reports (`academy.view_reports`)
 
 | Method | Path | Purpose | Notes |
@@ -169,7 +183,8 @@ not add business rules.
 `upload_missing` 409 ·
 `checksum_mismatch` 409 · `retry_limit_reached` 409 · `media_not_ready` 409 ·
 `lesson_not_eligible` 409 · `enrollment_incomplete` 409 · `acknowledgment_not_required` 409 ·
-`last_admin` 409 · `publish_invalid` 422 · `target_empty` 422 · `throttled` 429 ·
+`last_admin` 409 · `course_not_published` 409 · `publish_invalid` 422 · `target_empty` 422 ·
+`throttled` 429 ·
 `unavailable` 503.
 
 ## 12. Test obligations

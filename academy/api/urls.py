@@ -4,6 +4,16 @@ from __future__ import annotations
 
 from django.urls import path
 
+from academy.api.assignments import (
+    AssignmentDetailView,
+    AssignmentListCreateView,
+    AssignmentPreviewView,
+    CourseRosterView,
+    EnrollmentCancelView,
+    EnrollmentDetailView,
+    MyCoursesView,
+    MyEnrollmentsView,
+)
 from academy.api.content import (
     CourseArchiveView,
     CourseCloneView,
@@ -95,6 +105,34 @@ urlpatterns = [
         "manage/media/<uuid:media_id>/retry/",
         MediaRetryView.as_view(),
         name="manage-media-retry",
+    ),
+    path("manage/assignments/", AssignmentListCreateView.as_view(), name="manage-assignments"),
+    path(
+        "manage/assignments/preview/",
+        AssignmentPreviewView.as_view(),
+        name="manage-assignments-preview",
+    ),
+    path(
+        "manage/assignments/<uuid:assignment_id>/",
+        AssignmentDetailView.as_view(),
+        name="manage-assignment",
+    ),
+    path(
+        "manage/courses/<uuid:course_id>/enrollments/",
+        CourseRosterView.as_view(),
+        name="manage-course-enrollments",
+    ),
+    path(
+        "manage/enrollments/<uuid:enrollment_id>/cancel/",
+        EnrollmentCancelView.as_view(),
+        name="manage-enrollment-cancel",
+    ),
+    path("my/courses/", MyCoursesView.as_view(), name="my-courses"),
+    path("my/enrollments/", MyEnrollmentsView.as_view(), name="my-enrollments"),
+    path(
+        "my/enrollments/<uuid:enrollment_id>/",
+        EnrollmentDetailView.as_view(),
+        name="my-enrollment",
     ),
     path(
         "enrollments/<uuid:enrollment_id>/lessons/<uuid:lesson_id>/playback/",

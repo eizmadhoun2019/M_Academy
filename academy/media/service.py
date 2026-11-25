@@ -21,6 +21,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from academy.adapters.loader import load_adapter
+from academy.assignments.gating import require_accessible
 from academy.audit import record
 from academy.authorization.core import Access, Capability
 from academy.exceptions import (
@@ -579,6 +580,8 @@ def playback_urls(access: Access, enrollment_id: UUID, lesson_id: UUID) -> dict[
     lesson = Lesson.objects.for_org(org_id).filter(pk=lesson_id).first()
     if lesson is None:
         raise NotFound("lesson not found")
+    # domain-model §6 step 2: the same sequential lock the outline shows also guards playback.
+    require_accessible(enrollment, lesson)
     asset = None
     if lesson.media_asset_id:
         asset = MediaAsset.objects.for_org(org_id).filter(pk=lesson.media_asset_id).first()

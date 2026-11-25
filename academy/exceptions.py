@@ -77,6 +77,21 @@ class StateConflict(AcademyError):
         self.code = code
 
 
+class LessonLocked(AcademyError):
+    """A lesson whose earlier required lesson is incomplete (403, ``lesson_locked``)."""
+
+    code = "lesson_locked"
+
+    def __init__(self, next_lesson_id: Any, detail: str = "") -> None:
+        super().__init__(detail or self.code, fields={"next_lesson_id": str(next_lesson_id)})
+
+
+class TargetEmpty(AcademyError):
+    """An assignment whose target reaches nobody (422, ``target_empty``)."""
+
+    code = "target_empty"
+
+
 class PublishInvalid(AcademyError):
     """A draft that breaks the publish rules (422, ``docs/api.md`` §8)."""
 

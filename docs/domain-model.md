@@ -162,6 +162,12 @@ Constraints:
   `COALESCE(target_ref, '')` expression index for the `organization` case.
 - `CHECK (cancelled_at IS NULL OR cancelled_at >= created_at)`
 
+Expansion (T-019, D-017): the preview and the write share one selector. A `department` target
+resolves through `department_members` (descendants included), `role` through `role_members`, a
+`user` to that one reference, and `organization` to the union of `role_members` over every role
+the directory reports — the Hub has no "all members" route (hub-contract §3). Memberships are
+active only, the result is de-duplicated, and it is truncated at 5,000 with `capped = true`.
+
 ### 2.7 `Enrollment`
 Pins a learner to one published version.
 
@@ -187,6 +193,9 @@ Constraints:
 - Re-enrollment inserts a **new** row: the partial unique index covers `active` rows only, so a
   cancelled enrollment never blocks a new one, and reactivation never revives a cancelled row
   (D-028).
+- `member_changed` enrols a member into every live assignment that reaches them and cancels the
+  rows whose assignment no longer does (`removed_from_target`); `member_deactivated` cancels
+  every active row (`deactivated`). Both run in the webhook's transaction.
 Indexes: `(organization_id, user_ref, status)`, `(organization_id, course_id, status)`,
 `(organization_id, due_at) WHERE status = 'active' AND due_at IS NOT NULL`.
 

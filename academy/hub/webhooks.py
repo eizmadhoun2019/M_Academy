@@ -20,7 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from academy.access.principals import ROLES
 from academy.hub.assertions import WEBHOOK_CLAIMS, InvalidAssertion, verify
 from academy.hub.cache import invalidate_directory
-from academy.membership import member_deactivated
+from academy.membership import member_changed, member_deactivated
 from academy.models import HubWebhookEvent
 
 EVENT_TYPES = ("member_changed", "member_deactivated")
@@ -147,6 +147,14 @@ def _accept(organization_id: UUID, event: dict[str, Any], digest: str) -> bool |
             invalidate_directory(organization_id)
             if event["type"] == "member_deactivated":
                 member_deactivated(organization_id, str(event["user_ref"]))
+            else:
+                member_changed(
+                    organization_id,
+                    str(event["user_ref"]),
+                    department_refs=tuple(event.get("department_refs") or ()),
+                    role=event.get("role"),
+                    is_active=bool(event.get("is_active", True)),
+                )
         return False
     except IntegrityError:
         existing = HubWebhookEvent.objects.filter(
