@@ -21,6 +21,43 @@
 
 ## Entries
 
+### [2026-11-25] — T-022 reports and CSV export
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** `academy/reports/selectors.py` now owns every definition in `docs/reports.md`:
+  `summary()` groups enrollments by course or by department from one annotated query, `overdue()`
+  returns the active rows past `due_at` with `days_overdue` and `progress_percent`, and
+  `completion()` adds the pinned version and the `CompletionRecord` method. The §6 scope is
+  applied as a queryset condition (granted departments plus `owner_department_ref IS NULL`), and a
+  `department_ref` or `course` filter naming something outside it raises `403 forbidden` rather
+  than returning an empty page, so a manager learns the boundary instead of reading a zero. The
+  window is `[from, to)` in UTC on the date §1 names per endpoint, and `from > to` is the new
+  `400 invalid_range` code. `academy/reports/csv_export.py` writes the §5 file: UTF-8 BOM, CRLF,
+  snake_case header in the requested order, ISO-8601 UTC timestamps, one-decimal numbers,
+  empty cells for null, and a preceding `'` for any cell that starts with `= + - @`, tab or
+  carriage return; `manage/reports/export.csv` streams it, writes one `report.exported`
+  `AuditEvent` with the filter set and no learner identifier, and keeps the `5/hour` throttle
+  scope. `ACADEMY_CURSOR_PAGE_SIZE` (default 50) backs the opt-in cursor paging of the completion
+  list, and `docs/reports.md` §1/§2/§5 now state the two readings the code had to choose: the
+  average time is taken over the completed rows of the same filtered set, and an absent window
+  bound becomes the literal `all` in the filename.
+- **Impact:** REQ-12 is implemented end to end on the definitions T-023's dashboard will reuse.
+  The department boundary of reports differs deliberately from content management (general
+  courses stay visible to a department-scoped report reader), which the selector comments and
+  §6 of the document record.
+- **Evidence:** 30 new tests in `tests/test_reports.py` — every column of §2–§5, totals summed
+  instead of averaged, the null average, the window on `created_at`/`completed_at`/`due_at`,
+  the general-course bucket and the organization-name label, the directory fallback, the
+  fixed query count, cross-department `403`, `invalid_range`, cursor paging, the CSV
+  formula fixture (`=1+1`, `@SUM`, `-2+3`, tab), the BOM and CRLF bytes, the filename, the
+  `Cache-Control` header and the audit row; 590 tests at merge; ruff, format, mypy,
+  `makemigrations --check`, OpenAPI validation, G3/G7/G9 green locally; CI run `45663543806`
+  green on `81d422f`, fast-forwarded to `main` as `81d422f`.
+- **Approved by:** Project owner («تمام كمل 22» instruction of 2026-11-25).
+- **References:** T-022, REQ-12, `docs/reports.md`, `docs/api.md` §6/§11,
+  `docs/configuration.md` §5.
+
 ### [2026-11-25] — T-021 notifications, reminders and the escalation digest
 
 - **Type:** Milestone
