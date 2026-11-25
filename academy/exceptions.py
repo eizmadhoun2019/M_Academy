@@ -65,6 +65,24 @@ class LastAdmin(AcademyError):
     code = "last_admin"
 
 
+class StateConflict(AcademyError):
+    """A state refuses the operation (409) under a specific documented ``code``."""
+
+    code = "conflict"
+
+    def __init__(
+        self, code: str, detail: str = "", *, fields: dict[str, Any] | None = None
+    ) -> None:
+        super().__init__(detail, fields=fields)
+        self.code = code
+
+
+class PublishInvalid(AcademyError):
+    """A draft that breaks the publish rules (422, ``docs/api.md`` §8)."""
+
+    code = "publish_invalid"
+
+
 class AdapterNotConfigured(AcademyError):
     """A host seam has no configured implementation; a deployment error, never a fallback."""
 

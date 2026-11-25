@@ -171,6 +171,10 @@ class Access:
         scope = self.capabilities.get(Capability(capability))
         return scope is not None and scope.covers(department_ref)
 
+    def granted(self, capability: Capability | str) -> bool:
+        """Capability present with any scope at all; department scope is checked per object."""
+        return self.denied_reason is None and Capability(capability) in self.capabilities
+
     def covers_all_departments(self, capability: Capability | str) -> bool:
         scope = self.capabilities.get(Capability(capability))
         return self.denied_reason is None and scope is not None and scope.all_departments

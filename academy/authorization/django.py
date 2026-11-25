@@ -33,7 +33,7 @@ class AcademyPermission(BasePermission):
         if capability is None:
             return False
         access = getattr(request, "academy_access", None)
-        return isinstance(access, Access) and access.allows(capability)
+        return isinstance(access, Access) and access.granted(capability)
 
 
 class CapabilityRequiredMixin:

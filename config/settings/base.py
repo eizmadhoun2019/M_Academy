@@ -294,7 +294,10 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Masheed Academy API",
     # One shared component for the two "organization | department" choice sets.
-    "ENUM_NAME_OVERRIDES": {"ScopeTypeEnum": ["organization", "department"]},
+    "ENUM_NAME_OVERRIDES": {
+        "ScopeTypeEnum": ["organization", "department"],
+        "LessonContentTypeEnum": ["video", "text", "pdf"],
+    },
     "DESCRIPTION": "Endpoint inventory: docs/api.md",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,

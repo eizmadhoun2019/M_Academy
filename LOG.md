@@ -21,6 +21,35 @@
 
 ## Entries
 
+### [2026-11-25] — T-017 content services and API
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** Courses, versions, sections and lessons now go through
+  `academy/content/service.py`: every write checks `academy.manage_content`, then the course's
+  department scope, and treats a general course (`owner_department_ref` NULL, D-013) as
+  administrator-only; an out-of-scope object answers 404 like a missing one. Creating a course
+  opens draft version 1, cloning copies the whole tree into the next draft number and refuses a
+  second open draft (409 `draft_exists`), publishing validates the draft and either returns every
+  reason (422 `publish_invalid` with `{code, section_id?, lesson_id?}` items) or archives the
+  previous published version and stamps the new one atomically, and archive, discard, reorder and
+  lesson edits each append their audit row in the same transaction. Published versions stay
+  immutable: the services answer 409 `version_published` before the trigger would. The
+  `manage/courses/`, `manage/versions/`, `manage/sections/` and `manage/lessons/` routes expose
+  the inventory of `docs/api.md` §4, and `access.granted()` lets a department-scoped grant pass
+  the class-level permission while the service still enforces the object's department.
+- **Impact:** REQ-06 is implemented end to end: authoring, cloning, reordering and publishing
+  are covered by one decision path with audit evidence, and T-018 can attach media to the same
+  lesson rows.
+- **Evidence:** 21 new tests in `tests/test_content.py` (service scope matrix, clone numbering and
+  draft guard, every publish reason, immutable published versions, archive/discard, reorder
+  mismatch, owner-department lock, API create/list/patch/404/403/422 and section-lesson round
+  trip); ruff, format, mypy, `makemigrations --check`, OpenAPI validation and G7/G9 green
+  locally; CI recorded after the push.
+- **Approved by:** Project owner («كمل» instruction of 2026-11-25).
+- **References:** T-017, D-013, D-014, D-016, `docs/domain-model.md` §2.1–§2.4, `docs/api.md`
+  §4/§8.
+
 ### [2026-11-25] — T-016 permission grants
 
 - **Type:** Milestone

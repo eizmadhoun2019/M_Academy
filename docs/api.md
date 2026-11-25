@@ -165,7 +165,8 @@ not add business rules.
 `validation_error` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
 `unsupported_type` 400 · `unauthorized` 401 · `account_inactive` 403 · `forbidden` 403 ·
 `lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·
-`version_published` 409 · `course_published_locked` 409 · `upload_missing` 409 ·
+`version_published` 409 · `course_published_locked` 409 · `position_mismatch` 409 ·
+`upload_missing` 409 ·
 `checksum_mismatch` 409 · `retry_limit_reached` 409 · `media_not_ready` 409 ·
 `lesson_not_eligible` 409 · `enrollment_incomplete` 409 · `acknowledgment_not_required` 409 ·
 `last_admin` 409 · `publish_invalid` 422 · `target_empty` 422 · `throttled` 429 ·
