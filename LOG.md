@@ -45,7 +45,7 @@
   draft guard, every publish reason, immutable published versions, archive/discard, reorder
   mismatch, owner-department lock, API create/list/patch/404/403/422 and section-lesson round
   trip); ruff, format, mypy, `makemigrations --check`, OpenAPI validation and G7/G9 green
-  locally; CI recorded after the push.
+  locally; CI run `45585336949` green on `8b5ecc1`.
 - **Approved by:** Project owner («كمل» instruction of 2026-11-25).
 - **References:** T-017, D-013, D-014, D-016, `docs/domain-model.md` §2.1–§2.4, `docs/api.md`
   §4/§8.
