@@ -107,8 +107,8 @@ services:
       - "127.0.0.1:9100:9000"
       - "127.0.0.1:9101:9001"
     healthcheck:
-      # The pinned MinIO image has no curl; the live endpoint is checked from the host instead.
-      test: ["CMD", "/bin/true"]
+      # The pinned MinIO image has no curl/wget; use bash /dev/tcp for a real HTTP probe.
+      test: ["CMD", "/usr/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /minio/health/live HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
       interval: 10s
       timeout: 5s
       retries: 6
