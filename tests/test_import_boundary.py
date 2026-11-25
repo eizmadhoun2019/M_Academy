@@ -51,3 +51,10 @@ def test_gate_detects_a_forbidden_import(tmp_path: Path) -> None:
     assert any("host_stub.identity" in item for item in found)
     assert any("User" in item for item in found)
     assert any("import host_stub" in item for item in found)
+
+
+def test_gate_allows_the_academy_own_user_model(tmp_path: Path) -> None:
+    own = tmp_path / "own.py"
+    own.write_text("from academy.models.tenancy import User\n", encoding="utf-8")
+
+    assert gate.violations(own) == []

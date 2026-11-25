@@ -29,11 +29,13 @@ def test_every_academy_model_has_a_factory() -> None:
         for model in apps.get_app_config("academy").get_models()
         if model.__module__.startswith("academy.models")
     }
-    missing = sorted(model.__name__ for model in registered - set(FACTORIES))
+    tenant_models = {model for model in registered if issubclass(model, TenantModel)}
+    global_models = {"Organization", "User"}
+    missing = sorted(model.__name__ for model in tenant_models - set(FACTORIES))
 
     assert missing == []
-    for model in registered:
-        assert issubclass(model, TenantModel), model.__name__
+    # Identity tables are global by design (§1.1); they must not quietly become tenant rows.
+    assert {model.__name__ for model in registered - tenant_models} == global_models
 
 
 @pytest.mark.django_db

@@ -6,6 +6,7 @@ every fixture builds through :mod:`factories` so a schema change is fixed in one
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -17,10 +18,28 @@ from factories import (
     make_version,
 )
 
-from academy.models import Course, CourseVersion, Enrollment, Lesson, Section
+from academy.models import Course, CourseVersion, Enrollment, Lesson, Organization, Section
 
 ORG_ID = UUID("25498ed9-13b1-4f10-8294-859ff80a41b7")
 OTHER_ORG_ID = UUID("2f5e3d1a-0c4b-4a8e-9f2d-6b7c8d9e0f11")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def companies(django_db_setup: None, django_db_blocker: Any) -> None:
+    """The two tenant rows every factory needs; the organization FK is a database constraint.
+
+    ``ORG_ID`` comes from the migration seed on a fresh test database; the second company is
+    created here because the isolation suite needs it to exist before it can be referenced.
+    """
+    with django_db_blocker.unblock():
+        Organization.objects.get_or_create(
+            id=ORG_ID,
+            defaults={"name_ar": "Masheed Academy", "slug": "masheed"},
+        )
+        Organization.objects.get_or_create(
+            id=OTHER_ORG_ID,
+            defaults={"name_ar": "Other Company", "slug": "other-company"},
+        )
 
 
 @pytest.fixture

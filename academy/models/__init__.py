@@ -15,9 +15,15 @@ from academy.models.operations import (
 )
 from academy.models.progress import Assignment, CompletionRecord, Enrollment, LessonProgress
 from academy.models.quiz import Quiz, QuizAttempt, QuizAttemptAnswer, QuizChoice, QuizQuestion
+from academy.models.tenancy import BaseModel, Department, Membership, Organization, User
 
 __all__ = [
     "AccessSuspension",
+    "BaseModel",
+    "Department",
+    "Membership",
+    "Organization",
+    "User",
     "Assignment",
     "AuditEvent",
     "CompletionRecord",

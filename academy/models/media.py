@@ -40,6 +40,14 @@ class MediaAsset(TenantModel):
     attempt_count = models.SmallIntegerField(default=0)
     ready_at = models.DateTimeField(null=True, blank=True)
     created_by_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable target of the CP2 backfill.
+    created_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     objects: TenantManager[MediaAsset] = TenantManager()  # type: ignore[assignment]
 
     class Meta:

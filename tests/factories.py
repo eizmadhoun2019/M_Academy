@@ -13,6 +13,8 @@ from collections.abc import Callable, Iterable
 from typing import Any
 from uuid import UUID
 
+from django.utils import timezone
+
 from academy.models import (
     AccessSuspension,
     Assignment,
@@ -20,11 +22,13 @@ from academy.models import (
     CompletionRecord,
     Course,
     CourseVersion,
+    Department,
     Enrollment,
     HubWebhookEvent,
     Lesson,
     LessonProgress,
     MediaAsset,
+    Membership,
     NotificationLog,
     PermissionGrant,
     Quiz,
@@ -35,7 +39,31 @@ from academy.models import (
     ReminderLog,
     Section,
     TenantModel,
+    User,
 )
+
+
+def make_department(organization_id: UUID, **overrides: Any) -> Department:
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "name_ar": "التدريب",
+    }
+    values.update(overrides)
+    return Department.objects.create(**values)
+
+
+def make_membership(organization_id: UUID, **overrides: Any) -> Membership:
+    user = overrides.pop("user", None) or User.objects.create(
+        email=f"member-{uuid.uuid4()}@example.com", display_name="Member"
+    )
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "user": user,
+        "status": Membership.Status.ACTIVE,
+        "joined_at": timezone.now(),
+    }
+    values.update(overrides)
+    return Membership.objects.create(**values)
 
 
 def make_grant(organization_id: UUID, **overrides: Any) -> PermissionGrant:
@@ -326,6 +354,8 @@ def make_audit(organization_id: UUID, **overrides: Any) -> AuditEvent:
 
 
 FACTORIES: dict[type[TenantModel], Callable[[UUID], TenantModel]] = {
+    Department: make_department,
+    Membership: make_membership,
     Course: make_course,
     CourseVersion: make_version,
     Section: make_section,

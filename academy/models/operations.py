@@ -31,6 +31,14 @@ class ReminderLog(TenantModel):
     )
     kind = models.CharField(max_length=24, choices=Kind.choices)
     recipient_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable recipient target of the CP2 backfill.
+    recipient_membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     sent_at = models.DateTimeField(default=timezone.now)
     objects: TenantManager[ReminderLog] = TenantManager()  # type: ignore[assignment]
 
@@ -74,6 +82,21 @@ class NotificationLog(TenantModel):
     kind = models.CharField(max_length=32, choices=Kind.choices)
     dedupe_key = models.CharField(max_length=128)
     recipient_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable recipient targets of the CP2 backfill; null for account-level mail.
+    recipient_user = models.ForeignKey(
+        "academy.User",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    recipient_membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     channel = models.CharField(max_length=16, choices=Channel.choices, default=Channel.EMAIL)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     attempt_count = models.PositiveSmallIntegerField(default=0)
@@ -150,6 +173,9 @@ class AuditEvent(TenantModel):
 
     event_id = models.UUIDField(default=uuid.uuid4, editable=False)
     actor_ref = models.CharField(max_length=64)
+    # T-026 CP1: UUID snapshots, deliberately not FKs (§2.13).
+    actor_user_id = models.UUIDField(null=True, blank=True)
+    actor_membership_id = models.UUIDField(null=True, blank=True)
     action = models.CharField(max_length=64)
     object_type = models.CharField(max_length=32)
     object_id = models.CharField(max_length=64)
