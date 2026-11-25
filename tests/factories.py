@@ -14,6 +14,7 @@ from typing import Any
 from uuid import UUID
 
 from academy.models import (
+    AccessSuspension,
     Assignment,
     AuditEvent,
     CompletionRecord,
@@ -33,6 +34,17 @@ from academy.models import (
     Section,
     TenantModel,
 )
+
+
+def make_suspension(organization_id: UUID, **overrides: Any) -> AccessSuspension:
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "user_ref": "u-suspended",
+        "reason": "Policy review",
+        "suspended_by_ref": "u-admin",
+    }
+    values.update(overrides)
+    return AccessSuspension.objects.create(**values)
 
 
 def make_course(organization_id: UUID, **overrides: Any) -> Course:
@@ -305,6 +317,7 @@ FACTORIES: dict[type[TenantModel], Callable[[UUID], TenantModel]] = {
     ReminderLog: make_reminder,
     NotificationLog: make_notification,
     AuditEvent: make_audit,
+    AccessSuspension: make_suspension,
 }
 
 

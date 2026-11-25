@@ -27,11 +27,13 @@ never committed (`docs/operations/environments.md` §1).
 | `ACADEMY_SESSION_COOKIE_AGE` | `28800` (8 h) | Sliding: `SESSION_SAVE_EVERY_REQUEST=true` |
 | `ACADEMY_LOGIN_URL` | `/academy/login/` | Start of sign-in in `standalone` mode; `hub` mode starts at the Hub |
 | `ACADEMY_ACCESS_MODE` | `hub` (dev/test: `standalone`) | `hub` = verified Hub identity, no Academy login; `standalone` = local sign-in with trusted local membership (D-026). One record set; never a second organization |
+| `ACADEMY_ORGANIZATION_ID` | the agreed organization UUID (`docs/hub-contract.md` §7 example) | The single tenant this deployment serves (D-026); a Hub assertion or session naming another organization is refused |
 | `ACADEMY_AUTHORIZATION_MODE` | `role_plus_grants` (H1 production: `grants_only`) | Effective management authority (D-027). `grants_only` ignores Hub role defaults; `academy.learn` still needs active membership plus enrollment |
 | `ACADEMY_HUB_ROLE_DEFAULTS` | `platform_admin=all; department_manager=own departments` | Role-to-capability map used only in `role_plus_grants`; mirrors `docs/api.md` §2 |
 | `ACADEMY_MEMBERSHIP_RECONCILE_MINUTES` | `60` | Linked-user reconciliation interval (D-029); `0` disables the job |
 | `ACADEMY_API_BODY_LIMIT_BYTES` | `2097152` (2 MiB) | Larger payloads → `413 payload_too_large` |
 | `ACADEMY_DEVELOPMENT_LOGIN` | `true` in dev/test, `false` otherwise | Local identity stub |
+| `ACADEMY_THROTTLES_ENABLED` | `true` (test profile: `false`) | Turns the documented rate counters on or off; disabling is a test-only setting, never a production choice |
 | `ACADEMY_LOG_LEVEL` | `INFO` | JSON to stdout; never logs tokens, cookies, media URLs or emails |
 
 Proxy/TLS, CSRF-trusted origins, path prefix and storage CORS origin: `docs/hub-contract.md` §7.

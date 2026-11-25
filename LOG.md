@@ -21,6 +21,35 @@
 
 ## Entries
 
+### [2026-11-25] — T-014 sessions and auth lifecycle
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** One request middleware now resolves the caller into a `Principal` — from a
+  verified Hub claim set in `hub` mode, or from the standalone session that stores only the
+  identity (`user_ref`, role, departments, active flag) and never a capability — and publishes
+  the resolved `Access` on `request.academy_access` for the API and the pages alike. The
+  answer is cached in Redis under a key that carries the authorization mode, the role and
+  department fingerprint and the suspension flag, so a role change or a new suspension is
+  visible on the very next request even with a warm cache. `AccessSuspension` (migration
+  `0005`) adds one live suspension per user with a non-blank reason and a lift that must name
+  its actor; a suspended or inactive member gets `access_suspended` or `account_inactive` from
+  every API route and the X2 page from every `/academy/` page. The X1 sign-in form writes the
+  local identity for `standalone` mode only, is disabled by `ACADEMY_DEVELOPMENT_LOGIN`, can
+  preview an inactive membership, and is throttled at `10/min`; the DRF scopes of
+  `docs/configuration.md` §6 are configured with the documented rates and keyed by the verified
+  `user_ref`.
+- **Impact:** `ACADEMY_ACCESS_MODE`, `ACADEMY_ORGANIZATION_ID`, `ACADEMY_DEVELOPMENT_LOGIN`
+  and `ACADEMY_THROTTLES_ENABLED` are now read by the code and listed in
+  `docs/configuration.md` §1. Middleware order puts the resolver after sessions and locale
+  selection. Suspended grants are untouched, so lifting a suspension restores them (D-028).
+- **Evidence:** Branch `task/T-014-sessions-auth`; 360 tests including `tests/test_sessions.py`
+  (middleware, both access modes, suspension, role change, cache, sign-in/out, throttle, model
+  constraints); ruff, format, mypy, `makemigrations --check`, OpenAPI validation and G7/G9 green
+  locally; CI run recorded after the push.
+- **Approved by:** Project owner («كمل» instruction of 2026-11-25).
+- **References:** T-014, D-026, D-027, D-028, `docs/configuration.md` §1/§6, `docs/domain-model.md` §2.15.
+
 ### [2026-11-22] — Rebuild from scratch with UPDS documentation baseline
 
 - **Type:** Milestone

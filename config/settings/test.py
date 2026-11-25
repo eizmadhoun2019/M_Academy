@@ -30,5 +30,8 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+# Dev/test use the local sign-in and start from the H1 authorization mode (D-027).
+ACADEMY_ACCESS_MODE = "standalone"
+DEVELOPMENT_LOGIN = True
 THROTTLES_ENABLED = False
 MEDIA_ROOT = os.path.join(tempfile.gettempdir(), "academy-test-media")

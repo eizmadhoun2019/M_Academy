@@ -13,6 +13,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import NotAuthenticated
 
 from academy.authorization.core import Access
+from academy.exceptions import AccessSuspended, InactiveAccount
 
 
 class AcademyAccessAuthentication(BaseAuthentication):
@@ -22,6 +23,12 @@ class AcademyAccessAuthentication(BaseAuthentication):
         access = getattr(request, "academy_access", None)
         if not isinstance(access, Access):
             raise NotAuthenticated("no verified Academy identity")
+        # A suspended or inactive member holds an identity but no capability: refuse before
+        # any view can answer, so every endpoint rejects the caller the same way (D-028).
+        if access.denied_reason == "suspended":
+            raise AccessSuspended("the account is suspended in Academy")
+        if access.denied_reason == "inactive":
+            raise InactiveAccount("the account is inactive")
         return (access.principal, access)
 
     def authenticate_header(self, request: Any) -> str:

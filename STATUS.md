@@ -72,7 +72,7 @@ and verified here.
 | T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[x]` done on main (commit `bdab55e`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45367468113` on `main` green; 289 tests at merge) | Tech authority | T-009 | Schema builds with 0 warnings |
 | T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[x]` done on main (commit `6e08296`, merged 2026-11-24 on owner instruction; the merge dropped the branch's files and `f2dc808` restored them; 311 tests at merge) | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
 | T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[~]` in progress/review (AI agent, 2026-11-24; `static/css/academy.css` tokens, `templates/academy/`, preview at `/academy/preview/{ar,en}/`, `/academy` error pages, local Noto Sans Arabic with OFL licence, gettext catalogue compiled by `scripts/compile_messages.py`; 331 tests, ruff/format/mypy and G7/G9 clean; no migration; CI run `45382616992` green on `main`) | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
-| T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[ ]` | Tech authority | T-004 | Unauthenticated/inactive/role-change tests; access modes `hub`/`standalone` (local sign-in, D-026) and `AccessSuspension` enforcement (D-028) |
+| T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[~]` in progress/evidence (AI agent, 2026-11-25; `academy.access` middleware, `AccessSuspension` migration `0005`, X1 sign-in and X2 access-denied pages, capability cache keyed by the access fingerprint, DRF scopes per `docs/configuration.md` §6; 357 tests, ruff/format/mypy and G7/G9 clean locally; CI pending) | Tech authority | T-004 | Unauthenticated/inactive/role-change tests; access modes `hub`/`standalone` (local sign-in, D-026) and `AccessSuspension` enforcement (D-028) |
 | T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[ ]` | Tech authority | T-004, T-014 | Contract + integration suites pass vs fake |
 | T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[ ]` | Tech authority | T-009 | REQ-13 matrix tests in DRF + web, both modes; H1 `grants_only`, suspended grants ineffective but retained |
 | T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[ ]` | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
@@ -171,8 +171,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-013 (UI foundation) is complete on `main` and waits for owner review; **T-014**
-(sessions and auth lifecycle) follows it.
+T-014 (sessions and auth lifecycle) is implemented on its branch and waits for CI evidence
+and owner review; **T-015** (Hub HTTP integration) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one

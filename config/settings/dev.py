@@ -11,6 +11,8 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 MEDIA_ROOT = env("ACADEMY_MEDIA_ROOT", str(BASE_DIR / "local_media"))
 DEVELOPMENT_LOGIN = env("ACADEMY_DEVELOPMENT_LOGIN", "true").lower() == "true"
+# The development stack has no Hub, so the documented path is the local sign-in.
+ACADEMY_ACCESS_MODE = env("ACADEMY_ACCESS_MODE", "standalone")
 
 # The development stack runs against the stubs unless an adapter is configured explicitly, so a
 # fresh clone works without a Hub or a bucket (docs/configuration.md §11).

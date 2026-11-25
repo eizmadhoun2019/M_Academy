@@ -1,0 +1,25 @@
+{% load i18n static %}{% get_current_language as current_language %}{% get_current_language_bidi as language_bidi %}<!doctype html>
+<html lang="{{ current_language }}" dir="{% if language_bidi %}rtl{% else %}ltr{% endif %}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% translate "You cannot continue" %} — {% translate "Masheed Academy" %}</title>
+    <link rel="stylesheet" href="{% static 'css/academy.css' %}">
+  </head>
+  <body class="account-body" data-state="forbidden">
+    <main class="account-card" id="main">
+      <p class="account-code">{ 403 }</p>
+      <h1 class="account-title">{% translate "You cannot continue" %}</h1>
+      {% if reason == "suspended" %}
+        <p class="account-text">
+          {% translate "Your Academy access is suspended locally. Your grants are kept but cannot be used until an Academy administrator lifts the suspension." %}
+        </p>
+      {% else %}
+        <p class="account-text">
+          {% translate "Your membership is not active. Contact your organization administrator; Academy cannot activate it." %}
+        </p>
+      {% endif %}
+      <a class="button button--secondary" href="{% url 'academy_access:login' %}">{% translate "Back to sign-in" %}</a>
+    </main>
+  </body>
+</html>

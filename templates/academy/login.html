@@ -1,0 +1,58 @@
+{% load i18n static %}{% get_current_language as current_language %}{% get_current_language_bidi as language_bidi %}<!doctype html>
+<html lang="{{ current_language }}" dir="{% if language_bidi %}rtl{% else %}ltr{% endif %}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% translate "Sign in" %} — {% translate "Masheed Academy" %}</title>
+    <link rel="stylesheet" href="{% static 'css/academy.css' %}">
+  </head>
+  <body class="account-body">
+    <main class="account-card" id="main">
+      <h1 class="account-title">{% translate "Sign in" %}</h1>
+      <p class="account-text">{% translate "Local sign-in is for standalone deployments and development only." %}</p>
+
+      {% if throttled %}
+        <p class="field-error" role="alert">{% translate "Too many attempts. Wait a minute and try again." %}</p>
+      {% endif %}
+
+      <form method="post" action="{% url 'academy_access:login' %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <p class="field-error" role="alert">{{ form.non_field_errors.0 }}</p>
+        {% endif %}
+
+        <div class="field">
+          <label for="{{ form.user_ref.id_for_label }}">{% translate "User reference" %}</label>
+          {{ form.user_ref }}
+          {% if form.user_ref.errors %}<p class="field-error">{{ form.user_ref.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.password.id_for_label }}">{% translate "Password" %}</label>
+          {{ form.password }}
+          {% if form.password.errors %}<p class="field-error">{{ form.password.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.role.id_for_label }}">{% translate "Role" %}</label>
+          {{ form.role }}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.department_ref.id_for_label }}">{% translate "Department reference" %}</label>
+          {{ form.department_ref }}
+          <p class="hint">{% translate "Optional. Leave it empty for a personal account." %}</p>
+        </div>
+
+        <div class="field">
+          <label for="{{ form.simulate_inactive.id_for_label }}">
+            {{ form.simulate_inactive }} {% translate "Simulate an inactive membership" %}
+          </label>
+          <p class="hint">{% translate "Used to preview the access-denied page (X2)." %}</p>
+        </div>
+
+        <button class="button button--primary" type="submit">{% translate "Sign in" %}</button>
+      </form>
+    </main>
+  </body>
+</html>

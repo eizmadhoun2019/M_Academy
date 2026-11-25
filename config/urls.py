@@ -15,6 +15,7 @@ urlpatterns = [
     path("healthz", healthz, name="healthz"),
     # The language switch posts here (django.conf.urls.i18n) and redirects back.
     path("i18n/", include("django.conf.urls.i18n")),
+    path("academy/", include("academy.access.urls")),
     path("academy/", include("academy.ui.urls")),
     path("api/v1/academy/", include("academy.api.urls")),
     # Development/staging only; the production profile disables this route (docs/api.md §9).

@@ -65,6 +65,8 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     # After sessions and before common: Django's required order for locale selection.
     "django.middleware.locale.LocaleMiddleware",
+    # Resolves the caller once for the API and the pages (T-014); needs the session above.
+    "academy.access.middleware.AcademyAccessMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -159,6 +161,27 @@ SESSION_COOKIE_AGE = env_int("ACADEMY_SESSION_COOKIE_AGE", 28800)
 
 # D-027: the compatibility union is the default; H1 production sets `grants_only`.
 ACADEMY_AUTHORIZATION_MODE = env("ACADEMY_AUTHORIZATION_MODE", "role_plus_grants")
+
+# D-026: `hub` trusts only a verified Hub identity; `standalone` uses a local sign-in.
+ACADEMY_ACCESS_MODE = env("ACADEMY_ACCESS_MODE", "hub")
+if ACADEMY_ACCESS_MODE not in ("hub", "standalone"):
+    raise ImproperlyConfigured(
+        f"ACADEMY_ACCESS_MODE must be 'hub' or 'standalone', got {ACADEMY_ACCESS_MODE!r}"
+    )
+# One deployment serves one organization (D-026); the Hub assertion must name this UUID.
+ACADEMY_ORGANIZATION_ID = env("ACADEMY_ORGANIZATION_ID", "25498ed9-13b1-4f10-8294-859ff80a41b7")
+DEVELOPMENT_LOGIN = env_bool("ACADEMY_DEVELOPMENT_LOGIN", False)
+THROTTLES_ENABLED = env_bool("ACADEMY_THROTTLES_ENABLED", True)
+THROTTLE_RATES = {
+    "anon": "20/min",
+    "login": "10/min",
+    "heartbeat": "30/min",
+    "playback": "30/min",
+    "read": "120/min",
+    "write": "60/min",
+    "export": "5/hour",
+    "webhook": "600/min",
+}
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -205,6 +228,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "academy.api.pagination.AcademyPagination",
     "PAGE_SIZE": 25,
+    # docs/configuration.md §6; the test profile turns the counters off.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "academy.api.throttles.AcademyAnonThrottle",
+        "academy.api.throttles.AcademyUserThrottle",
+    ]
+    if THROTTLES_ENABLED
+    else [],
+    "DEFAULT_THROTTLE_RATES": THROTTLE_RATES,
 }
 
 SPECTACULAR_SETTINGS = {

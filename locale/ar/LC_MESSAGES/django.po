@@ -330,3 +330,42 @@ msgstr "معاينة حالة %(option)s"
 
 msgid "Back to the ready state"
 msgstr "العودة إلى الحالة الجاهزة"
+
+msgid "Sign in"
+msgstr "تسجيل الدخول"
+
+msgid "Local sign-in is for standalone deployments and development only."
+msgstr "تسجيل الدخول المحلي مخصّص للنشر المستقل والتطوير فقط."
+
+msgid "Too many attempts. Wait a minute and try again."
+msgstr "محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة."
+
+msgid "Password"
+msgstr "كلمة المرور"
+
+msgid "Role"
+msgstr "الدور"
+
+msgid "Department reference"
+msgstr "معرّف الإدارة"
+
+msgid "Optional. Leave it empty for a personal account."
+msgstr "اختياري. اتركه فارغاً لحساب شخصي."
+
+msgid "Simulate an inactive membership"
+msgstr "محاكاة عضوية غير نشطة"
+
+msgid "Used to preview the access-denied page (X2)."
+msgstr "يُستخدم لمعاينة صفحة منع الوصول (X2)."
+
+msgid "You cannot continue"
+msgstr "لا يمكنك المتابعة"
+
+msgid "Your Academy access is suspended locally. Your grants are kept but cannot be used until an Academy administrator lifts the suspension."
+msgstr "تم إيقاف وصولك إلى الأكاديمية محلياً. تبقى منحك محفوظة لكن لا يمكن استخدامها حتى يرفع مسؤول الأكاديمية الإيقاف."
+
+msgid "Your membership is not active. Contact your organization administrator; Academy cannot activate it."
+msgstr "عضويتك غير نشطة. تواصل مع مسؤول مؤسستك؛ لا تستطيع الأكاديمية تفعيلها."
+
+msgid "Back to sign-in"
+msgstr "العودة إلى تسجيل الدخول"
