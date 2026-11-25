@@ -21,6 +21,23 @@
 
 ## Entries
 
+### [2026-11-25] — T-025 H1.5 amendment evidence (content commit and CI)
+
+- **Type:** Verification
+- **Status:** Verified
+- **Summary:** Recorded the content commit and CI run for the H1.5 architecture amendment. The
+  documentation content is `e2e9c1b` on `task/T-025-docs-consolidation`; GitHub Actions workflow
+  `CI` completed with **success** for that exact SHA. This evidence-only entry updates the
+  citations without changing the content commit or embedding its own hash in it.
+- **Impact:** `STATUS.md` now cites `e2e9c1b` and run 45684270950. T-025 remains `[~]` because owner
+  review/approval is still required; CI is no longer an open evidence gap.
+- **Evidence:** Commit `e2e9c1b`; `CI` run
+  https://github.com/eizmadhoun2019/M_Academy/actions/runs/45684270950 — `completed` / `success`;
+  `python scripts/check_docs.py` → G9 passed (38 markdown files).
+- **Approved by:** Project owner (delegation for this T-025 correction).
+- **References:** T-025, the amendment entry below, `STATUS.md`, `RULES.md` evidence policy.
+- **Corrects:** The “CI pending” evidence line in the amendment entry below.
+
 ### [2026-11-25] — T-025 H1.5 architecture simplification amendment
 
 - **Type:** Decision | Change

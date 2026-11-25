@@ -31,7 +31,7 @@ Implementation starts at T-026 after the owner merges this branch.
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-025 | Documentation and governance consolidation | `[~]` — H1.5 amendment on branch, awaiting review and CI | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation`; content SHA/CI in the follow-up evidence entry |
+| T-025 | Documentation and governance consolidation | `[~]` — amendment `e2e9c1b`; CI success; awaiting owner review | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation`; CI run 45684270950 |
 | T-026 | Tenancy and account foundation | `[ ]` next | AI agent after T-025 merge | T-025 | `docs/plan.md` §4 T-026 |
 | T-033 | Hub quarantine | `[ ]` parallel candidate | AI agent | T-026 | `docs/plan.md` §4 T-033 |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
@@ -48,8 +48,8 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
   no company chooser/switcher/selection APIs or screens, platform administration without a
   membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
   with 320+ testing and the binding visual-reference gate. Prior package commits `96f78d2`,
-  `eb19fd1`, `15e0e53`; `check_docs` G9 passed (38 files); CI for the amended head is not yet
-  verified, so T-025 stays `[~]` and is not merge-ready.
+  `eb19fd1`, `15e0e53`, content amendment `e2e9c1b`; `check_docs` G9 passed (38 files); GitHub
+  Actions CI run 45684270950 succeeded. T-025 stays `[~]` pending owner review, not merge-ready.
 - 2026-11-25 — T-022 reports: one selector module defines every number, department scope includes
   general courses and refuses a cross-department read, streamed BOM CSV with formula-safe cells
   and an audited export. See `LOG.md`.
@@ -73,7 +73,6 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 | D-009 KPI values | Blocks success measurement, not the build | Project owner | Set before the pilot | T-034 |
 | T-001 bucket evidence | Holds T-001 `[~]` | Tech authority | Re-run the bucket check with the resolved MinIO image | T-034 |
 | Legacy identity mapping file (`legacy_user_ref,email,display_name`) | T-026 cannot activate real accounts without it | Project owner/HR | Provide a verified file before T-027 | T-026/T-027 |
-| CI for the amended T-025 head | Gate/merge evidence is incomplete until a run is observed | AI agent / owner | Check GitHub Actions after push; if unavailable, record it and keep T-025 `[~]` | T-025 |
 | Two stacks on one host | Port/volume/cookie collision or legacy damage | Tech authority | Isolation rules enforced; only `m-academy-*` commands | ongoing |
 | Public repository (D-023) | Leaking internal material | Project owner | No secrets in tracked files; assume every commit is public | ongoing |
 | Hub contract (D-004/D-010) | No H1.5 impact; Hub dormant | Project owner + Hub owner | Revisit only at a reactivation decision | H2 |
@@ -91,8 +90,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). This file does not du
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-T-025 is ready for **owner review**, not yet merge-ready: CI on the final branch head must be
-observed, or recorded as unavailable, and the owner must approve. After merge, start **T-026 CP1**
+T-025 is ready for **owner review**; CI on content commit `e2e9c1b` passed, and the owner's approval
+is the remaining merge condition. After merge, start **T-026 CP1**
 (tenancy schema expand) exactly as `docs/plan.md` §4 defines it; T-033 may run in parallel once
 T-026 CP1 lands. Do not merge to `main` without the owner's approval. Say «كمل» to authorize the
 next checkpoint; the agent does one checkpoint, commits, pushes, reports evidence and stops.
