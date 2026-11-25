@@ -89,6 +89,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-25 — T-013 follow-up: the development stack serves its own static files,
+  the stylesheet is never cached stale, the drawer opens on phones without hiding the
+  desktop sidebar, and no width overflows at 360 or 768. See LOG.md.
 - 2026-11-24 — T-013 UI foundation: design tokens, one RTL/LTR shell, the component
   showcase with five sample states, 403/404/500 pages, the locally hosted Noto Sans Arabic
   font and a dependency-free catalogue compiler. See LOG.md.

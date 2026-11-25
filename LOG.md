@@ -720,3 +720,27 @@ overrides require.
 - **References:** T-013, REQ-05, `docs/ui/screen-specification.md` §1, §5, §7,
   `docs/ui/wireframes.md` §Visual language, §Preview routes, `docs/api.md` §10, RULES §UI.
 
+### [2026-11-25] — T-013 follow-up: the development stack renders the shell
+
+- **Type:** Fix
+- **Status:** Implemented
+- **Summary:** Running the stack locally exposed four gaps the test suite could not see:
+  gunicorn serves no static files, so the stylesheet and the Arabic font answered 404; the
+  browser cached the stylesheet heuristically from its `Last-Modified` header, so an edit was
+  invisible until a cache purge; `<details>` hides its children entirely when closed, which
+  removed the desktop sidebar; and a grid item's min-content width let a long field stretch
+  the column past a 360 px viewport. The development profile now mounts `config.dev_static`
+  (only with `DEBUG`, with `no-store`), maps `woff2` to its real MIME type, uses a
+  checkbox-and-label drawer, and keeps every grid item at `min-inline-size: 0` with
+  `minmax(0, 1fr)` main column.
+- **Impact:** `/academy/preview/ar|en/` is reviewable in a browser at 360, 768 and 1280 with
+  its real font and styles; production is unchanged because the route needs `DEBUG` and the
+  build collects statics separately.
+- **Evidence:** `pytest -q tests/test_ui.py` → 20 passed; `ruff check`, `ruff format --check`
+  and `mypy .` (82 files) clean. In the browser: no console errors, stylesheet and font return
+  200, no horizontal overflow at 360 or 768 in Arabic and English, and the menu button opens
+  and closes the drawer. CI run `45562632646` on `task/T-013-ui-foundation` is green.
+- **Approved by:** Project owner (2026-11-25): «كمل».
+- **References:** T-013, `docs/ui/screen-specification.md` §5, `docs/api.md` §10,
+  `docs/operations/environments.md`.
+
