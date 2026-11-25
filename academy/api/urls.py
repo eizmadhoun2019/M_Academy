@@ -44,6 +44,12 @@ from academy.api.progress import (
     LessonCompleteView,
     LessonProgressView,
 )
+from academy.api.reports import (
+    ReportCompletionView,
+    ReportExportView,
+    ReportOverdueView,
+    ReportSummaryView,
+)
 from academy.api.views import MeCapabilitiesView
 
 app_name = "academy_api"
@@ -113,6 +119,14 @@ urlpatterns = [
         MediaRetryView.as_view(),
         name="manage-media-retry",
     ),
+    path("manage/reports/summary/", ReportSummaryView.as_view(), name="manage-reports-summary"),
+    path("manage/reports/overdue/", ReportOverdueView.as_view(), name="manage-reports-overdue"),
+    path(
+        "manage/reports/completion/",
+        ReportCompletionView.as_view(),
+        name="manage-reports-completion",
+    ),
+    path("manage/reports/export.csv", ReportExportView.as_view(), name="manage-reports-export"),
     path("manage/assignments/", AssignmentListCreateView.as_view(), name="manage-assignments"),
     path(
         "manage/assignments/preview/",

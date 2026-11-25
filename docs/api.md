@@ -119,8 +119,10 @@ Scope rules (D-015, D-017):
 | GET | `manage/reports/completion/` | Per-learner completion rows | Paginated, cursor supported |
 | GET | `manage/reports/export.csv` | CSV export | Neutralizes formula injection (`= + - @ \t \r`); `Content-Disposition: attachment`; audited |
 
-All report queries are department-scoped for `department_manager`. Query count is asserted
-in tests (no N+1 over enrollments).
+All report queries are department-scoped for `department_manager`; a `department_ref` or
+`course` outside that scope is `403 forbidden`, never an empty list. `from > to` is
+`400 invalid_range`; the numbers themselves are defined in `docs/reports.md`. Query count is
+asserted in tests (no N+1 over enrollments).
 
 ## 7. Administration (`academy.admin`)
 
@@ -176,7 +178,7 @@ The web layer derives everything from the same services and selectors as the API
 not add business rules.
 
 ## 11. Error codes (complete list)
-`validation_error` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
+`validation_error` 400 · `invalid_range` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
 `unsupported_type` 400 · `unauthorized` 401 · `account_inactive` 403 · `forbidden` 403 ·
 `lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·
 `version_published` 409 · `course_published_locked` 409 · `position_mismatch` 409 ·

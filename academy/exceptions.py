@@ -92,6 +92,12 @@ class TargetEmpty(AcademyError):
     code = "target_empty"
 
 
+class InvalidRange(AcademyError):
+    """A report window whose ``from`` is after its ``to`` (400, ``invalid_range``)."""
+
+    code = "invalid_range"
+
+
 class ProgressSkipRejected(AcademyError):
     """A heartbeat that claims more playback than the clock allows (400, §7.3 step 5)."""
 

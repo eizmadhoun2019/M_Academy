@@ -131,6 +131,11 @@ ACADEMY_TRANSCODE_TIMEOUT_SECONDS = env_int("ACADEMY_TRANSCODE_TIMEOUT_SECONDS",
 ACADEMY_TRANSCODE_ATTEMPTS = env_int("ACADEMY_TRANSCODE_ATTEMPTS", 2)
 ACADEMY_KEEP_ORIGINALS = env_bool("ACADEMY_KEEP_ORIGINALS", False)
 
+# --- Reports (docs/reports.md §4) --------------------------------------------
+# Cursor paging is opt-in on the report lists; a page without ``cursor=`` keeps the page
+# numbers, and this is the page size ``cursor=`` returns.
+ACADEMY_CURSOR_PAGE_SIZE = env_int("ACADEMY_CURSOR_PAGE_SIZE", 50)
+
 # --- Adapters (ARCHITECTURE.md §4) -------------------------------------------
 # Four host seams, each named by a ``module.path:ClassName`` value and resolved on first use
 # by ``academy.adapters.loader``. Empty means "not configured": the loader raises instead of

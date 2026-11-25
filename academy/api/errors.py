@@ -18,6 +18,7 @@ from academy.exceptions import AcademyError
 
 STATUS_BY_CODE = {
     "validation_error": status.HTTP_400_BAD_REQUEST,
+    "invalid_range": status.HTTP_400_BAD_REQUEST,
     "upload_too_large": status.HTTP_400_BAD_REQUEST,
     "unsupported_type": status.HTTP_400_BAD_REQUEST,
     "progress_skip_rejected": status.HTTP_400_BAD_REQUEST,

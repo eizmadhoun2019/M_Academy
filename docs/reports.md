@@ -2,7 +2,7 @@
 
 **Status:** Canonical for REQ-12. `docs/api.md` §6 owns the routes; this file owns what each
 response contains and how every number is computed.
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-25
 **Consumed by:** T-022 (implementation and tests), T-023 (dashboard columns).
 
 ---
@@ -17,7 +17,7 @@ response contains and how every number is computed.
 | **Not started** | `status='active'` with no watched progress. |
 | **Overdue** | `status='active'` and `due_at IS NOT NULL` and `due_at < now()`. A learner at exactly `due_at` is not yet overdue. |
 | **Completion %** | `completed / eligible × 100`, rounded to one decimal, `0.0` when the denominator is 0 (never blank, never an error). |
-| **Average completion time** | For enrollments completed inside the filter window: mean of `completed_at − created_at`, expressed in days with one decimal. Uses `created_at` (enrollment creation) because no separate `started_at` is stored. |
+| **Average completion time** | Mean of `completed_at − created_at` over the *completed* rows of the same filtered result set (the window of §1 applies to `created_at`), in days with one decimal; `null` when that set holds no completed row. Uses `created_at` (enrollment creation) because no separate `started_at` is stored. |
 | **Days overdue** | `floor((now() − due_at) / 1 day)`, minimum 0. |
 | **Last activity** | `MAX(LessonProgress.last_heartbeat_at)` for the enrollment. |
 | **Progress %** | Completed lessons ÷ lessons in the pinned version × 100, one decimal. Lessons in an archived version are counted as they were. |
@@ -31,7 +31,7 @@ Query: `group_by=course|department_ref` (default `course`), `course`, `departmen
 | Column | Type | Notes |
 |---|---|---|
 | `group_key` | string | Course UUID or department ref |
-| `group_label` | string | Display only — resolved from the Hub directory, cached 60 s; falls back to the key when the directory is unavailable |
+| `group_label` | string | Display only — resolved from the Hub directory, cached 60 s; falls back to the key (the ref) when the directory is unavailable or does not know it. The general bucket (`group_key` empty) is labelled with `ACADEMY_ORGANIZATION_NAME` |
 | `eligible` | int | |
 | `completed` | int | |
 | `in_progress` | int | |
@@ -83,7 +83,7 @@ Same filters as §4 except pagination, plus `columns` (comma-separated allowlist
 Streamed, not buffered; no row cap because the query is bounded and indexed.
 
 Format rules:
-- `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="academy-completion-<from>-<to>.csv"`, `Cache-Control: private, no-store`.
+- `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="academy-completion-<from>-<to>.csv"` (the literal `all` stands in for an absent bound), `Cache-Control: private, no-store`.
 - Encoding `utf-8-sig` (BOM) so Arabic opens correctly in Excel; line endings CRLF.
 - Header row is the snake_case column names of §4, in the order requested.
 - Values: timestamps ISO-8601 UTC; decimals with `.` as separator regardless of locale;
