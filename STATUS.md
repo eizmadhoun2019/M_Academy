@@ -75,7 +75,7 @@ and verified here.
 | T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[x]` done on main (commit `cb1edda`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45568418999` on `main` green at that commit; `AccessSuspension` migration `0005`, `academy.access` middleware, X1 sign-in and X2 access-denied pages, fingerprint-keyed capability cache, documented DRF scopes; 360 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004 |
 | T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[x]` done on main (commit `f4eea00`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45573329413` on `main` green at that commit; 399 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-014 |
 | T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[x]` done on main (commit `17fe415`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45577563757` on `main` green at that commit; `PermissionGrant` migration `0007`, grant/revoke services with audit, `manage/grants/` API with idempotency, `provision_admin`, last-admin guard; 423 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-009 |
-| T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[~]` implemented on `task/T-017-content` (scope-aware course/version/section/lesson services, publish validator with per-item reasons, `manage/courses/`+`manage/versions/`+`manage/sections/`+`manage/lessons/` routes; 21 new tests (444 total), ruff/format/mypy and G7/G9 clean locally; CI run `45585336949` green on the branch at `8b5ecc1`) | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
+| T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[x]` done on main (commit `6cc59c9`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45586286539` on `main` green at that commit; scope-checked services, publish validation and the `manage/` content routes; 444 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
 | T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[ ]` | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
 | T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[ ]` | Tech authority | T-017 | REQ-08, sequential-lock matrix |
 | T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[ ]` | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
@@ -185,8 +185,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-017 (content services and API) is implemented on its branch and waits for CI evidence and
-owner review; **T-018** (media upload and processing) follows it.
+T-017 (content services and API) is complete on `main` and waits for owner review; **T-018**
+(media upload and processing) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
