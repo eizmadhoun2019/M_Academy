@@ -1,0 +1,9 @@
+{{ brand }}
+{{ subject }}
+
+{{ body }}
+
+{{ button }}:
+{{ url }}
+
+{{ footer }}

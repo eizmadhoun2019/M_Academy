@@ -22,7 +22,8 @@ never committed (`docs/operations/environments.md` §1).
 | `ACADEMY_ALLOWED_HOSTS` | `localhost,127.0.0.1` (dev) | Comma-separated |
 | `ACADEMY_TIME_ZONE` | `UTC` | Storage and logs always UTC |
 | `ACADEMY_BUSINESS_TZ` | `UTC` (D-002) | Reminder anchors and display only |
-| `ACADEMY_DEFAULT_LANGUAGE` | `ar` | `ar \| en`; `LocaleMiddleware`, cookie `django_language` |
+| `ACADEMY_DEFAULT_LANGUAGE` | `ar` | `ar \| en`; `LocaleMiddleware`, cookie `django_language`; the language of every notification |
+| `ACADEMY_ORGANIZATION_NAME` | `مشيد` | Display name substituted for `{org}` in the notification copy and printed in the brand line (`docs/notifications.md` §3) |
 | `ACADEMY_SESSION_COOKIE_NAME` | `m_academy_sessionid` | Namespaced — never bare `sessionid` |
 | `ACADEMY_SESSION_COOKIE_AGE` | `28800` (8 h) | Sliding: `SESSION_SAVE_EVERY_REQUEST=true` |
 | `ACADEMY_LOGIN_URL` | `/academy/login/` | Start of sign-in in `standalone` mode; `hub` mode starts at the Hub |

@@ -24,10 +24,10 @@ duplicate a user-visible effect. Exactly one `beat` process runs at a time.
 | `academy.media.process` | `media` | `POST /manage/media/{id}/complete/` after `stat` verification | soft 3300 s, hard 3600 s; 2 retries, backoff 60 s / 300 s | `MediaAsset.status` transition under `SELECT … FOR UPDATE`; a `ready` asset is never reprocessed | `ffprobe` → duration/limit check → ffmpeg → HLS renditions + poster → `status='ready'`, `ready_at` |
 | `academy.media.purge_abandoned` | `default` | beat, daily 03:10 UTC | 300 s; 1 retry | Deletes only `status='awaiting_upload'` older than `ACADEMY_UPLOAD_ABANDON_HOURS` | Frees orphan storage objects and rows |
 | `academy.progress.compact` | `default` | beat, daily 04:10 UTC | 900 s; no retry (next run covers it) | Re-normalization is convergent: merging adjacent ranges with gap ≤ 0.5 s always yields the same result | Recalculates `watched_ranges`, `watched_seconds`, `frontier_seconds` for rows touched in the last 2 days |
-| `academy.notifications.send` | `notifications` | On commit of a domain handler that creates a `pending` `NotificationLog` row; also the retry sweeper | 60 s; 3 attempts, backoff 5 / 15 / 60 min | `UNIQUE(organization_id, dedupe_key, channel)`; `status='sent'` short-circuits | Renders the message from `docs/notifications.md` and delivers by channel |
-| `academy.notifications.sweep` | `notifications` | beat, every 15 min | 300 s | Picks `pending`/`failed` rows with `attempt_count < 3`; the unique key prevents doubles | Re-enqueues `academy.notifications.send` |
-| `academy.reminders.evaluate` | `default` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ` (D-002) | 1800 s; no retry (idempotent, next run re-evaluates) | `UNIQUE(enrollment_id, kind, recipient_ref)` on `ReminderLog`, checked in the same transaction that creates the notification | Emits `due_minus_3`, `due`, `due_plus_1` for active, incomplete, non-cancelled enrollments with a due date that is not yet acknowledged |
-| `academy.escalations.digest` | `notifications` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ`, for enrollments at due+3 | 1800 s; 1 retry | `ReminderLog.kind='manager_escalation'` per `(enrollment, manager)` | Sends one digest per manager covering their overdue learners (REQ-11) |
+| `academy.notifications.send` | `notifications` | On commit of a domain handler that creates a `pending` `NotificationLog` row; also the retry sweeper | soft 60 s / hard 90 s; 3 attempts, backoff 5 / 15 min | `UNIQUE(organization_id, dedupe_key, channel)`; `status='sent'` short-circuits | Renders the message from `docs/notifications.md` and delivers by channel |
+| `academy.notifications.sweep` | `notifications` | beat, every 15 min | soft 300 s / hard 330 s | Picks `pending`/`failed` rows with `attempt_count < 3`; the unique key prevents doubles | Re-enqueues `academy.notifications.send` |
+| `academy.reminders.evaluate` | `default` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ` (D-002) | soft 1800 s / hard 1860 s; no retry (idempotent, next run re-evaluates) | `UNIQUE(enrollment_id, kind, recipient_ref)` on `ReminderLog`, checked in the same transaction that creates the notification | Emits `due_minus_3`, `due`, `due_plus_1` for active, incomplete, non-cancelled enrollments with a due date that is not yet acknowledged |
+| `academy.escalations.digest` | `notifications` | beat, daily at 08:00 `ACADEMY_BUSINESS_TZ`, for enrollments at due+3; with no arguments it sends every batch still owed a digest | soft 1800 s / hard 1860 s; 1 retry | `ReminderLog.kind='manager_escalation'` per `(enrollment, manager)` | Sends one digest per manager covering their overdue learners (REQ-11) |
 | `academy.membership.reconcile` | `default` | beat, every `ACADEMY_MEMBERSHIP_RECONCILE_MINUTES` (60) | 600 s; 1 retry | Upserts only linked users; a directory failure leaves stored state unchanged | Re-reads linked employees from the Hub directory (D-029); a failed read is never treated as a deactivation |
 | `academy.audit.mirror` | `default` | beat, every 5 min | 120 s; 5 attempts, capped backoff 15 min | `AuditEvent.event_id` is the outbound idempotency key | Pushes unmirrored events to the Hub `activity` path through `HubHttp`; stops silently when the circuit is open |
 
@@ -69,7 +69,13 @@ duplicate a user-visible effect. Exactly one `beat` process runs at a time.
 | 08:00 daily business TZ | `academy.reminders.evaluate`, `academy.escalations.digest` |
 
 Schedule is declared in code (`CELERY_BEAT_SCHEDULE`), never edited in the admin, so the
-deployed schedule matches this table at review time.
+deployed schedule matches this table at review time. Celery itself beats in UTC, so the one
+business-time entry converts 08:00 to a UTC hour when the process starts; the default zone is
+UTC (D-002), and a zone with DST drifts by an hour until the next deploy.
+
+The other rows of the table (`academy.media.purge_abandoned`, `academy.progress.compact`,
+`academy.membership.reconcile`, `academy.audit.mirror`) join the same dictionary with the tasks
+that implement them, so no entry names a task that does not exist yet.
 
 ## 5. Test obligations
 

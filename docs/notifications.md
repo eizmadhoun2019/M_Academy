@@ -2,7 +2,7 @@
 
 **Status:** Canonical for REQ-10 and REQ-11 copy. `docs/background-jobs.md` owns when a
 message is produced; this file owns what it says.
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-25
 **Visual template:** `docs/ui/emails/escalation-digest.html` and `.txt` (approved artifacts:
 navy `#101820` header, gold `#E8AA23` brand line, white card on `#F8FAFC`, 12 px radius,
 Tahoma/Arial, RTL).
@@ -26,8 +26,13 @@ Tahoma/Arial, RTL).
   no grade or score, no video link — a link to the page, never to a media URL.
 - Links are absolute: `{ACADEMY_HUB_ORIGIN}{ACADEMY_PROXY_PATH_PREFIX}` + the path below.
 - Transactional only: no unsubscribe footer, no marketing copy, no tracking pixels.
-- A `skipped` status is used when the recipient is inactive in the Hub or already completed the
-  course at send time; the reason goes to `error_code` (`recipient_inactive`, `already_completed`).
+- A `skipped` status is used when the message must not leave: the recipient is unknown or
+  inactive in the Hub (`recipient_inactive`), the course was completed in the meantime
+  (`already_completed`), the enrollment was cancelled or unassigned (`enrollment_cancelled`), or
+  the ids the key names no longer resolve (`context_missing`). The reason goes to `error_code`.
+- The copy is rendered when the send runs, from the ids in `dedupe_key`, not when the row is
+  queued: a message that waited in the queue still names the course as it is, and a reminder
+  that became unnecessary is skipped instead of sent with stale facts.
 
 ## 2. Message catalogue
 

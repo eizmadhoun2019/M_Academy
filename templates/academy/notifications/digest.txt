@@ -1,0 +1,15 @@
+{{ brand }}
+{{ heading }}
+
+{{ intro }}
+
+{% for row in rows %}{{ headers.0 }}: {{ row.employee }}
+{{ headers.1 }}: {{ row.course }}
+{{ headers.2 }}: {{ row.due }}
+{{ headers.3 }}: {{ row.days }}
+{{ headers.4 }}: {{ row.progress }}
+
+{% endfor %}{{ button }}:
+{{ url }}
+
+{{ footer }}

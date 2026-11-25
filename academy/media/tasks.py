@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 @shared_task(
     name="academy.media.process",
     bind=True,
-    queue="media",
     max_retries=2,
     soft_time_limit=3300,
     time_limit=3600,

@@ -65,6 +65,19 @@ HUB = dict(
 # --- fixtures and helpers ---------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin ``timezone.now`` for this module.
+
+    The anti-skip ceiling is derived from the wall clock, so a loaded machine that spends a
+    tenth of a second between ``seeded()`` and ``beat()`` moves ``skippable_seconds`` by that
+    much and turns every "exactly 22 s" assertion into a coin flip. Frozen, the numbers are the
+    ones the document states.
+    """
+    moment = timezone.now()
+    monkeypatch.setattr(timezone, "now", lambda: moment)
+
+
 def learner(user_ref: str = "u-1") -> Access:
     principal = Principal(
         user_ref=user_ref, organization_id=ORG, department_refs=frozenset({"dep-1"})

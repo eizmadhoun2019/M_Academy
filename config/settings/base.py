@@ -9,8 +9,11 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+from datetime import UTC, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from kombu import Queue
 
@@ -163,6 +166,17 @@ CACHES = {
     }
 }
 
+# --- Branding and business time (docs/configuration.md §1) ------------------
+# Reminder anchors are calendar days in the organization's zone (D-002 keeps UTC as the default,
+# so storage, logs and reminders agree in the standard deployment).
+try:
+    ACADEMY_BUSINESS_TZ = str(ZoneInfo(env("ACADEMY_BUSINESS_TZ", "UTC")))
+except ZoneInfoNotFoundError as error:
+    raise ImproperlyConfigured(f"ACADEMY_BUSINESS_TZ is not a known zone ({error})") from error
+# The organization display name the notification copy substitutes for `{org}` and prints in the
+# brand line of every message (docs/notifications.md §3).
+ACADEMY_ORGANIZATION_NAME = env("ACADEMY_ORGANIZATION_NAME", "مشيد")
+
 # --- Celery ----------------------------------------------------------------
 # Queues are fixed by docs/operations/environments.md §4 and the catalogue that fills them is
 # docs/background-jobs.md §1. A task name that matches no route lands on `default` instead of
@@ -185,9 +199,31 @@ CELERY_TASK_ROUTES = {
     "academy.escalations.*": {"queue": "notifications"},
     "academy.*": {"queue": "default"},
 }
+
+
 # The beat schedule (docs/background-jobs.md §4) is declared with the tasks it names: T-018 for
 # media and T-021 for reminders. Scheduling a task that does not exist would only fill the
 # queues with messages no worker can route.
+#
+# Celery beats in UTC (CELERY_TIMEZONE above), while the reminder table is anchored in business
+# time, so the one business-time entry converts its hour once when the process starts. With the
+# default `ACADEMY_BUSINESS_TZ=UTC` (D-002) the conversion is the identity; a zone with DST
+# drifts by an hour until the next deploy, which is why the default is UTC.
+def _business_crontab(hour: int, minute: int = 0) -> crontab:
+    local = datetime.now(ZoneInfo(ACADEMY_BUSINESS_TZ))
+    target = local.replace(hour=hour, minute=minute, second=0, microsecond=0).astimezone(UTC)
+    return crontab(hour=target.hour, minute=target.minute)
+
+
+_DAILY_08 = _business_crontab(8)
+CELERY_BEAT_SCHEDULE = {
+    "notifications-sweep": {
+        "task": "academy.notifications.sweep",
+        "schedule": crontab(minute="*/15"),
+    },
+    "reminders-evaluate": {"task": "academy.reminders.evaluate", "schedule": _DAILY_08},
+    "escalations-digest": {"task": "academy.escalations.digest", "schedule": _DAILY_08},
+}
 
 # --- Email (Hub mail API arrives with T-015) ---------------------------------
 EMAIL_BACKEND = env("ACADEMY_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
