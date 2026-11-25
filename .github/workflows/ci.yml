@@ -117,6 +117,11 @@ jobs:
           ACADEMY_ALLOWED_HOSTS=academy.example.com \
           ACADEMY_CSRF_TRUSTED_ORIGINS=https://hub.example.com \
           ACADEMY_DB_PASSWORD=ci \
+          ACADEMY_HUB_ORIGIN=https://hub.example.com \
+          ACADEMY_HUB_API_BASE_URL=https://hub-api.example.com \
+          ACADEMY_HUB_API_TOKEN=ci-service-token \
+          ACADEMY_HUB_IDENTITY_KEYS='{"k1":"identity-ci-secret-at-least-32-bytes"}' \
+          ACADEMY_HUB_WEBHOOK_KEYS='{"w1":"webhook-ci-secret-at-least-32-bytes"}' \
           python manage.py check --deploy --settings=config.settings.prod
       # Two steps, not one: a build failure must not look like a scan finding, and the step
       # name is the only fail signal that is readable without signing in to GitHub.
