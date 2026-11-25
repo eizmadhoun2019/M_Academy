@@ -18,6 +18,8 @@ from academy.exceptions import AcademyError
 
 STATUS_BY_CODE = {
     "validation_error": status.HTTP_400_BAD_REQUEST,
+    "upload_too_large": status.HTTP_400_BAD_REQUEST,
+    "unsupported_type": status.HTTP_400_BAD_REQUEST,
     "unauthorized": status.HTTP_401_UNAUTHORIZED,
     "account_inactive": status.HTTP_403_FORBIDDEN,
     "access_suspended": status.HTTP_403_FORBIDDEN,
@@ -26,6 +28,10 @@ STATUS_BY_CODE = {
     "not_found": status.HTTP_404_NOT_FOUND,
     "method_not_allowed": status.HTTP_405_METHOD_NOT_ALLOWED,
     "idempotency_conflict": status.HTTP_409_CONFLICT,
+    "upload_missing": status.HTTP_409_CONFLICT,
+    "checksum_mismatch": status.HTTP_409_CONFLICT,
+    "retry_limit_reached": status.HTTP_409_CONFLICT,
+    "media_not_ready": status.HTTP_409_CONFLICT,
     "last_admin": status.HTTP_409_CONFLICT,
     "conflict": status.HTTP_409_CONFLICT,
     "course_published_locked": status.HTTP_409_CONFLICT,

@@ -76,6 +76,7 @@ DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+markers = ["slow: runs ffmpeg and takes more than a second"]
 filterwarnings = ["error::DeprecationWarning"]
 
 [tool.coverage.run]

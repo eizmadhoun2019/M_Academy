@@ -87,3 +87,15 @@ class AdapterNotConfigured(AcademyError):
     """A host seam has no configured implementation; a deployment error, never a fallback."""
 
     code = "unavailable"
+
+
+class MediaUploadError(AcademyError):
+    """An upload the policy rejects before any bytes are stored (400)."""
+
+    code = "validation_error"
+
+    def __init__(
+        self, code: str, detail: str = "", *, fields: dict[str, Any] | None = None
+    ) -> None:
+        super().__init__(detail, fields=fields)
+        self.code = code

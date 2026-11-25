@@ -97,8 +97,8 @@ Raising a limit is a one-row change plus a test update.
 | Variable | Default | Notes |
 |---|---|---|
 | `ACADEMY_HLS_RENDITIONS` | `360p,720p` | Matches the `renditions` jsonb keys in `docs/domain-model.md` §2.5 |
-| `ACADEMY_HLS_360P` | `640x360`, `800k` video, `96k` audio | Single-pass H.264 `main`, AAC stereo |
-| `ACADEMY_HLS_720P` | `1280x720`, `2500k` video, `128k` audio | Source below 720p produces 360p only |
+| `ACADEMY_HLS_360P` | `640x360,800k,96k` | Single-pass H.264 `main`, AAC stereo; `WxH,videoBitrate,audioBitrate` |
+| `ACADEMY_HLS_720P` | `1280x720,2500k,128k` | Source below the rendition height produces that rendition only |
 | `ACADEMY_HLS_SEGMENT_SECONDS` | `6` | Playlist window `0` (VOD) |
 | `ACADEMY_HLS_GOP_FRAMES` | `48` | Fixed keyframe interval, `-sc_threshold 0`, aligned to segments |
 | `ACADEMY_HLS_SEGMENT_TYPE` | `mpegts` | `ts` segments + `.m3u8`; no DRM in Phase 1 |

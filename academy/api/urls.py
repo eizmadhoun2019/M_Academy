@@ -20,6 +20,13 @@ from academy.api.content import (
     VersionSectionsView,
 )
 from academy.api.grants import GrantListCreateView, GrantRevokeView
+from academy.api.media import (
+    MediaCompleteView,
+    MediaDetailView,
+    MediaRetryView,
+    MediaUploadCreateView,
+    PlaybackView,
+)
 from academy.api.views import MeCapabilitiesView
 
 app_name = "academy_api"
@@ -77,4 +84,21 @@ urlpatterns = [
         name="manage-section-lessons-reorder",
     ),
     path("manage/lessons/<uuid:lesson_id>/", LessonDetailView.as_view(), name="manage-lesson"),
+    path("manage/media/uploads/", MediaUploadCreateView.as_view(), name="manage-media-uploads"),
+    path("manage/media/<uuid:media_id>/", MediaDetailView.as_view(), name="manage-media"),
+    path(
+        "manage/media/<uuid:media_id>/complete/",
+        MediaCompleteView.as_view(),
+        name="manage-media-complete",
+    ),
+    path(
+        "manage/media/<uuid:media_id>/retry/",
+        MediaRetryView.as_view(),
+        name="manage-media-retry",
+    ),
+    path(
+        "enrollments/<uuid:enrollment_id>/lessons/<uuid:lesson_id>/playback/",
+        PlaybackView.as_view(),
+        name="lesson-playback",
+    ),
 ]
