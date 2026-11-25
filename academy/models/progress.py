@@ -34,6 +34,28 @@ class Assignment(TenantModel):
     due_at = models.DateTimeField(null=True, blank=True)
     mandatory = models.BooleanField(default=True)
     assigned_by_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable targets of the CP2 backfill; only one is set per target type.
+    target_membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    target_department = models.ForeignKey(
+        "academy.Department",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    assigned_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     note = models.CharField(max_length=500, null=True, blank=True)  # noqa: DJ001 - NULL is semantic here: the checks tell NULL from ''
     cancelled_at = models.DateTimeField(null=True, blank=True)
     objects: TenantManager[Assignment] = TenantManager()  # type: ignore[assignment]
@@ -94,6 +116,14 @@ class Enrollment(TenantModel):
         CourseVersion, on_delete=models.RESTRICT, related_name="enrollments"
     )
     user_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable learner target of the CP2 backfill.
+    membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     due_at = models.DateTimeField(null=True, blank=True)
     mandatory = models.BooleanField(default=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
@@ -205,6 +235,15 @@ class CompletionRecord(TenantModel):
     course_id = models.UUIDField()
     course_version_id = models.UUIDField()
     user_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable snapshots filled by the CP2 backfill.
+    membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    user_id = models.UUIDField(null=True, blank=True)
     completed_at = models.DateTimeField()
     method = models.CharField(max_length=16, choices=Method.choices, default=Method.LESSONS)
     actor_ref = models.CharField(max_length=64)

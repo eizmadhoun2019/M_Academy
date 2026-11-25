@@ -30,6 +30,21 @@ class Course(TenantModel):
     owner_department_ref = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001 - NULL is semantic here: the checks tell NULL from ''
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
     created_by_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable targets of the CP2 backfill; the legacy refs stay authoritative.
+    owner_department = models.ForeignKey(
+        "academy.Department",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     objects: TenantManager[Course] = TenantManager()  # type: ignore[assignment]
 
     class Meta:
@@ -76,6 +91,21 @@ class CourseVersion(TenantModel):
     published_at = models.DateTimeField(null=True, blank=True)
     published_by_ref = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001 - NULL is semantic here: the checks tell NULL from ''
     created_by_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable targets of the CP2 backfill.
+    published_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     objects: TenantManager[CourseVersion] = TenantManager()  # type: ignore[assignment]
 
     class Meta:

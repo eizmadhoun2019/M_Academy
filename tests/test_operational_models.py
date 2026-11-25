@@ -116,9 +116,12 @@ def make_attempt(quiz: Quiz, enrollment: Enrollment, **overrides: object) -> Qui
 
 def test_every_academy_model_is_a_tenant_model() -> None:
     models = list(apps.get_app_config("academy").get_models())
+    global_models = {"Organization", "User"}
 
     assert models
-    assert [model.__name__ for model in models if not issubclass(model, TenantModel)] == []
+    assert {model.__name__ for model in models if not issubclass(model, TenantModel)} == (
+        global_models
+    )
 
 
 def test_quiz_defaults(quiz: Quiz) -> None:

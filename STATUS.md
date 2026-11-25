@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-035 merged and closed)
-**Updated by:** AI agent (T-035), under the owner's delegation
+**Last updated:** 2026-11-25 (T-026 CP1 implemented on a branch, awaiting owner review)
+**Updated by:** AI agent (T-026 CP1), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 has not started; no application code changed
+**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is implemented and pushed on its branch for owner review; CP2/CP3 not started
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -28,14 +28,16 @@ administration and the capability-preservation matrix, and fixed the evidence po
 template, migration, API contract, Hub activation, infrastructure or dependency changed in T-025.**
 T-025 is merged as `b592498` (CI run 45687216183, success). T-035 adopted the official
 `Masheed-Academy-Official-UI-UX-v1.0` (D-045) and is merged as `47638b0` (CI run 45694757748,
-success). Implementation starts at T-026.
+success). T-026 CP1 adds the four tenancy tables, nullable backfill FKs on the existing tenant
+tables, the database-level organization/composite FKs and the Masheed seed — with no read path,
+API or UI change; CP2 (mapping/backfill) and CP3 (company context and isolation) remain open.
 
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
 | T-035 | Official UI/UX reference adoption and repository hygiene | `[x]` — merged in `47638b0`; CI success 45694757748; owner approved 2026-11-25 | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; restore rehearsal 14/14; `check_docs` green |
-| T-026 | Tenancy and account foundation | `[ ]` next — do not start without «كمل» | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
+| T-026 | Tenancy and account foundation | `[~]` — CP1 on `task/T-026-tenancy-schema`, awaiting owner review; CP2/CP3 not started | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
 | T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
@@ -47,6 +49,16 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
+- 2026-11-25 — **T-026 CP1 implemented (branch, not merged).** Four tenancy tables
+  (`Organization`, `User`, `Department`, `Membership`) with D-043 constraints (`UNIQUE (user_id)`,
+  active/removed stamps, one-company membership), nullable backfill FKs on the existing tenant
+  tables, database `organization_id` FKs on every tenant table plus the two composite
+  `(organization_id, id)` FKs, and an idempotent Masheed seed (`ACADEMY_ORGANIZATION_ID`,
+  slug `masheed`, `ACADEMY_COMPANY_NAME`). Migration 0008 reverses cleanly (applied → 0007 →
+  applied again). `pytest -q` → 606 passed, 1 failed (`test_the_digest_lists_every_overdue_learner_once`,
+  pre-existing: reproduced unchanged on clean `main` with the local Celery worker running);
+  `ruff check`, `ruff format --check`, `mypy .` and `makemigrations --check` clean. CP1 changes no
+  read path, API, template or UI; screen groups remain pending approval.
 - 2026-11-25 — **T-035 merged (docs only).** The owner's official
   `Masheed-Academy-Official-UI-UX-v1.0` was verified (14/14 board fingerprints and dimensions), its
   text specifications and tokens were merged into `docs/ui/`, and it is now the single design

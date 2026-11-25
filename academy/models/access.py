@@ -17,6 +17,28 @@ class AccessSuspension(TenantModel):
     """One active suspension per user; lifting keeps the row for the audit trail."""
 
     user_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable targets of the CP2 backfill.
+    membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    suspended_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    lifted_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     reason = models.CharField(max_length=500)
     suspended_at = models.DateTimeField(default=timezone.now)
     suspended_by_ref = models.CharField(max_length=64)

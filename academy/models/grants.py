@@ -27,6 +27,28 @@ class PermissionGrant(TenantModel):
         DEPARTMENT = "department", "Department"
 
     user_ref = models.CharField(max_length=64)
+    # T-026 CP1: nullable targets of the CP2 backfill (T-028 replaces the grant shape).
+    membership = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    scope_department = models.ForeignKey(
+        "academy.Department",
+        on_delete=models.PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    granted_by = models.ForeignKey(
+        "academy.Membership",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     capability = models.CharField(max_length=24, choices=Capability.choices)
     scope_type = models.CharField(max_length=16, choices=Scope.choices)
     scope_ref = models.CharField(max_length=64, blank=True, default="")

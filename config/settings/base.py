@@ -251,6 +251,8 @@ if ACADEMY_ACCESS_MODE not in ("hub", "standalone"):
     )
 # One deployment serves one organization (D-026); the Hub assertion must name this UUID.
 ACADEMY_ORGANIZATION_ID = env("ACADEMY_ORGANIZATION_ID", "25498ed9-13b1-4f10-8294-859ff80a41b7")
+# T-026: display name of the seeded company (docs/migration-h1.5.md §3).
+ACADEMY_COMPANY_NAME = env("ACADEMY_COMPANY_NAME", "Masheed Academy")
 DEVELOPMENT_LOGIN = env_bool("ACADEMY_DEVELOPMENT_LOGIN", False)
 THROTTLES_ENABLED = env_bool("ACADEMY_THROTTLES_ENABLED", True)
 THROTTLE_RATES = {

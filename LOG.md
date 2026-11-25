@@ -21,6 +21,42 @@
 
 ## Entries
 
+### [2026-11-25] — T-026 CP1 schema expand implemented
+
+- **Type:** Change
+- **Status:** Implemented (tested; awaiting owner review — not merged)
+- **Summary:** CP1 of T-026, per `docs/migration-h1.5.md` M1, adds the four tenancy tables —
+  `Organization`, `User`, `Department`, `Membership` — with D-043's `UNIQUE (user_id)` on
+  `Membership`, the active/removed lifecycle checks, department sibling uniqueness including
+  roots (`NULLS NOT DISTINCT`), and `UNIQUE (organization_id, id)` on both tenant tables. The
+  existing tenant tables gain nullable `owner_department`/`created_by`/`published_by`/
+  `target_membership`/`target_department`/`assigned_by`/`membership`/`recipient_membership`/
+  `recipient_user`/`suspended_by`/`lifted_by`/`scope_department`/`granted_by` columns and the
+  audit UUID snapshots; the legacy `*_ref` strings remain authoritative, so no read path changes.
+  Migration 0008 also adds a database `organization_id` FK on every tenant table (the model field
+  stays a UUID, as M1 permits) and the composite `(organization_id, department_id)` /
+  `(organization_id, parent_id)` FKs, plus an idempotent seed of the deployment company
+  (`ACADEMY_ORGANIZATION_ID`, slug `masheed`, `ACADEMY_COMPANY_NAME`, language and business
+  timezone). The seed's reverse refuses to delete a company that already has memberships or
+  departments.
+- **Impact:** Schema is expanded and ready for CP2; no API, service, template, permission or
+  authentication behaviour changed, and no visual implementation started. `T-026` is `[~]` on
+  its branch. The import-boundary gate now allows the Academy's own identity model by name while
+  still forbidding host/Django user models, and the two registry tests that asserted “every
+  Academy model is a TenantModel” now name `Organization` and `User` as the approved global
+  exceptions (§1.1).
+- **Evidence:** Migration applied, reversed to 0007 and re-applied on the development database;
+  `makemigrations --check` reports no changes; `pytest -q` → **606 passed, 1 failed**; the failure
+  is `tests/test_reminders.py::test_the_digest_lists_every_overdue_learner_once`, reproduced with
+  the same assertion on a clean `main` worktree (local Celery is not eager when a worker is
+  running), so it is pre-existing and out of CP1 scope. `ruff check`, `ruff format --check` and
+  `mypy .` (151 files) pass. New tests: `tests/test_tenancy_constraints.py` (12 constraint/seed
+  cases), plus factories for `Department`/`Membership` and the session fixture that seeds both
+  fixed companies.
+- **Approved by:** Project owner (2026-11-25): «كمل» — CP1 only.
+- **References:** T-026, `docs/plan.md` §4 T-026 criteria 1/6/7, `docs/migration-h1.5.md` §2–§3,
+  `docs/domain-model.md` §1.1/§2.0.1–§2.0.4, D-026, D-043.
+
 ### [2026-11-25] — T-035 merged and closed
 
 - **Type:** Change

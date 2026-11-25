@@ -18,6 +18,8 @@ PACKAGE = ROOT / "academy"
 
 FORBIDDEN_PREFIXES = ("host_stub", "django.contrib.auth.models")
 FORBIDDEN_NAMES = {"User", "get_user_model", "AUTH_USER_MODEL"}
+# T-026: the Academy owns its identity tables; importing that User is not a host-user leak.
+OWN_MODELS = "academy.models"
 
 
 def violations(path: Path) -> list[str]:
@@ -32,9 +34,10 @@ def violations(path: Path) -> list[str]:
             module = node.module or ""
             if module.startswith(FORBIDDEN_PREFIXES):
                 found.append(f"{path.name}:{node.lineno}: from {module}")
-            for alias in node.names:
-                if alias.name in FORBIDDEN_NAMES:
-                    found.append(f"{path.name}:{node.lineno}: {module}.{alias.name}")
+            if not module.startswith(OWN_MODELS):
+                for alias in node.names:
+                    if alias.name in FORBIDDEN_NAMES:
+                        found.append(f"{path.name}:{node.lineno}: {module}.{alias.name}")
     return found
 
 
