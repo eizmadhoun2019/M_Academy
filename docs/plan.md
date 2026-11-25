@@ -54,7 +54,7 @@
 | **T-032** | Tenant-aware notifications, reminders and reports | `[ ]` | T-027, T-028 | GATE-1 |
 | **T-033** | Hub quarantine as an optional integration | `[ ]` | T-026 | GATE-1 |
 | **T-034** | Release hardening, operations, security/privacy evidence, pilot (was T-024) | `[ ]` | T-030…T-033 | GATE-1 |
-| **T-035** | Official UI/UX reference adoption and repository hygiene | `[~]` (owner review; docs only) | T-025 | — |
+| **T-035** | Official UI/UX reference adoption and repository hygiene | `[x]` (merged in `47638b0`; docs only) | T-025 | — |
 
 Dependency graph:
 ```

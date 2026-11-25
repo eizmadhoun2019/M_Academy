@@ -21,6 +21,30 @@
 
 ## Entries
 
+### [2026-11-25] — T-035 merged and closed
+
+- **Type:** Change
+- **Status:** Merged
+- **Summary:** The owner approved the adoption of `Masheed-Academy-Official-UI-UX-v1.0` (D-045),
+  the external archive of superseded design material and the permanent UI rules. Before closure the
+  archive restore procedure was rehearsed: the archived ZIP was extracted again and all 14 boards
+  re-hashed to `REFERENCE_INDEX.csv` (14/14 match, dimensions unchanged), then the scratch copy was
+  removed. The untracked, superseded `INSTALLATION_AR.md` document-package note was moved to
+  `../_design-archive/superseded/` with its SHA-256 unchanged. D-044 remains `Confirmed (amended by
+  D-045)` and the owning documents agree; D-001, D-005, D-009 and D-010 stay open, the asset gaps
+  stay recorded and every screen group stays **pending owner approval**. The capability matrix is
+  still 23 rows and no gate was weakened.
+- **Impact:** T-035 is closed on `main`; the single design authority and permanent Mobile First /
+  responsive / master-shell / no-internal-banner rules now apply to all UI tasks. No code, template,
+  stylesheet, migration, API or dependency changed and no visual implementation started.
+- **Evidence:** Final branch head `6cb8776` passed CI run
+  [45694300738](https://github.com/eizmadhoun2019/M_Academy/actions/runs/45694300738); merge commit
+  `47638b0` passed CI run
+  [45694757748](https://github.com/eizmadhoun2019/M_Academy/actions/runs/45694757748);
+  `check_docs` G9 passed (40 files); no pull request or review comment was open on the branch.
+- **Approved by:** Project owner, 2026-11-25 (adoption, archive and merge).
+- **References:** T-035, D-044/D-045, `docs/plan.md` §4, `docs/ui/design-reference.md`.
+
 ### [2026-11-25] — T-035 official UI/UX reference adopted; legacy design material archived
 
 - **Type:** Change

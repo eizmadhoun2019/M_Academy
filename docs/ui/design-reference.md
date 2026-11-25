@@ -71,8 +71,8 @@ screenshot or a crop.
 ## 4. Superseded material (archived, not deleted)
 
 Moved to `../_design-archive/superseded/` and removed from the active repository. Git history is
-unchanged; the old PDF and page renders were tracked and their deletion is recorded in this
-branch's commit.
+unchanged; the old PDF and page renders were tracked and their deletion is recorded in
+`165d261` (merged in `47638b0`).
 
 | Material | Type | Why superseded |
 |---|---|---|
