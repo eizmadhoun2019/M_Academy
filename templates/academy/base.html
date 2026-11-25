@@ -12,9 +12,9 @@
     <div class="app-shell">
       <aside class="sidebar">
         <p class="wordmark">{% translate "Masheed Academy" %}</p>
-        <details class="nav-disclosure">
-          <summary class="nav-summary">{% translate "Menu" %}</summary>
-          <nav aria-label="{% translate 'Showcase sections' %}">
+        <input class="nav-toggle" type="checkbox" id="nav-toggle">
+        <label class="nav-summary" for="nav-toggle">{% translate "Menu" %}</label>
+        <nav class="nav-panel" aria-label="{% translate 'Showcase sections' %}">
             {% for heading, anchors in nav_sections %}
               <p class="nav-heading">{{ heading }}</p>
               <ul class="nav-list">
@@ -27,8 +27,7 @@
                 {% endfor %}
               </ul>
             {% endfor %}
-          </nav>
-        </details>
+        </nav>
         <p class="sidebar-note">{% translate "Product destinations appear with the screens that need them; this page shows the shell and its parts." %}</p>
       </aside>
       <div class="canvas">

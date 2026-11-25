@@ -6,6 +6,7 @@ there, it does not belong in this file.
 
 from __future__ import annotations
 
+import mimetypes
 import os
 from pathlib import Path
 
@@ -183,6 +184,9 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 # Source styles, the locally hosted Arabic font and its licence (RULES §UI and frontend).
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Windows registries have no woff2 entry, so the development server would answer with
+# application/octet-stream; the browser then refuses a strict font MIME check.
+mimetypes.add_type("font/woff2", ".woff2")
 MEDIA_ROOT = env("ACADEMY_MEDIA_ROOT", "/data/media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

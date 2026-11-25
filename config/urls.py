@@ -3,10 +3,12 @@
 Operational routes, the versioned Academy API, the i18n switch and the Academy web pages.
 """
 
-from django.urls import include, path
+from django.conf import settings
+from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView
 from rest_framework.permissions import AllowAny
 
+from config.dev_static import serve as serve_dev_static
 from config.health import healthz
 
 urlpatterns = [
@@ -22,6 +24,11 @@ urlpatterns = [
         name="openapi-schema",
     ),
 ]
+
+if settings.DEBUG:
+    # The development stack runs gunicorn, which does not serve static files the way
+    # ``runserver`` does (docs/operations/environments.md). The route exists only with DEBUG.
+    urlpatterns += [re_path(r"^static/(?P<path>.*)$", serve_dev_static)]
 
 handler403 = "academy.ui.errors.forbidden"
 handler404 = "academy.ui.errors.not_found"
