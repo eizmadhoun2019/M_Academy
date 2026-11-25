@@ -21,6 +21,35 @@
 
 ## Entries
 
+### [2026-11-25] — T-025 approved, merged and closed
+
+- **Type:** Milestone
+- **Status:** Merged
+- **Summary:** The project owner approved the H1.5 direction, D-043/D-044 and the T-025
+  corrections, and authorized the merge under the governance rules. The capability-preservation
+  matrix was completed to **23 rows** by restoring company administration (users, invitations,
+  departments, roles and settings, from G5/REQ-21/REQ-25); no capability was removed or weakened.
+  Final branch head `e19f76c` passed CI run 45686699559. T-025 was merged into `main` with merge
+  commit `b592498`, which passed CI run 45687216183. The repository had no open pull request and no
+  review threads or commit comments for this branch, so no review remark remains unresolved.
+- **Impact:** T-025 is `[x]` on `main`. T-026 CP1 is the next eligible checkpoint and has **not**
+  started. T-033 remains `[ ]` and may start only after T-026 is `[x]`, in parallel with T-027/T-028;
+  the earlier “after T-026 CP1” note was corrected because CP1 alone does not satisfy its
+  dependency. D-001, D-005 and D-009 remain **Open** with no closure evidence or owner decision, and
+  D-010 remains deferred to H2. No application code, template, migration, dependency or
+  infrastructure changed.
+- **Evidence:** Source head `e19f76c`; workflow `CI` run
+  https://github.com/eizmadhoun2019/M_Academy/actions/runs/45686699559 — `completed` / `success`.
+  Merge commit `b592498`; workflow `CI` run
+  https://github.com/eizmadhoun2019/M_Academy/actions/runs/45687216183 — `completed` / `success`.
+  `python scripts/check_docs.py` → G9 passed (38 markdown files); capability matrix = 23 rows;
+  `git diff --check` clean.
+- **Approved by:** Project owner (2026-11-25): architecture, D-043/D-044 and merge to `main`.
+- **References:** T-025, D-043, D-044, `docs/traceability.md` §4.1, `docs/plan.md` §4 T-025/T-033,
+  `STATUS.md`, `RULES.md` task lifecycle and definition of done.
+- **Corrects:** The “T-025 remains `[~]`” and “T-033 may run after T-026 CP1” statements in the
+  previous entries and the prior `STATUS.md` next action.
+
 ### [2026-11-25] — T-025 H1.5 amendment evidence (content commit and CI)
 
 - **Type:** Verification

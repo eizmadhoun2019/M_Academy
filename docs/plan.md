@@ -44,7 +44,7 @@
 | T-022 | Reports and CSV | `[x]` (adapted by T-032) | T-020 | GATE-1 |
 | **T-023** | Learner + management web UI (old scope) | `[–]` **superseded by T-031** | — | — |
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
-| **T-025** | Documentation and governance consolidation | `[~]` (this task) | owner approval | GATE-1 |
+| **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
 | **T-026** | Tenancy and account foundation | `[ ]` | T-025 | GATE-1 |
 | **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |

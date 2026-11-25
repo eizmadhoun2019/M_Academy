@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-025 H1.5 architecture amendment)
+**Last updated:** 2026-11-25 (T-025 merged and closed)
 **Updated by:** AI agent (T-025), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 documented the H1.5 correction (one membership, Mobile First, visual gate); no application code changed
+**Overall status:** Active — T-025 is merged on `main`; T-026 CP1 is next and has not started; no application code changed
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -26,14 +26,14 @@ migration, README, skills and ADRs to make «كمل» sufficient. The architectu
 the company chooser/switcher and multi-membership paths, added `UNIQUE (user_id)`, platform-only
 administration and the capability-preservation matrix, and fixed the evidence policy. **No code,
 template, migration, API contract, Hub activation, infrastructure or dependency changed in T-025.**
-Implementation starts at T-026 after the owner merges this branch.
+T-025 is merged as `b592498` (CI run 45687216183, success); implementation starts at T-026.
 
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-025 | Documentation and governance consolidation | `[~]` — amendment `e2e9c1b`; CI success; awaiting owner review | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation`; CI run 45684270950 |
-| T-026 | Tenancy and account foundation | `[ ]` next | AI agent after T-025 merge | T-025 | `docs/plan.md` §4 T-026 |
-| T-033 | Hub quarantine | `[ ]` parallel candidate | AI agent | T-026 | `docs/plan.md` §4 T-033 |
+| T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
+| T-026 | Tenancy and account foundation | `[ ]` next — do not start without «كمل» | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
+| T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
 | T-023 | Learner + management UI (old scope) | `[–]` superseded by **T-031** | — | — | historical only |
@@ -48,8 +48,10 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
   no company chooser/switcher/selection APIs or screens, platform administration without a
   membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
   with 320+ testing and the binding visual-reference gate. Prior package commits `96f78d2`,
-  `eb19fd1`, `15e0e53`, content amendment `e2e9c1b`; `check_docs` G9 passed (38 files); GitHub
-  Actions CI run 45684270950 succeeded. T-025 stays `[~]` pending owner review, not merge-ready.
+  `eb19fd1`, `15e0e53`, content amendment `e2e9c1b`; the capability matrix was completed to
+  **23 rows** with company administration restored. Owner approved the architecture and merge on
+  2026-11-25. Final branch head `e19f76c` passed CI run 45686699559; merge commit `b592498`
+  passed CI run 45687216183; `check_docs` G9 passed (38 files). T-025 is closed.
 - 2026-11-25 — T-022 reports: one selector module defines every number, department scope includes
   general courses and refuses a cross-department read, streamed BOM CSV with formula-safe cells
   and an audited export. See `LOG.md`.
@@ -90,11 +92,12 @@ Single register: [`docs/decisions.md`](docs/decisions.md). This file does not du
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-T-025 is ready for **owner review**; CI on content commit `e2e9c1b` passed, and the owner's approval
-is the remaining merge condition. After merge, start **T-026 CP1**
-(tenancy schema expand) exactly as `docs/plan.md` §4 defines it; T-033 may run in parallel once
-T-026 CP1 lands. Do not merge to `main` without the owner's approval. Say «كمل» to authorize the
-next checkpoint; the agent does one checkpoint, commits, pushes, reports evidence and stops.
+T-025 is **closed**: owner-approved and merged as `b592498`, CI success 45687216183. The next
+eligible checkpoint is **T-026 CP1** (tenancy schema expand), exactly as `docs/plan.md` §4 defines
+it, but it has **not** started. T-033 remains `[ ]` and may start only after T-026 is `[x]`, in
+parallel with T-027/T-028; T-026 CP1 alone is not sufficient. D-001, D-005 and D-009 remain open.
+Say «كمل» to authorize T-026 CP1; the agent does one checkpoint, commits, pushes, reports evidence
+and stops.
 
 ## Update rules
 - Update when project state changes. Do not turn this file into a diary (`LOG.md` owns history).
