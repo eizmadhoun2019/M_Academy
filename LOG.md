@@ -46,7 +46,7 @@
 - **Evidence:** Branch `task/T-014-sessions-auth`; 360 tests including `tests/test_sessions.py`
   (middleware, both access modes, suspension, role change, cache, sign-in/out, throttle, model
   constraints); ruff, format, mypy, `makemigrations --check`, OpenAPI validation and G7/G9 green
-  locally; CI run recorded after the push.
+  locally; CI run `45567646962` green on `5baa76a` (the first run `45566819646` failed G1 on two lint findings, fixed in `5baa76a`).
 - **Approved by:** Project owner («كمل» instruction of 2026-11-25).
 - **References:** T-014, D-026, D-027, D-028, `docs/configuration.md` §1/§6, `docs/domain-model.md` §2.15.
 
