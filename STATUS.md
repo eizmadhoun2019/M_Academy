@@ -1,214 +1,103 @@
 # STATUS — Current Project State
 
 > Current state only. Historical detail belongs in `LOG.md`.
+> Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-019 assignments and gating)
-**Updated by:** Project owner (with AI agent assistance)
-**Current phase:** Phase 0 — Foundation (rebuild from scratch)
-**Project scale:** Medium
+**Last updated:** 2026-11-25 (T-025 H1.5 architecture amendment)
+**Updated by:** AI agent (T-025), under the owner's delegation
+**Current phase:** H1.5 — Foundation (GATE-1)
+**Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active
+**Overall status:** Active — T-025 documented the H1.5 correction (one membership, Mobile First, visual gate); no application code changed
 
 ## Snapshot
-The project is being rebuilt from scratch with a UPDS 1.0.0-rc2 documentation baseline
-(seven core documents + performance profile, seeded from the legacy requirements set on
-2026-11-22). The **T-001 scaffold** now exists: a Django 5.2 `config` project with `dev`/`test`/`prod`
-profiles, an isolated compose stack (`m-academy`) running six of seven services, pinned
-dependencies, the CI gate definitions and the docs check. The storage service stays down
-until the owner resolves D-025. The `academy` package now exists (T-003): the tenant
-base model with `for_org` scoping, the adapter loader and the domain exceptions, registered in
-`INSTALLED_APPS` and inspected by gate G7. The four host seams are specified (T-004) as Protocols
-with their value types, the development/test stubs behind them, and one contract suite per
-seam that any future Hub or bucket implementation must pass. Domain events now have their
-emitter (T-005): an event is queued through `transaction.on_commit` and dispatched to its
-subscribers only after the write commits. The documentation also records the owner-approved **H1
-target** (charter 2.3; decisions D-026…D-030): Masheed only, one record set with Hub-integrated
-or standalone local sign-in, `grants_only` management authority, an Academy-owned dashboard and
-sidebar, and screens specified in `docs/ui/screen-specification.md`. Those are documented
-targets — no code implements them yet. The catalog schema exists (T-006): Course →
-CourseVersion → Section → Lesson plus MediaAsset, with every documented check, partial unique
-index, deferrable position constraint and the two freeze triggers in the database itself. The
-assignment/progress schema (T-007) follows it: Assignment → Enrollment → LessonProgress →
-CompletionRecord, with the active-enrollment and active-target partial unique indexes, the
-watched-number checks and a trigger that makes a completion row immutable. T-008 completes the
-Phase 1–2 schema with the quiz tables (no endpoint yet) and the operational logs: `ReminderLog`
-and `NotificationLog` carry the idempotency keys, and `AuditEvent` is the append-only ledger
-whose trigger and `audit.record` service arrived with T-012. The authorization layer (T-009) resolves
-effective capabilities from a principal and the stored grants: H1 `grants_only` keeps learning
-for active members and requires a grant for every management capability, the compatibility
-`role_plus_grants` union stays testable, and an Academy-local suspension denies everything with
-`access_suspended`. The test foundation (T-010) is generic: one factory per table builds a
-valid row, and the isolation suite writes each table in two organizations, asserts that
-`for_org` returns only its own row, and proves the detector fails on an unscoped query. The API
-skeleton (T-011) now serves `/api/v1/academy/` with one error envelope, page/page_size
-pagination, a 401 without identity, the `me/capabilities/` route backed by the authorization
-layer, and a generated OpenAPI document that validates with zero warnings. Assignments now close
-the loop from content to learner (T-019): a manager's target expands through the directory into
-enrollments, Hub membership changes enrol and cancel through the webhook transaction, and the
-sequential lock is enforced before a rendition URL is ever presigned. The audit service
-(T-012) is the accountability floor: `audit.record` appends one row inside the caller's
-transaction, validates the action name and ids-only metadata, and returns an existing row when
-the same `event_id` arrives twice, while a PostgreSQL trigger refuses every UPDATE and DELETE. `docs/domain-model.md` (schema, constraints, progress algorithm),
-`docs/api.md` (endpoint inventory), `docs/decisions.md` (decision register) and
-`docs/traceability.md` (IDs, gates, sources of truth). The rebuild has its **own repository** (`M_Academy`) and its **own runtime stack**
-(compose project `m-academy`: own containers, PostgreSQL, Redis, MinIO buckets, volumes,
-Celery broker, secrets and host ports). It runs beside the legacy deployment without
-sharing anything; the legacy stack and repository are reference only
-(`docs/operations/environments.md`). The legacy implementation (17/42 tasks
-complete: foundation through permission grants) remains available in the legacy repository
-as reference and history — nothing in it is claimed for this rebuild until re-implemented
-and verified here.
+`main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
+the T-022 merge; gates G1–G9 green on their merge commits), with two exceptions recorded below:
+T-001's bucket evidence and T-013's English/accessibility completion. The code is still
+**single-company** (fixed `ACADEMY_ORGANIZATION_ID`, opaque `user_ref`/`department_ref`) and its
+production identity path is Hub-oriented; that is the gap T-026…T-033 close.
+
+The canonical target is now charter 2.5: standalone-first, multi-company, **one company membership
+per account**, local identity and dynamic scoped RBAC, with the Hub integration dormant and
+optional. Mobile First and the binding visual-reference gate are recorded in D-044. T-025 rewrote the charter,
+architecture, rules, decisions, access control, security, domain model, API, configuration,
+plan, traceability, UI, notifications, reports, jobs, Hub contract, operations, performance,
+migration, README, skills and ADRs to make «كمل» sufficient. The architecture correction removed
+the company chooser/switcher and multi-membership paths, added `UNIQUE (user_id)`, platform-only
+administration and the capability-preservation matrix, and fixed the evidence policy. **No code,
+template, migration, API contract, Hub activation, infrastructure or dependency changed in T-025.**
+Implementation starts at T-026 after the owner merges this branch.
 
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-001 | Repository and stack bootstrap: `git init` + `origin` = `M_Academy` + first commit (push after D-023); pyproject (pinned deps), ruff/mypy/pytest, pre-commit, Makefile, Dockerfile, isolated compose (project `m-academy`: web/db/redis/minio/worker/beat/mailhog), env example with generated secrets, CI gates, docs check | `[~]` in progress/evidence (AI agent, 2026-11-23; gates G1–G9 green in CI run `45138282623` on `main`; the bucket step still waits on D-025) | Tech authority | — | Isolation checklist in `docs/operations/environments.md` §7 all pass: only `m-academy-*` containers, `/healthz` 200 on `http://localhost:8101`, legacy stack still up, gates G1–G9 green in CI |
-| T-002 | Settings profiles + Celery queues + JSON logging + i18n (ar/en) | `[x]` done on main (commit `8168477`, merged 2026-11-23 on owner instruction; CI run `45148819610` on `main` green on that commit; `tests/test_settings.py` — 26 tests; ruff/format/mypy clean locally) | Tech authority | T-001 | Worker ping task via Redis; settings tests |
-| T-003 | `academy` app skeleton: TenantModel/manager, adapter loader, exceptions; import-boundary test | `[x]` done on main (commit `3b7d450`, merged 2026-11-23 on owner instruction; CI run `45154163445` on `main` green on that commit; 47 tests, ruff/format/mypy/migrations clean locally) | Tech authority | T-002 | Loader + `for_org` tests; `academy` ⊄ host test |
-| T-004 | Adapter interfaces + `host_stub` + 4 contract suites | `[x]` done on main (commit `928e7da`, merged 2026-11-23 on owner instruction; CI run `45159244272` green on the branch commit and `45159847845` green on `main` at that commit; 123 tests at merge) | Tech authority | T-003 | All contract suites pass |
-| T-005 | Domain events (signals, on-commit emitter, handlers) | `[x]` done on main (commit `0204cac`, merged 2026-11-23 on owner instruction; CI run `45162780071` on `main` green on that commit; 145 tests at merge) | Tech authority | T-003 | Events fire only after commit |
-| T-006 | Catalog models + migrations (Course/Version/Section/Lesson/MediaAsset) | `[x]` done on main (merge commit `7fe4b32`, merged 2026-11-23 on owner instruction with a merge commit because `main` had advanced with the documentation change; CI run `45346681425` on `main` green; 171 tests at merge) | Tech authority | T-003 | Migrations apply/reverse; constraint tests |
-| T-007 | Assignment/progress models + constraints (Assignment/Enrollment/LessonProgress/CompletionRecord) | `[x]` done on main (commit `8d30403`, merged 2026-11-23 on owner instruction with a fast-forward; CI run `45350592242` on `main` green; 196 tests at merge) | Tech authority | T-006 | Constraints + indexes tested |
-| T-008 | Quiz + operational models (Quiz…AttemptAnswer, ReminderLog, NotificationLog, AuditEvent) | `[x]` done on main (commit `52798e5`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45353814514` on `main` green; 219 tests at merge) | Tech authority | T-007 | Meta-test: every model is a TenantModel |
-| T-009 | Authorization layer: capabilities, DRF permissions, web mixin, scope handling | `[x]` done on main (commit `a48768c`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45357518339` on `main` green; 242 tests at merge) | Tech authority | T-004 | Allow/deny/scope matrix tests for `role_plus_grants` and `grants_only` (H1 default, D-027); local suspension denies |
-| T-010 | Test foundations: factories, two-org fixtures, tenant-isolation suite | `[x]` done on main (commit `968ee4a`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45361612343` on `main` green; 281 tests at merge) | Tech authority | T-008 | Isolation suite runs; leak-detection proven |
-| T-011 | API skeleton: versioned routes, auth, error format, pagination, OpenAPI, `/healthz` | `[x]` done on main (commit `bdab55e`, merged 2026-11-24 on owner instruction with a fast-forward; CI run `45367468113` on `main` green; 289 tests at merge) | Tech authority | T-009 | Schema builds with 0 warnings |
-| T-012 | Audit trail: model + append-only trigger + `audit.record` service | `[x]` done on main (commit `6e08296`, merged 2026-11-24 on owner instruction; the merge dropped the branch's files and `f2dc808` restored them; 311 tests at merge) | Tech authority | T-008 | DB blocks UPDATE/DELETE; record joins caller transaction |
-| T-013 | UI foundation: tokens, RTL/LTR shell, showcase, error pages, wireframes, Arabic font | `[~]` in progress/review (AI agent, 2026-11-24; `static/css/academy.css` tokens, `templates/academy/`, preview at `/academy/preview/{ar,en}/`, `/academy` error pages, local Noto Sans Arabic with OFL licence, gettext catalogue compiled by `scripts/compile_messages.py`; 331 tests, ruff/format/mypy and G7/G9 clean; no migration; CI run `45382616992` green on `main`) | Tech authority | T-002 | Renders at 360/768/1280 in ar+en; axe clean |
-| T-014 | Sessions/auth lifecycle (dev login, inactive handling, capability cache, throttles) | `[x]` done on main (commit `cb1edda`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45568418999` on `main` green at that commit; `AccessSuspension` migration `0005`, `academy.access` middleware, X1 sign-in and X2 access-denied pages, fingerprint-keyed capability cache, documented DRF scopes; 360 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004 |
-| T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[x]` done on main (commit `f4eea00`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45573329413` on `main` green at that commit; 399 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-014 |
-| T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[x]` done on main (commit `17fe415`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45577563757` on `main` green at that commit; `PermissionGrant` migration `0007`, grant/revoke services with audit, `manage/grants/` API with idempotency, `provision_admin`, last-admin guard; 423 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-009 |
-| T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[x]` done on main (commit `6cc59c9`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45586286539` on `main` green at that commit; scope-checked services, publish validation and the `manage/` content routes; 444 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
-| T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[x]` done on main (commit `22f38a4`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45617783011` on `task/T-018-media` green at that commit; presigned PUT with tenant keys, `stat` verification, the ffmpeg→HLS pipeline with poster and playback playlists; 459 tests including the slow HLS integration, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
-| T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[x]` done on main (commit `1d5fc56`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45624655284` on `task/T-019-assignments` green at that commit; one shared expansion selector for preview and write, scoped assignment/roster services, Hub-driven enrolment and cancellation, `lesson_locked` gating in the outline and playback; 37 new tests, 496 at merge, ruff/format/mypy and G7/G9 clean) | Tech authority | T-017 | REQ-08, sequential-lock matrix |
-| T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[x]` done on main (commit `cff7c9b`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45634497939` on `task/T-020-progress-heartbeat-completion` green at that commit; `academy/progress.py` owns the §7 write path, the refusal commits its skip counter, completion is idempotent and the enrollment block lists its blockers; 32 new tests, 528 at merge, ruff/format/mypy and G7/G9 clean) | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
-| T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[x]` done on main (commit `4aafd75`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45652976135` on `task/T-021-notifications-reminders` green at that commit; one catalogue of seven ar/en messages, a queue whose row is written before the send so the dedupe key is the idempotency gate, the −3/0/+1 learner reminders, the due+3 manager escalation with a daily digest, suppression codes and a repair sweep; 32 new tests, 560 at merge, ruff/format/mypy, G3/G7/G9 clean) | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
-| T-022 | Reports + CSV export (scoped selectors, formula-safe CSV) | `[x]` done on main (commit `81d422f`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45663543806` on `task/T-022-reports-csv` green at that commit; one selector module behind four routes with a fixed query count, general courses in the department scope, a cross-department filter answered 403, a streamed BOM CSV whose cells cannot become formulas, 30 new tests, 590 at merge, ruff/format/mypy, G3/G7/G9 clean) | Tech authority | T-020 | REQ-12; query-count + scope tests; columns and CSV per `docs/reports.md` |
-| T-023 | Learner + management web UI (bilingual, responsive, accessible, player) | `[ ]` | Tech authority | T-020, T-022 | REQ-14 + screens L1–L4, S1, X1–X2 per `docs/ui/screen-specification.md`; manual checks recorded in LOG |
-| T-024 | Journey test + E2E + accessibility + load test + ops (deploy/backup/restore/alerts) + security review + privacy tooling + pilot | `[ ]` | Tech authority | T-023 | REQ-15…REQ-20 evidence in LOG; alert thresholds in `docs/operations/environments.md` §8 |
-| GATE-1 | Phase 1 gate: all REQ-01…REQ-20 verified; release `v1.0.0` | `[ ]` | Project owner | T-001…T-024 | [RELEASE] entry in LOG with per-REQ evidence |
+| T-025 | Documentation and governance consolidation | `[~]` — amendment `e2e9c1b`; CI success; awaiting owner review | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation`; CI run 45684270950 |
+| T-026 | Tenancy and account foundation | `[ ]` next | AI agent after T-025 merge | T-025 | `docs/plan.md` §4 T-026 |
+| T-033 | Hub quarantine | `[ ]` parallel candidate | AI agent | T-026 | `docs/plan.md` §4 T-033 |
+| T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
+| T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
+| T-023 | Learner + management UI (old scope) | `[–]` superseded by **T-031** | — | — | historical only |
+| T-024 | Hardening + E2E + ops (old scope) | `[–]` superseded by **T-034** | — | — | historical only |
+| GATE-1 | H1.5 gate | `[ ]` | Project owner | T-025…T-034 | `docs/plan.md` §5; capability matrix verified |
 
-Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; endpoint tasks
-(T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
+Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-015 is completed code
+that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
-- 2026-11-25 — T-022 reports: one selector module defines every number of `docs/reports.md`, so the summary, the two row lists and the CSV cannot disagree; a department scope includes the general courses and a named department outside it is refused instead of returning an empty page, and the export streams a BOM file whose formula-like cells are quoted, audited as `report.exported`. See LOG.md.
-- 2026-11-25 — T-021 notifications: seven catalogued ar/en messages leave through one queue whose row is written before the send, so a retry, a second worker or the repair sweep cannot send the same message twice; the −3/0/+1 reminders are anchored on the business date, the manager hears once a day at due+3, and a message that became unnecessary is skipped with its code instead of leaving with stale facts. See LOG.md.
-- 2026-11-25 — T-020 heartbeat and completion: the server credits only the elapsed window at
-  the reported rate, a forward jump is refused with the ceiling it allowed, and a replay or a
-  rewind adds nothing; lesson completion is idempotent, enrollment completion blocks on the
-  unfinished lessons it names, and the override is audited once with ids-only metadata. See
-  LOG.md.
-- 2026-11-25 — T-019 assignments: one expansion selector serves the preview and the write,
-  `member_changed` enrols and cancels without a second path, and the §7.5 lock is enforced by
-  the outline and by playback alike. See LOG.md.
-- 2026-11-25 — T-018 media pipeline: presigned uploads under per-asset tenant keys, `stat`
-  verification before an asset leaves `awaiting_upload`, the worker transcode to HLS with a
-  poster and playback playlists. See LOG.md.
-- 2026-11-25 — T-017 content services: courses, versions, sections and lessons through
-  scope-checked services, draft clone, publish validation with every reason, and the
-  `manage/…` routes behind `academy.manage_content`. See LOG.md.
-- 2026-11-25 — T-016 permission grants: `PermissionGrant` with its scope checks, audited
-  grant/revoke services, last-admin protection, the `manage/grants/` API and a request path
-  that now unions live grants into effective capability. See LOG.md.
-- 2026-11-25 — T-015 Hub HTTP integration: verified signed identity in `hub` mode, signed
-  membership webhooks with durable receipts, HTTP directory and delivery transports with
-  retries, circuit and cache invalidation, and a loopback Hub fake the contract suites run
-  against. See LOG.md.
-- 2026-11-25 — T-014 sessions/auth lifecycle: one middleware resolves the caller in both
-  access modes and publishes a single `Access`, `AccessSuspension` denies on the next request
-  even with a warm cache, and the X1 sign-in plus the X2 access-denied screen are reachable
-  in `standalone` mode only. See LOG.md.
-- 2026-11-25 — T-013 follow-up: the development stack serves its own static files,
-  the stylesheet is never cached stale, the drawer opens on phones without hiding the
-  desktop sidebar, and no width overflows at 360 or 768. See LOG.md.
-- 2026-11-24 — T-013 UI foundation: design tokens, one RTL/LTR shell, the component
-  showcase with five sample states, 403/404/500 pages, the locally hosted Noto Sans Arabic
-  font and a dependency-free catalogue compiler. See LOG.md.
-- 2026-11-24 — T-012 audit trail: `audit.record` joins the caller's transaction,
-  rejects free-text metadata and duplicate-inconsistent `event_id`s, and migration `0004`
-  makes `AuditEvent` append-only in PostgreSQL. See LOG.md.
-- 2026-11-24 — T-011 API skeleton: `/api/v1/academy/` with the documented error
-  envelope, pagination, an access-context authenticator, `me/capabilities/` and a clean
-  OpenAPI document. See LOG.md.
-- 2026-11-24 — T-010 test foundations: one factory per table, two-organization
-  fixtures, and a generic tenant-isolation suite that also proves the leak detector fires.
-  G7's tenant half is now active. See LOG.md.
-- 2026-11-24 — T-009 authorization layer: capabilities, scopes, grant-aware effective
-  access, the two documented modes, `AccessSuspended`/`InactiveAccount`, a DRF permission and
-  a web mixin; the matrix is tested without a view. See LOG.md.
-- 2026-11-24 — T-008 quiz and operational schema: five quiz tables, `ReminderLog`,
-  `NotificationLog` and `AuditEvent` with their idempotency unique keys and checks; migration
-  `0003` reverses cleanly. See LOG.md.
-- 2026-11-24 — T-007 assignment/progress schema: `Assignment`, `Enrollment`,
-  `LessonProgress` and `CompletionRecord` with their partial unique indexes, checks, lookup
-  indexes and the completion-immutability trigger; migration `0002` reverses cleanly. See LOG.md.
-- 2026-11-23 — T-006 catalog schema: `Course`, `CourseVersion`, `Section`, `Lesson` and
-  `MediaAsset` with the documented checks, partial unique indexes, deferrable position
-  constraints, and the `courseversion_immutable` / `version_content_frozen` triggers in
-  `academy/migrations/0001_initial.py`; the migration applies, reverses and re-applies. See
-  LOG.md.
-- 2026-11-23 — T-005 merged to `main`: the on-commit event emitter and its handler registry.
-  See LOG.md.
-- 2026-11-23 — T-005 domain events: `academy.events` emits through `transaction.on_commit`, so a
-  rolled-back write dispatches nothing; handlers subscribe by event name, a failing handler is
-  logged without stopping the rest, and the envelope is frozen with a JSON payload. See LOG.md.
-- 2026-11-23 — T-004 merged to `main`: the four host-seam Protocols, the `host_stub`
-  implementations and their contract suites. See LOG.md.
-- 2026-11-23 — T-004 adapters: the four seams are Protocols (`IdentityAdapter`,
-  `OrganizationAdapter`, `NotifyAdapter`, `StorageAdapter`) with stdlib-only value types, the
-  `host_stub` implementations behind them, and one contract suite per seam under
-  `tests/contracts/` (76 assertions). See LOG.md.
-- 2026-11-23 — T-003 merged to `main`: tenant base model, adapter loader and domain exceptions;
-  CI run `45154163445` green on the merge commit `3b7d450`. See LOG.md.
-- 2026-11-22 — T-001 scaffold: own repository initialised, Django 5.2 project with
-  dev/test/prod profiles, isolated stack answering `http://localhost:8101/healthz` 200 with
-  live DB and cache checks, gates G1/G2/G4/G5/G9 green locally, Celery worker answered
-  `pong`. Storage service blocked by D-025. Evidence in LOG.md.
-- 2026-11-22 — Rebuild repositioned onto a new repository (`M_Academy`) with a fully isolated
-  stack (containers, PostgreSQL, Redis, MinIO, Celery, secrets, ports). Isolation contract
-  and safety rules written in `docs/operations/environments.md`; RULES and CHARTER 2.2
-  updated; port 8001 (legacy web) dropped in favour of 8101 (see LOG.md).
-- 2026-11-22 — Documentation strengthened for a from-scratch build: decision register,
-  traceability map, domain model (with the progressive-watch/anti-skip algorithm) and API
-  inventory written; legacy `P0-/P1-` IDs retired; CHARTER 2.1 and ARCHITECTURE references
-  corrected (see LOG.md).
-- 2026-11-22 — UPDS documentation baseline created and seeded from the legacy requirements set (see LOG.md).
+- 2026-11-25 — T-025 H1.5 amendment: one company membership per account with `UNIQUE (user_id)`,
+  no company chooser/switcher/selection APIs or screens, platform administration without a
+  membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
+  with 320+ testing and the binding visual-reference gate. Prior package commits `96f78d2`,
+  `eb19fd1`, `15e0e53`, content amendment `e2e9c1b`; `check_docs` G9 passed (38 files); GitHub
+  Actions CI run 45684270950 succeeded. T-025 stays `[~]` pending owner review, not merge-ready.
+- 2026-11-25 — T-022 reports: one selector module defines every number, department scope includes
+  general courses and refuses a cross-department read, streamed BOM CSV with formula-safe cells
+  and an audited export. See `LOG.md`.
+- 2026-11-25 — T-021 notifications: seven ar/en messages through a durable queue, −3/0/+1
+  reminders, due+3 manager digest, suppression codes and a repair sweep. See `LOG.md`.
+- 2026-11-25 — T-020 heartbeat/completion: server-credited elapsed window, forward-skip refusal,
+  idempotent completion and named blockers. See `LOG.md`.
+- 2026-11-25 — T-019 assignments: one expansion selector, membership-driven enrol/cancel,
+  server-enforced lesson lock. See `LOG.md`.
+- 2026-11-25 — T-018 media: presigned tenant-key uploads, `stat` verification, ffmpeg→HLS and
+  poster/playlists. See `LOG.md`.
+- 2026-11-25 — T-017 content services; T-016 permission grants; T-015 Hub HTTP integration;
+  T-014 sessions/auth lifecycle; T-013 UI foundation; T-012 append-only audit; T-011 API
+  skeleton; T-010 test foundations; T-009 authorization v1; T-008…T-006 schema. See `LOG.md`.
 
 ## Blockers and risks
-| Item | Impact | Owner | Next action | Review date |
+| Item | Impact | Owner | Next action | Review |
 |---|---|---|---|---|
-| Hub contract unconfirmed (D-004 identity format, D-010 Hub implementation, D-005 domain/TLS) | Blocks live integration; not blocking Academy-side build (fakes) | Project owner + Hub owner | Confirm contract after T-015 | T-015 |
-| Video storage provider (self-hosted vs managed) | Blocks production media deploy only | Project owner | Decide before T-018 production config | T-018 |
-| Employee-data retention/legal basis needs legal confirmation | Blocks go-live | Management + legal | Advise before GATE-1 | GATE-1 |
-| MinIO development image is unavailable: `minio/minio` is gone from Docker Hub, `ghcr.io/minio/minio` is denied and `quay.io/minio/minio` returns 401 (checked 2026-11-22) | The storage service of the dev stack cannot start, so uploads and the bucket checks cannot run | Project owner | Decide D-025: load a MinIO image into the local engine (`docker save`/`load`) or approve an S3-compatible development substitute behind the existing `StorageAdapter` | T-018 |
-| Two stacks on one host (legacy `masheed-academy` + new `m-academy`) | Port/volume/cookie collision, or accidental destruction of legacy data | Tech authority | Isolation table + safety rules in `docs/operations/environments.md`; checklist §7 at T-001 | T-001 |
-| Repository is public and the baseline is published (D-023 Confirmed: public) | Future internal material leaking into a tracked file | Project owner | Keep secrets in the untracked `.env`; assume every commit is public | ongoing |
+| D-001 production storage provider | Blocks production media only; dev/test use MinIO | Project owner | Decide before the production release decision | T-034 |
+| D-005 production domain/TLS owner | Blocks production ingress only | Project owner + ops | Decide before production deploy | T-034 |
+| D-009 KPI values | Blocks success measurement, not the build | Project owner | Set before the pilot | T-034 |
+| T-001 bucket evidence | Holds T-001 `[~]` | Tech authority | Re-run the bucket check with the resolved MinIO image | T-034 |
+| Legacy identity mapping file (`legacy_user_ref,email,display_name`) | T-026 cannot activate real accounts without it | Project owner/HR | Provide a verified file before T-027 | T-026/T-027 |
+| Two stacks on one host | Port/volume/cookie collision or legacy damage | Tech authority | Isolation rules enforced; only `m-academy-*` commands | ongoing |
+| Public repository (D-023) | Leaking internal material | Project owner | No secrets in tracked files; assume every commit is public | ongoing |
+| Hub contract (D-004/D-010) | No H1.5 impact; Hub dormant | Project owner + Hub owner | Revisit only at a reactivation decision | H2 |
 
 ## Decisions
-Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not duplicate values.
-
-- **Open:** D-001 (video storage provider), D-005 (upstream domain/TLS), D-009 (KPI values),
-  D-010 (Hub implementation owner), D-025 (object-storage image for the development stack).
-  Only D-025 blocks a Phase 0 acceptance item — the bucket step of T-001; none blocks Phase 0
-  implementation work.
-- **Confirmed:** D-023 (repository stays public; the documentation baseline is published);
-  D-011 (Academy-owned navigation); D-026 (H1 scope and access modes), D-027 (`grants_only`),
-  D-028 (local suspension), D-029 (linked-membership reconciliation), D-030 (H1 UI boundary).
-- **Defaulted** (build proceeds on the documented value; owner may override): D-002, D-003,
-  D-004, D-006, D-007, D-008, D-012, D-013, D-014, D-015, D-016, D-017, D-024.
-- Retired legacy numbers (D-018…D-022, plus the four CHARTER 2.0 collisions) are mapped in
-  that file and must not reappear.
+Single register: [`docs/decisions.md`](docs/decisions.md). This file does not duplicate values.
+- **Open:** D-001, D-005, D-009, D-010 (deferred H2).
+- **Confirmed (2026-11-25):** D-031…D-044 (standalone/Hub dormant, tenancy, local identity, RBAC,
+  public origin, mail, PII, settings, observability, environments, UUID strategy, outbox deferral,
+  performance profile, one membership per account, Mobile First and visual reference). Older
+  confirmed decisions remain unless marked superseded.
+- **Resolved:** D-025 (local MinIO image).
+- **Superseded:** D-002→D-038, D-013/D-026→D-032, D-027→D-034; ADR-002/010/011/012/014 replaced by
+  ADR-023…026.
+- Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-T-022 (reports and CSV export) is complete on `main`; **T-023** (the learner and management
-web UI) is next, and the owner asked to agree on the interface shape before it is built, so
-the agent waits for that agreement instead of starting the screens.
-The H1 documentation alignment is merged to `main`
-(commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
-authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
-task/checkpoint, commits, pushes, reports evidence, stops.
+T-025 is ready for **owner review**; CI on content commit `e2e9c1b` passed, and the owner's approval
+is the remaining merge condition. After merge, start **T-026 CP1**
+(tenancy schema expand) exactly as `docs/plan.md` §4 defines it; T-033 may run in parallel once
+T-026 CP1 lands. Do not merge to `main` without the owner's approval. Say «كمل» to authorize the
+next checkpoint; the agent does one checkpoint, commits, pushes, reports evidence and stops.
 
 ## Update rules
-- Update when project state changes. Do not turn this file into a diary (LOG.md owns history).
-- Do not mark work complete without merge-commit + CI evidence.
+- Update when project state changes. Do not turn this file into a diary (`LOG.md` owns history).
+- `[x]` requires a commit, a CI run and named evidence. Do not mark work complete because code
+  exists locally.
+- Keep task IDs and states consistent with `docs/plan.md` and `docs/traceability.md`.

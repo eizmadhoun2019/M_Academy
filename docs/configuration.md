@@ -2,13 +2,14 @@
 
 **Status:** Canonical for everything **except** Hub integration variables, which live in
 `docs/hub-contract.md` §7 and are not duplicated here.
-**Last updated:** 2026-11-22
-**Consumed by:** T-001 (`.env.example`), T-002 (settings profiles), T-011, T-014, T-018.
+**Last updated:** 2026-11-25
+**Consumed by:** T-001 (`.env.example`), T-002 (settings profiles), T-011, T-014, T-018,
+T-027…T-030, T-034.
 
-All project settings use the `ACADEMY_` prefix and are read once at process start. A value
-that is not listed here does not exist: adding one means adding a row. Secrets come from the
-untracked `.env` in development and from the deployment's environment in production, and are
-never committed (`docs/operations/environments.md` §1).
+All project settings use the `ACADEMY_` prefix and are read once at process start. A value not
+listed here does not exist: adding one means adding a row. Secrets come from the untracked
+`.env` in development and from the deployment environment in production; they are never
+committed (`docs/operations/environments.md` §7).
 
 ---
 
@@ -16,65 +17,83 @@ never committed (`docs/operations/environments.md` §1).
 
 | Variable | Default | Notes |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | — required, ≥50 chars, generated at T-001 | Never reused from another project |
-| `ACADEMY_ENV` | `development` | `development \| test \| production` |
+| `DJANGO_SECRET_KEY` | — required, ≥50 chars | Never reused from another project |
+| `ACADEMY_ENV` | `development` | `development \| test \| staging \| production` |
 | `ACADEMY_DEBUG` | `false` (true only in `development`) | Production refuses to start with `true` |
-| `ACADEMY_ALLOWED_HOSTS` | `localhost,127.0.0.1` (dev) | Comma-separated |
+| `ACADEMY_ALLOWED_HOSTS` | `localhost,127.0.0.1` (dev) | Comma-separated; no wildcard in production |
+| `ACADEMY_PUBLIC_BASE_URL` | `http://localhost:8101` | Absolute links in mail and public pages; never derived from the request `Host` |
 | `ACADEMY_TIME_ZONE` | `UTC` | Storage and logs always UTC |
-| `ACADEMY_BUSINESS_TZ` | `UTC` (D-002) | Reminder anchors and display only |
-| `ACADEMY_DEFAULT_LANGUAGE` | `ar` | `ar \| en`; `LocaleMiddleware`, cookie `django_language`; the language of every notification |
-| `ACADEMY_ORGANIZATION_NAME` | `مشيد` | Display name substituted for `{org}` in the notification copy and printed in the brand line (`docs/notifications.md` §3) |
+| `ACADEMY_DEFAULT_LANGUAGE` | `ar` | `ar \| en`; fallback when a company/user has no preference; `LocaleMiddleware` |
 | `ACADEMY_SESSION_COOKIE_NAME` | `m_academy_sessionid` | Namespaced — never bare `sessionid` |
-| `ACADEMY_SESSION_COOKIE_AGE` | `28800` (8 h) | Sliding: `SESSION_SAVE_EVERY_REQUEST=true` |
-| `ACADEMY_LOGIN_URL` | `/academy/login/` | Start of sign-in in `standalone` mode; `hub` mode starts at the Hub |
-| `ACADEMY_ACCESS_MODE` | `hub` (dev/test: `standalone`) | `hub` = verified Hub identity, no Academy login; `standalone` = local sign-in with trusted local membership (D-026). One record set; never a second organization |
-| `ACADEMY_ORGANIZATION_ID` | the agreed organization UUID (`docs/hub-contract.md` §7 example) | The single tenant this deployment serves (D-026); a Hub assertion or session naming another organization is refused |
-| `ACADEMY_AUTHORIZATION_MODE` | `role_plus_grants` (H1 production: `grants_only`) | Effective management authority (D-027). `grants_only` ignores Hub role defaults; `academy.learn` still needs active membership plus enrollment |
-| `ACADEMY_HUB_ROLE_DEFAULTS` | `platform_admin=all; department_manager=own departments` | Role-to-capability map used only in `role_plus_grants`; mirrors `docs/api.md` §2 |
-| `ACADEMY_MEMBERSHIP_RECONCILE_MINUTES` | `60` | Linked-user reconciliation interval (D-029); `0` disables the job |
-| `ACADEMY_API_BODY_LIMIT_BYTES` | `2097152` (2 MiB) | Larger payloads → `413 payload_too_large` |
-| `ACADEMY_DEVELOPMENT_LOGIN` | `true` in dev/test, `false` otherwise | Local identity stub |
-| `ACADEMY_THROTTLES_ENABLED` | `true` (test profile: `false`) | Turns the documented rate counters on or off; disabling is a test-only setting, never a production choice |
-| `ACADEMY_LOG_LEVEL` | `INFO` | JSON to stdout; never logs tokens, cookies, media URLs or emails |
+| `ACADEMY_SESSION_COOKIE_AGE` | `43200` (12 h) | Absolute lifetime |
+| `ACADEMY_SESSION_IDLE_MINUTES` | `30` | Server-side last-activity check; no per-request write |
+| `ACADEMY_SESSION_SAVE_EVERY_REQUEST` | `false` | Must stay false; idle timeout is enforced by middleware |
+| `ACADEMY_LOGIN_URL` | `/academy/login/` | Start of sign-in; Hub is never the login page (D-035) |
+| `ACADEMY_ACCESS_MODE` | `standalone` | `standalone` (local accounts, always works) or `hub` (optional signed identity for an integrated deployment). Hub mode requires `ACADEMY_HUB_ENABLED=true`; it never disables local admin recovery. |
+| `ACADEMY_DEVELOPMENT_LOGIN` | `false` | Development-only identity stub. Startup refuses it when `DEBUG=false` or `ACADEMY_ENV=production`; tests assert this. |
+| `ACADEMY_API_BODY_LIMIT_BYTES` | `2097152` (2 MiB) | Larger → `413 payload_too_large` |
+| `ACADEMY_THROTTLES_ENABLED` | `true` (test profile: `false`) | Test-only off switch; never a production choice |
+| `ACADEMY_LOG_LEVEL` | `INFO` | JSON to stdout; never tokens, cookies, media URLs, emails or names |
+| `ACADEMY_DEFAULT_FROM_EMAIL` | `no-reply@academy.invalid` | Replaced by a real sender in production |
+| `ACADEMY_SUPPORT_EMAIL` | empty | Shown on public contact page and in failure mail footers |
+| `ACADEMY_COMPANY_NAME` | `مشيد` | Brand line on the public site; not a tenant name |
 
-Hub integration values (semantics and rotation in `docs/hub-contract.md` §5):
+## 2. Authentication, sessions and security
 
 | Variable | Default | Notes |
 |---|---|---|
-| `ACADEMY_HUB_ORIGIN`, `ACADEMY_HUB_UPSTREAM_HOST`, `ACADEMY_TRUSTED_PROXY_NETWORKS` | empty | Exact public origin, private upstream host, trusted ingress CIDRs |
-| `ACADEMY_PROXY_PATH_PREFIX`, `ACADEMY_STORAGE_CORS_ORIGIN` | `/academy`, empty | Public mount prefix and bucket CORS origin |
-| `ACADEMY_HUB_API_BASE_URL`, `ACADEMY_HUB_API_TOKEN`, `ACADEMY_HUB_API_PATHS` | empty, empty, `{}` | Hub service URL, outbound bearer, optional path overrides |
-| `ACADEMY_HUB_IDENTITY_KEYS`, `ACADEMY_HUB_WEBHOOK_KEYS` | `{}` | Separate JSON `kid` → secret maps; start-up refuses keys under 32 bytes in production |
-| `ACADEMY_HUB_IDENTITY_VERIFIER` | empty | Dotted `module:callable` replacement verifier; the identity adapter is used when empty |
-| `ACADEMY_HUB_IDENTITY_HEADER`, `ACADEMY_HUB_WEBHOOK_HEADER`, `ACADEMY_HUB_WEBHOOK_PATH` | `X-Masheed-Identity`, `X-Masheed-Webhook`, `/internal/hub/webhooks/` | Must match the proxy and sender |
-| `ACADEMY_HUB_ISSUER`, `ACADEMY_HUB_AUDIENCE` | `masheed-hub`, `masheed-academy` | Webhook audience adds `:webhooks` |
-| `ACADEMY_HUB_ASSERTION_TTL`, `ACADEMY_HUB_WEBHOOK_TTL`, `ACADEMY_HUB_CLOCK_SKEW` | `60`, `300`, `5` | Seconds; preserved across key rotation |
-| `ACADEMY_HUB_CONNECT_TIMEOUT`, `ACADEMY_HUB_READ_TIMEOUT`, `ACADEMY_HUB_API_RETRIES`, `ACADEMY_HUB_RETRY_BACKOFF` | `0.5`, `1`, `1`, `0.1` | Transport behaviour of §3 |
-| `ACADEMY_HUB_CIRCUIT_FAILURES`, `ACADEMY_HUB_CIRCUIT_SECONDS`, `ACADEMY_HUB_DIRECTORY_TTL` | `3`, `30`, `60` | Shared circuit and tenant directory cache |
-| `ACADEMY_HUB_NAVIGATION_SOURCE`, `ACADEMY_HUB_NAVIGATION` | `settings`, `[]` | `settings` or `identity`, plus the settings-mode menu |
+| `ACADEMY_PASSWORD_MIN_LENGTH` | `12` | Django validators; no forced composition |
+| `ACADEMY_LOGIN_MAX_FAILURES` | `5` | Per email+IP per window |
+| `ACADEMY_LOGIN_WINDOW_SECONDS` | `900` | 15 min; then exponential backoff |
+| `ACADEMY_LOGIN_IP_MAX_FAILURES` | `20` | Per IP per window |
+| `ACADEMY_MFA_ENCRYPTION_KEY` | — required in production | 32-byte urlsafe key for TOTP secrets; rotation re-encrypts |
+| `ACADEMY_MFA_REQUIRED_ROLES` | `super_admin,company_admin` | Enforced at login; additional roles may be added |
+| `ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS` | `86400` | 24 h |
+| `ACADEMY_PASSWORD_RESET_TTL_SECONDS` | `3600` | 1 h |
+| `ACADEMY_INVITATION_TTL_SECONDS` | `604800` | 7 days |
+| `ACADEMY_SESSION_COOKIE_SECURE` | `true` in staging/production | Must be true outside development |
+| `ACADEMY_CSRF_TRUSTED_ORIGINS` | empty | Comma-separated exact origins; no wildcard |
+| `ACADEMY_SECURE_SSL_REDIRECT` | `true` in staging/production | Proxy must forward the scheme |
+| `ACADEMY_HSTS_SECONDS` | `31536000` in production | `includeSubDomains` only after D-005 confirms |
+| `ACADEMY_CSP_STORAGE_ORIGIN` | empty | Storage host allowed in `media-src`/`connect-src`; required in production |
+| `ACADEMY_TRUSTED_PROXY_NETWORKS` | empty | Only these peers may supply `X-Forwarded-For`/proto |
 
-Proxy/TLS, CSRF-trusted origins, path prefix and storage CORS origin: `docs/hub-contract.md` §7.
-
-## 2. Data stores
+## 3. Data stores
 
 | Variable | Default (dev stack) | Notes |
 |---|---|---|
 | `ACADEMY_DB_HOST` / `_PORT` | `db` / `5432` | Host-side `127.0.0.1:5433` |
 | `ACADEMY_DB_NAME` / `_USER` | `academy` / `academy` | Own instance, never the legacy one |
-| `ACADEMY_DB_PASSWORD` | generated at T-001 | |
+| `ACADEMY_DB_PASSWORD` | generated | |
 | `ACADEMY_DB_CONN_MAX_AGE` | `60` | Seconds; `CONN_HEALTH_CHECKS=true` |
-| `ACADEMY_REDIS_URL` | `redis://redis:6379/0` | Cache DB 0, key prefix `macademy:` |
-| `ACADEMY_CACHE_TTL_SECONDS` | `60` | Hub membership/directory cache (ADR-012) |
+| `ACADEMY_REDIS_URL` | `redis://redis:6379/0` | Cache DB 0, prefix `macademy:` |
+| `ACADEMY_CACHE_TTL_SECONDS` | `60` | Authorization/company-context cache; never a permission long-cache |
 | `ACADEMY_CELERY_BROKER_URL` | `redis://redis:6379/1` | Own Redis instance |
 | `ACADEMY_CELERY_RESULT_URL` | `redis://redis:6379/2` | Results kept 1 day |
 | `ACADEMY_STORAGE_ENDPOINT` | `http://minio:9000` | `StorageAdapter` only |
 | `ACADEMY_STORAGE_BUCKET` | `academy-media-dev` (`academy-media-test` in tests) | Never a legacy bucket |
 | `ACADEMY_STORAGE_REGION` | `us-east-1` | MinIO ignores it |
 | `ACADEMY_STORAGE_PATH_STYLE` | `true` in dev, `false` in production | |
-| `ACADEMY_STORAGE_ACCESS_KEY` / `_SECRET_KEY` | generated at T-001 | |
-| `ACADEMY_EMAIL_BACKEND` | SMTP → MailHog (`mailhog:1025`) in dev, Hub mail API in production | REQ-03 |
+| `ACADEMY_STORAGE_ACCESS_KEY` / `_SECRET_KEY` | generated | |
 
-## 3. Upload policy (enforced twice: on request, then on `stat` verification)
+## 4. Mail (D-036)
+
+| Variable | Default | Notes |
+|---|---|---|
+| `ACADEMY_MAIL_TRANSPORT` | `smtp` (`console` in test) | `smtp \| console \| locmem \| hub`; `hub` only when Hub is enabled |
+| `ACADEMY_SMTP_HOST` / `_PORT` | `mailhog` / `1025` (dev) | Production uses the provider's host |
+| `ACADEMY_SMTP_USER` / `_PASSWORD` | empty | Never logged |
+| `ACADEMY_SMTP_USE_TLS` / `_USE_SSL` | `false` / `false` | Exactly one may be true |
+| `ACADEMY_SMTP_TIMEOUT_SECONDS` | `10` | Connection/read timeout |
+| `ACADEMY_EMAIL_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` | Kept for Django compatibility; `ACADEMY_MAIL_TRANSPORT` decides the adapter |
+| `ACADEMY_EMAIL_RETRY_ATTEMPTS` | `3` | Notification task retries |
+| `ACADEMY_EMAIL_RETRY_BACKOFF_SECONDS` | `60` | Exponential |
+
+Sender identity: company `sender_name` if set, else `ACADEMY_COMPANY_NAME`; address is always
+`ACADEMY_DEFAULT_FROM_EMAIL` in H1.5 (per-company domains are H2). SPF/DKIM/DMARC are deployment
+tasks, not settings.
+
+## 5. Upload policy (enforced twice: on request, then on `stat` verification)
 
 | Variable | Default | Enforcement |
 |---|---|---|
@@ -84,86 +103,100 @@ Proxy/TLS, CSRF-trusted origins, path prefix and storage CORS origin: `docs/hub-
 | `ACADEMY_UPLOAD_VIDEO_TYPES` | `video/mp4` | `400 unsupported_type` |
 | `ACADEMY_UPLOAD_IMAGE_TYPES` | `image/png,image/jpeg,image/webp` | `400 unsupported_type` |
 | `ACADEMY_UPLOAD_DOCUMENT_TYPES` | `application/pdf` | `400 unsupported_type` |
-| `ACADEMY_UPLOAD_MAX_DURATION_SECONDS` | `14400` (4 h) | Checked after `ffprobe`; asset → `failed` with `duration_exceeded` |
+| `ACADEMY_UPLOAD_MAX_DURATION_SECONDS` | `14400` (4 h) | After `ffprobe`; asset → `failed` `duration_exceeded` |
 | `ACADEMY_UPLOAD_URL_TTL_SECONDS` | `900` | Presigned `PUT` lifetime |
 | `ACADEMY_UPLOAD_ABANDON_HOURS` | `24` | `awaiting_upload` older than this is purged |
-| `ACADEMY_PLAYBACK_URL_TTL_SECONDS` | `300` | Presigned `GET` per playlist/segment request |
+| `ACADEMY_PLAYBACK_URL_TTL_SECONDS` | `300` | Presigned `GET` per playlist/segment |
 
-Rationale: 2 GiB at 2 Mbps ≈ 2.2 h of source, enough for any single lesson, and the presigned
-`PUT` keeps the payload off the application server (performance profile body limit 2 MiB).
-Raising a limit is a one-row change plus a test update.
+Rationale: 2 GiB at 2 Mbps ≈ 2.2 h of source, enough for one lesson; the presigned `PUT` keeps
+payloads off the application server (2 MiB body limit). Raising a limit is a row plus a test.
 
-## 4. Video pipeline (ffmpeg → HLS)
+## 6. Video pipeline (ffmpeg → HLS)
 
 | Variable | Default | Notes |
 |---|---|---|
-| `ACADEMY_HLS_RENDITIONS` | `360p,720p` | Matches the `renditions` jsonb keys in `docs/domain-model.md` §2.5 |
-| `ACADEMY_HLS_360P` | `640x360,800k,96k` | Single-pass H.264 `main`, AAC stereo; `WxH,videoBitrate,audioBitrate` |
-| `ACADEMY_HLS_720P` | `1280x720,2500k,128k` | Source below the rendition height produces that rendition only |
+| `ACADEMY_HLS_RENDITIONS` | `360p,720p` | Matches `renditions` jsonb keys |
+| `ACADEMY_HLS_360P` | `640x360,800k,96k` | Single-pass H.264 `main`, AAC stereo |
+| `ACADEMY_HLS_720P` | `1280x720,2500k,128k` | Source below the height produces that rendition only |
 | `ACADEMY_HLS_SEGMENT_SECONDS` | `6` | Playlist window `0` (VOD) |
-| `ACADEMY_HLS_GOP_FRAMES` | `48` | Fixed keyframe interval, `-sc_threshold 0`, aligned to segments |
-| `ACADEMY_HLS_SEGMENT_TYPE` | `mpegts` | `ts` segments + `.m3u8`; no DRM in Phase 1 |
+| `ACADEMY_HLS_GOP_FRAMES` | `48` | Fixed keyframe interval, `-sc_threshold 0` |
+| `ACADEMY_HLS_SEGMENT_TYPE` | `mpegts` | `.ts` + `.m3u8`; no DRM in H1.5 |
 | `ACADEMY_TRANSCODE_TIMEOUT_SECONDS` | `3600` | Per asset |
-| `ACADEMY_TRANSCODE_ATTEMPTS` | `2` retries (3 total) | Beyond that `409 retry_limit_reached` |
-| `ACADEMY_KEEP_ORIGINALS` | `false` | Original object deleted after `ready` when false |
+| `ACADEMY_TRANSCODE_ATTEMPTS` | `2` retries (3 total) | Beyond → `409 retry_limit_reached` |
+| `ACADEMY_KEEP_ORIGINALS` | `false` | Original deleted after `ready` when false |
 
 Storage layout: `org/<organization_id>/media/<asset_id>/original.<ext>`,
 `.../hls/<rendition>/index.m3u8`, `.../hls/<rendition>/seg-<n>.ts`, `.../poster.jpg`.
-Playback URLs are minted per request and never stored (`docs/domain-model.md` §6).
+Playback URLs are minted per request and never stored.
 
-## 5. Pagination and result limits
+## 7. Values that belong to the company (not env vars)
+Organization settings are edited by a Company Admin (`academy.settings.manage`) and audited.
+They are the source of truth; environment values are only platform fallbacks.
+
+| Setting | Default | Notes |
+|---|---|---|
+| Display name (ar/en) | from the Organization row | Used in UI, mail, reports |
+| Default language | `ar` | Applies to members without a personal preference |
+| Time zone | `Asia/Riyadh` | Reminder hour and date display; storage stays UTC (D-038) |
+| Reminder hour | `08:00` local | 0–23 |
+| Sender name | platform default | Mail from-name |
+| Completion threshold | `90` | Per lesson default; 50–100 |
+| Retention overrides | platform defaults | Bounded by legal minimum/maximum |
+| Department tree | — | Managed in N3 |
+
+## 8. Pagination and result limits
 
 | Variable | Default | Notes |
 |---|---|---|
 | `ACADEMY_PAGE_SIZE` | `25` | Matches the performance profile |
-| `ACADEMY_MAX_PAGE_SIZE` | `100` | Larger values are clamped silently, not rejected |
-| `ACADEMY_CURSOR_PAGE_SIZE` | `50` | Cursor endpoints: report rows, audit search |
+| `ACADEMY_MAX_PAGE_SIZE` | `100` | Larger values are clamped, not rejected |
+| `ACADEMY_CURSOR_PAGE_SIZE` | `50` | Report rows, audit search |
 | `ACADEMY_PREVIEW_RECIPIENT_CAP` | `5000` | D-017 |
 
-## 6. Throttles (DRF scoped throttles + middleware for web views)
+## 9. Throttles (DRF scoped throttles + middleware for web views)
 
 | Scope | Rate | Applies to |
 |---|---|---|
 | `anon` | `20/min` per IP | Unauthenticated requests |
-| `login` | `10/min` per IP | Development login and Hub callback |
-| `heartbeat` | `30/min` per user | `POST …/progress/` (nominal load is 4/min) |
+| `login` | `5/15 min` per email+IP, `20/15 min` per IP | Login, reset request, verification resend |
+| `heartbeat` | `30/min` per user | `POST …/progress/` (nominal 4/min) |
 | `playback` | `30/min` per user | `POST …/playback/` |
-| `read` | `120/min` per user | Default for `GET` endpoints |
-| `write` | `60/min` per user | Default for management `POST/PATCH/DELETE` |
+| `read` | `120/min` per user | Default `GET` |
+| `write` | `60/min` per user | Management `POST/PATCH/DELETE` |
 | `export` | `5/hour` per user | CSV and privacy export |
-| `webhook` | `600/min` per source IP | Hub webhook route |
+| `webhook` | `600/min` per source IP | Hub webhook route (only when enabled) |
 
-Rates are per process-independent (Redis-backed). Exceeding returns `429 rate_limited` with
-`Retry-After`. The heartbeat rate leaves 7× headroom over design load so a client retrying
-after a network drop is never locked out, while a scripted cursor-scrub loop is (it also
-trips `progress_skip_rejected`).
+Redis-backed, per process-independent. Exceeding returns **429 `throttled`** with `Retry-After`.
+The heartbeat rate leaves 7× headroom over design load so a client retrying after a network drop
+is not locked out, while a scripted cursor-scrub loop is (it also trips
+`progress_skip_rejected`).
 
-## 7. Values deliberately left to the database or the owner
+## 10. Observability (D-039)
 
-| Item | Where it lives | Why not an env var |
+| Variable | Default | Notes |
 |---|---|---|
-| Completion threshold (default 90%) | `Organization settings`, default `DEFAULT_COMPLETE_PERCENT` | Per-organization business rule |
-| Retention windows | `Organization settings`, defaults per `docs/domain-model.md` §8 | Legal/management decision (D-003) |
-| Grants-only mode | `Organization settings` | Toggled by an admin, audited |
-| Business time zone | `ACADEMY_BUSINESS_TZ` (D-002) | Deployment-wide |
+| `ACADEMY_METRICS_ENABLED` | `true` in staging/production | Exposes `/metrics` on the internal network |
+| `SENTRY_DSN` | empty | Error reporting; scrubs cookies/headers/bodies |
+| `ACADEMY_TRACE_SAMPLE_RATE` | `0.05` | Trace propagation sample; 0 disables |
+| `ACADEMY_SLOW_QUERY_MS` | `500` | Logs a warning with the SQL fingerprint (no parameters) |
+| `ACADEMY_HEALTH_TIMEOUT_SECONDS` | `2` | `/healthz` dependency check budget |
 
-## 8. Test profile overrides
+## 11. Test profile overrides
 
-`ACADEMY_ENV=test` forces: in-memory email, eager Celery, `MEDIA` on a temp dir, storage
-adapter `InMemoryStorage` or MinIO `academy-media-test`, throttle rates disabled
-(`ACADEMY_THROTTLES_ENABLED=false`), fixed clock injected through the clock service, and
-`ACADEMY_UPLOAD_MAX_*` lowered so oversize tests do not write gigabytes.
+`ACADEMY_ENV=test` forces: in-memory mail, eager Celery, media on a temp dir, storage adapter
+`InMemoryStorage` or MinIO `academy-media-test`, throttling disabled
+(`ACADEMY_THROTTLES_ENABLED=false`), fixed clock through the clock service, dev login allowed only
+when `ACADEMY_DEBUG=true` **and** the test settings module is loaded, and lowered upload limits so
+oversize tests do not write gigabytes. A test asserts that `ACADEMY_ENV=production` with
+`ACADEMY_DEVELOPMENT_LOGIN=true` fails startup.
 
-## 9. `.env.example` contract (created at T-001)
+## 12. `.env.example` contract
+Contains every variable of §1–§6 and §10 with placeholder values and a comment naming the owning
+document. No secret, no real host, no legacy value. `git check-ignore .env` must pass. Adding a
+variable updates this file in the same commit.
 
-Contains every variable of §1–§6 with placeholder values and a comment naming the owning
-document. No secret, no real host, no legacy value. `git check-ignore .env` must pass
-(`docs/operations/environments.md` §7 item 9).
-
-## 10. Logging and request ids
-
-Every process writes one JSON object per line to stdout, so the container runtime collects a
-stream that needs no parsing rule:
+## 13. Logging and request ids
+Every process writes one JSON object per line to stdout.
 
 | Field | Meaning |
 |---|---|
@@ -171,35 +204,31 @@ stream that needs no parsing rule:
 | `level` | `DEBUG` … `CRITICAL` |
 | `logger` | Dotted logger name |
 | `service` | `academy` |
-| `env` | Value of `ACADEMY_ENV` |
-| `message` | Rendered message; never a token, cookie, email or media URL (§1) |
-| `request_id` | Present only inside a request |
-| `exception` / `stack` | Present only when the record carries them |
+| `env` | `ACADEMY_ENV` |
+| `message` | Rendered message; never a token, cookie, email, name or media URL |
+| `request_id` | Inside a request |
+| `company_id` | Company context derived from the single membership, when known (UUID); platform route id when explicit |
+| `user_id` | Actor UUID when known (never email) |
+| `route` | URL name, not the raw path with ids |
+| `duration_ms` | Request duration |
+| `exception` / `stack` | Only when the record carries them |
 
-A request id is accepted from the inbound `X-Request-ID` header only when it matches
-`[A-Za-z0-9._-]{1,64}`; anything else is replaced by a generated 32-character id, which is also
-returned in `X-Request-ID` on the response. This is what makes a support report traceable to
-the lines it produced.
+A request id is accepted from `X-Request-ID` only when it matches `[A-Za-z0-9._-]{1,64}`;
+anything else is replaced by a generated 32-character id, also returned in `X-Request-ID`.
 
-## 11. Adapters
-
-`academy/` reaches the host only through four seams (`ARCHITECTURE.md` §4). Each seam is named
-by a `module.path:ClassName` value, resolved on first use by `academy.adapters.loader` and
-cached for the process lifetime. An empty value means **not configured**: the loader raises
-`AdapterNotConfigured` instead of substituting a default, so a deployment that forgot an
-adapter fails on the first call rather than degrading silently. `academy` itself never imports
-`host_stub` or a provider SDK (gate G7); only the configured class does.
+## 14. Adapters and transports
+External seams are named by `module.path:ClassName`, resolved on first use and cached per process.
+An empty value means **not configured**: the loader raises `AdapterNotConfigured` instead of
+substituting a default, so a deployment fails on first call rather than degrading silently.
+`academy` never imports `host_stub` or a provider SDK (gate G7).
 
 | Variable | Seam | Default | Notes |
 |---|---|---|---|
-| `ACADEMY_ADAPTER_IDENTITY` | `identity` | `host_stub.identity:DevelopmentIdentity` (dev/test), empty in production | Signed-identity verification (T-015 adds the Hub verifier) |
-| `ACADEMY_ADAPTER_ORGANIZATION` | `organization` | `host_stub.organization:StubDirectory` (dev/test), empty in production | Hub directory lookups (ADR-012) |
-| `ACADEMY_ADAPTER_NOTIFY` | `notify` | `host_stub.notify:RecordingNotifier` (dev/test), empty in production | Mail and activity log; never called from a request cycle |
-| `ACADEMY_ADAPTER_STORAGE` | `storage` | `host_stub.storage:InMemoryStorage` (dev/test), empty in production | Presign/stat/delete for media (D-001 keeps the provider open) |
+| `ACADEMY_ADAPTER_IDENTITY` | `identity` | `host_stub.identity:DevelopmentIdentity` (dev/test), empty in production | Only used when `ACADEMY_ACCESS_MODE=hub` |
+| `ACADEMY_ADAPTER_ORGANIZATION` | `organization` | `host_stub.organization:StubDirectory` (dev/test), empty | Hub directory; not used in standalone |
+| `ACADEMY_ADAPTER_NOTIFY` | `notify` | `host_stub.notify:RecordingNotifier` (dev/test), empty | Optional Hub activity mirror; local mail is `ACADEMY_MAIL_TRANSPORT` |
+| `ACADEMY_ADAPTER_STORAGE` | `storage` | `host_stub.storage:InMemoryStorage` (dev/test), empty in production | Presign/stat/delete (D-001) |
 
-The development and test profiles fill any empty value with the stub above, so a fresh clone
-runs without a Hub or a bucket; the production profile keeps the empty value and therefore
-fails at the first call until the deployment supplies a real implementation. Each seam has a
-contract suite under `tests/contracts/` — an implementation is accepted when that suite passes,
-which is how T-015's Hub transports and T-018's bucket implementation land without changing
-their callers.
+Each seam has a contract suite under `tests/contracts/`; an implementation is accepted when that
+suite passes. Development/test fill empty values with the stubs so a fresh clone runs without Hub
+or a bucket.

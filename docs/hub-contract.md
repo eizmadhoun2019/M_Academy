@@ -1,19 +1,19 @@
-# Masheed Hub ↔ Academy integration contract
+# Masheed Hub ↔ Academy integration contract (OPTIONAL, DORMANT)
 
-**Status: Proposed.** This document specifies what Academy's T-015 implementation expects. Every Hub route and behavior below is a proposal for Hub-team review. Academy runs on a separate Django and PostgreSQL server. The Hub proxy provides the public Academy experience on the Hub domain.
+**Status: Dormant / optional integration (D-031, T-033).** H1.5 runs standalone: Academy owns its origin, accounts, memberships, permissions and mail. Nothing below is on the launch path, and no Hub route, key or job exists while `ACADEMY_HUB_ENABLED=false` (the default). The wire contract is retained for a future explicitly approved integration; every route and behavior is still a proposal for Hub-team review (D-004, D-010).
 
-## Pending Hub-team confirmation
+## Pending Hub-team confirmation (only when the integration is enabled)
 
 | Decision | Proposal default | Configuration or owner action |
 |---|---|---|
 | D-004 · Token format and rotation | HMAC-SHA256 signed envelope, independent identity/webhook key rings, 60-second identity lifetime and five seconds of clock skew | Configure key rings and the identity verifier. A JWT variant requires a compatible verifier and agreement on the wire format. |
 | D-010 · Hub implementation owner and availability | Academy-side verification uses a loopback Hub fake. Hub owner, integration contact, test URL and delivery date are pending. | Hub team assigns an owner and supplies the service URL, credential and accepted route map. Configure these per environment. |
-| D-005 · Academy DNS and TLS | Public browser origin is the Hub's HTTPS origin. Academy uses a private HTTPS upstream reachable by the Hub proxy and webhook sender. | Configure Hub origin, Academy upstream hostname and certificate, allowlisted proxy networks, script prefix, trusted CSRF origins and bucket CORS origin per environment. Example hosts below are placeholders. |
+| D-005 · Academy DNS and TLS | The **default** public origin is Academy's own HTTPS origin (D-035). A Hub reverse proxy is an optional topology only if both owners approve it. | Configure Academy's hostname/certificate for production. Only if the proxy topology is approved, also configure Hub origin, upstream, allowlisted proxy networks, prefix, CSRF origins and bucket CORS. Example hosts below are placeholders. |
 | D-011 · Navigation source | Academy owns its own permission-aware sidebar and personal dashboard; it does **not** mirror Hub navigation. | Any legacy `ACADEMY_HUB_NAVIGATION_SOURCE` setting is a compatibility concern only; Academy decides internal links from effective Academy permissions. A contextual Return to Hub link is optional. |
 
 ## 1. Requests from the browser through Hub
 
-Example public origin: https://hub.example.com. Example private upstream: https://academy.internal.example.com.
+This section applies **only** when the integration is enabled. Default: Academy serves `/` and `/academy/` on its own origin; no proxy is involved. In the optional topology: example public origin `https://hub.example.com`, private upstream `https://academy.internal.example.com`.
 
 | Browser request | Hub forwarding |
 |---|---|
@@ -26,7 +26,7 @@ For dynamic Academy routes, check the Hub session before proxying. Remove every 
 
 Academy treats the mount prefix as Django FORCE_SCRIPT_NAME, emits the academy_csrftoken cookie with Path=/academy/, Secure and SameSite=Lax, and checks the exact Hub origin. For an unsafe browser request, send both this cookie and its token in X-CSRFToken or the Django form field. Hub should preserve status codes and Academy's CSRF Set-Cookie header. Protected responses must not be shared-cacheable. The proxy should reject delivered API request bodies above 2 MiB, with explicit connect, read and overall deadlines. Size and timeout settings should account for Academy's latency targets. Academy does not issue a production login redirect. Hub handles its own sign-in when the Hub session is missing.
 
-T-015 verifies the protected API entry point against the fake. The learner pages under the mount are scheduled in T-023. The production ingress serves collected static assets under the same prefix.
+T-033 verifies the protected API entry point against the fake while the feature is enabled, and proves the routes are absent while it is disabled. Learner pages under a mount are delivered by T-031 only in that approved topology.
 
 Configure bucket CORS for the exact Hub origin. Allow PUT, GET and HEAD, the signed upload headers (for example Content-Type), and Range for playback when used. Expose ETag, Accept-Ranges and Content-Range as needed. Allow the storage origin in Hub's media and connection CSP directives. The browser uses signed storage URLs without cookies. Academy grants and refreshes playback URLs through the proxied API.
 
@@ -55,7 +55,7 @@ Example decoded claims for GET /academy/api/v1/academy/?view=compact:
 }
 ```
 
-All fields above are required. Use integer Unix seconds for iat and exp, and generate a fresh cryptographically random nonce for each forwarded request, including retries. Encode 24 random bytes as unpadded base64url for the nonce. target is the decoded internal URL path after removing the prefix, followed by ? and the original query string when present. For example, preserve query order and encoding exactly. Sign the actual forwarded method and target. Hub must derive the organization, user status and claims from trusted sources. Academy accepts the configured organization UUID and rejects other tenants.
+All fields above are required. Use integer Unix seconds for iat and exp, and generate a fresh cryptographically random nonce for each forwarded request, including retries. Encode 24 random bytes as unpadded base64url for the nonce. target is the decoded internal URL path after removing the prefix, followed by ? and the original query string when present. For example, preserve query order and encoding exactly. Sign the actual forwarded method and target. Hub must derive the organization, user status and claims from trusted sources. Academy maps the asserted Hub organization and user reference to an existing local `Organization` and its single `Membership`; an unmapped organization or user is rejected. A Hub assertion that would place an already-affiliated user in a second company is rejected (`already_member`). Hub claims never create companies, accounts, memberships or permissions implicitly.
 
 Use a stable opaque user_ref up to 64 characters, a display name up to 200 characters, language ar or en, and a current membership status. Supply exactly one of platform_admin, department_manager, or employee. Academy maps the signed role to its own configured defaults. T-016 adds Academy-local grants to that calculation, and the token contract remains the same. department_refs contains up to 50 opaque strings (up to 64 characters each), with the primary department first. When the identity navigation source is selected, optionally include navigation as an array of up to 30 objects, for example [{"label":"Home","url":"/"}]. The labels are plain text and links are absolute paths on the Hub origin.
 
@@ -142,7 +142,7 @@ A successful POST returns 200 with {"accepted":true,"duplicate":false}. After an
 
 ## 5. Configure Academy's side
 
-The `config.settings.prod` profile requires the Hub origin, API credential, identity and webhook key rings, and the agreed organization UUID. Production startup rejects missing key rings or keys shorter than 32 UTF-8 bytes. Keep secrets in the deployment's secret manager. The standalone development profile continues to use local Django login.
+The Hub variables below are required **only** when `ACADEMY_HUB_ENABLED=true` and `ACADEMY_ACCESS_MODE=hub`. With the default `false`, production startup must succeed without any of them and must not register webhook routes or Hub jobs (T-033 test). When enabled, startup rejects missing key rings or keys shorter than 32 UTF-8 bytes. Keep secrets in the deployment secret manager. Standalone mode always uses local Django authentication (D-033).
 
 | Settings | What to configure |
 |---|---|
@@ -166,25 +166,25 @@ The `config.settings.prod` profile requires the Hub origin, API credential, iden
 - [ ] Simulate Hub service API errors and repeat under an open circuit. Continue signed learner heartbeat through the available proxy. Simulate proxy loss and verify resume from Academy's confirmed progress after recovery.
 
 
-## H1 scope clarification — owner-approved documentation target
+## 6. Dormant status and reactivation checklist
 
-The integration serves **Masheed only** in H1. Hub owns verified employee
-identity, membership and directory; Academy owns training-specific grants,
-courses, assignments, progress and audit. Hub's role claims do **not**
-automatically grant Academy management capabilities (`grants_only`).
+**Current state (2026-11-25): dormant.** The integration code and contract tests are retained
+(T-015), Hub is disabled by default (D-031/T-033), and the platform does not require Hub to
+boot, authenticate, mail, learn or report. The earlier H1 clarification (Hub-owned identity,
+`grants_only`, single organization, Academy on the Hub domain) is **superseded** by D-032,
+D-033, D-034 and D-035; it is not in force and must not guide new work.
 
-Academy uses signed Hub webhooks and reconciles **linked employee accounts only**
-hourly (`academy.membership.reconcile`, `docs/background-jobs.md` §1) and after connection
-restoration. A directory outage must not be
-interpreted as a deactivation. The exact reconciliation API operations and
-credentials require confirmation from the Hub owner; this section does not
-invent an endpoint or claim that production integration has passed.
+Reactivation requires, in order:
+1. An owner decision that supersedes D-031 for a named deployment, with a scope and date.
+2. A security review of the wire format, key management, replay/nonce handling, tenant mapping
+   and proxy trust (D-004/D-010).
+3. A confirmed Hub contract version and test endpoint from the Hub owner.
+4. Mapping rules: Hub organization → local `Organization`; Hub user reference → local `User` +
+   its **single** `Membership`; a second company is rejected (D-043); Hub roles **never** become
+   Academy permissions (D-034).
+5. The full contract suite plus end-to-end sign-in, webhook, mail-off and outage tests on
+   staging.
+6. `ACADEMY_HUB_ENABLED=true` set only for that environment, with monitoring and an audit entry.
 
-In Hub mode, entry opens Academy's personal dashboard directly with no second
-login. Hub owns session expiration; Academy denies protected requests after
-that session ends. A separate simple production standalone mode uses trusted
-local membership and a verified administrative account link to the same
-training record. This local sign-in is **not** Hub SSO and does not create
-a second organization.
-
-For the authoritative UI navigation decision, see `docs/decisions.md` D-011.
+While dormant, `docs/access-control.md`, `docs/security.md` and `docs/api.md` remain authoritative;
+this file never overrides them.

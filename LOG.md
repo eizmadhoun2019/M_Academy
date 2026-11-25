@@ -21,6 +21,74 @@
 
 ## Entries
 
+### [2026-11-25] — T-025 H1.5 amendment evidence (content commit and CI)
+
+- **Type:** Verification
+- **Status:** Verified
+- **Summary:** Recorded the content commit and CI run for the H1.5 architecture amendment. The
+  documentation content is `e2e9c1b` on `task/T-025-docs-consolidation`; GitHub Actions workflow
+  `CI` completed with **success** for that exact SHA. This evidence-only entry updates the
+  citations without changing the content commit or embedding its own hash in it.
+- **Impact:** `STATUS.md` now cites `e2e9c1b` and run 45684270950. T-025 remains `[~]` because owner
+  review/approval is still required; CI is no longer an open evidence gap.
+- **Evidence:** Commit `e2e9c1b`; `CI` run
+  https://github.com/eizmadhoun2019/M_Academy/actions/runs/45684270950 — `completed` / `success`;
+  `python scripts/check_docs.py` → G9 passed (38 markdown files).
+- **Approved by:** Project owner (delegation for this T-025 correction).
+- **References:** T-025, the amendment entry below, `STATUS.md`, `RULES.md` evidence policy.
+- **Corrects:** The “CI pending” evidence line in the amendment entry below.
+
+### [2026-11-25] — T-025 H1.5 architecture simplification amendment
+
+- **Type:** Decision | Change
+- **Status:** Implemented (CI pending)
+- **Summary:** Corrected the H1.5 target to **one company membership per account**: `Membership`
+  carries `UNIQUE (user_id)`, services and tests enforce it, invitations reject a second company
+  and there is no company chooser, switcher, selection API or setting. Platform administrators are
+  handled by `PlatformRoleAssignment` with no synthetic company; platform screens take an explicit
+  company id under platform permission and audit. The account/membership/company/authority
+  separation, tenant isolation and all earlier training capabilities are preserved. Added D-043 and
+  D-044, amended D-032/D-007/D-008/D-030, corrected ADR-024/025/026 and the ADR index, and added
+  the capability-preservation matrix to `docs/traceability.md`. Mobile First (390/768/1440, test
+  from 320) and the binding visual-reference/visual-regression gate are now mandatory. Recorded the
+  evidence policy that avoids a self-referential commit id. Added a historical banner to the
+  untracked `INSTALLATION_AR.md` without deleting owner content; UX archives remain untracked.
+- **Impact:** The documentation set no longer promises multi-membership UX or client-selected
+  company context. T-026…T-034, GATE-1 and G8/G10 carry the new constraints and the capability
+  matrix; T-030 keeps platform administration membership-free. T-025 remains `[~]` until CI is
+  observed and the owner approves; `main` is untouched.
+- **Evidence:** Content commit carrying this entry on `task/T-025-docs-consolidation`; its SHA and
+  the GitHub Actions run are recorded in the immediately following evidence entry, per the
+  `RULES.md` evidence policy. `python scripts/check_docs.py` → G9 passed (38 markdown files);
+  cross-document grep for chooser/switcher/multi-membership/old viewport/font references was clean
+  apart from explicit prohibitions and historical text. No application tests were run because no
+  code changed.
+- **Approved by:** Project owner (H1.5 correction prompt, 2026-11-25).
+- **References:** T-025, D-043, D-044, D-032/D-007/D-008/D-030, ADR-024…ADR-026,
+  `docs/traceability.md` §4.1, `docs/plan.md` T-025…T-034/GATE-1.
+
+### [2026-11-25] — T-025 documentation and governance consolidation
+
+- **Type:** Change
+- **Status:** Implemented
+- **Summary:** Rebuilt the project's governance set around charter 2.4 and H1.5: standalone-first
+  architecture with Hub dormant, first-class organizations/memberships/departments, local
+  accounts with Django Auth, dynamic scoped RBAC, public site on `/` and application under
+  `/academy/`, per-company settings/time zone/mail, tenant-aware jobs and reports, migration and
+  operations plans. Added `docs/plan.md` (T-025…T-034, checkpoints, acceptance criteria, GATE-1),
+  `docs/traceability.md` (G1–G12, REQ-01…REQ-28, sources of truth), `docs/security.md`,
+  `docs/access-control.md`, `docs/migration-h1.5.md`, ADR-023…ADR-028 and the permission-change
+  skill. Marked T-023/T-024 superseded rather than deleting them; no application code, template,
+  migration, API contract, Hub activation, infrastructure or dependency was changed.
+- **Impact:** A new agent can start from `README.md` → `RULES.md` → `STATUS.md` → `docs/plan.md`
+  and continue with «كمل». Implementation begins at T-026 only after owner approval; current
+  single-company/Hub code is explicitly documented as the pre-H1.5 state.
+- **Evidence:** Branch `task/T-025-docs-consolidation`, commit `96f78d2`; `python
+  scripts/check_docs.py` → G9 passed (38 markdown files); cross-document review covered
+  scope/tenancy/permissions/API/UI/tasks; no application tests were run because no code changed.
+- **Approved by:** Project owner (delegation in the consolidation prompt, 2026-11-25).
+- **References:** T-025, D-031…D-042, ADR-023…ADR-028, `docs/plan.md`, `STATUS.md`.
+
 ### [2026-11-25] — T-022 reports and CSV export
 
 - **Type:** Milestone
