@@ -24,7 +24,7 @@
 ### [2026-11-25] — T-035 official UI/UX reference adopted; legacy design material archived
 
 - **Type:** Change
-- **Status:** Implemented (CI evidence recorded in the following evidence commit)
+- **Status:** Verified
 - **Summary:** The owner delivered `Masheed-Academy-Official-UI-UX-v1.0` as the official visual.
   The archive was verified intact: 24 files, 14 reference boards, every SHA-256 and pixel dimension
   matching `REFERENCE_INDEX.csv`. Its text specifications were merged into the owning documents
@@ -47,8 +47,10 @@
   migration, API, Hub contract, dependency or infrastructure changed. T-026 CP1 has **not**
   started and still needs «كمل» after this task merges.
 - **Evidence:** Reference hash/dimension verification output and `REFERENCE_INDEX.csv` (all 14
-  match); before/after root listing; `python scripts/check_docs.py`; `git status` showing no design
-  binary tracked; task commit and CI run recorded in the evidence commit.
+  match); before/after root listing; `python scripts/check_docs.py` → `G9 documentation check passed
+  (41 markdown files)`; `git status` showed no design binary tracked. Content commit `165d261` on
+  `task/T-035-design-reference-adoption` passed CI run
+  [45692372567](https://github.com/eizmadhoun2019/M_Academy/actions/runs/45692372567).
 - **Approved by:** Owner delivered and approved the package (D-045); merge to `main` pending owner
   approval.
 - **References:** T-035, D-044/D-045, `docs/plan.md` §4, `docs/ui/design-system.md`,

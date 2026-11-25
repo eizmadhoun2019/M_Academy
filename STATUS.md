@@ -32,7 +32,7 @@ T-025 is merged as `b592498` (CI run 45687216183, success); implementation start
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
-| T-035 | Official UI/UX reference adoption and repository hygiene | `[~]` — branch `task/T-035-design-reference-adoption`; owner approval and merge pending | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md` |
+| T-035 | Official UI/UX reference adoption and repository hygiene | `[~]` — branch `task/T-035-design-reference-adoption`, content commit `165d261`, CI success 45692372567; owner approval and merge pending | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; `check_docs` 41 files |
 | T-026 | Tenancy and account foundation | `[ ]` next — do not start without «كمل» | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
 | T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
@@ -53,8 +53,8 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
   tree and archived in `../_design-archive/`; boards are Git-ignored and no design binary is
   tracked. Mobile First, the six verification widths (320/390/768/1024/1440/1920) and the master
   shell are permanent in `RULES.md` and `docs/ui/design-system.md`. No screen group gate was closed,
-  and no code, template, stylesheet, migration, API or dependency changed. Evidence lands with the
-  task commit and CI run.
+  and no code, template, stylesheet, migration, API or dependency changed. Content commit `165d261`
+  passed CI run 45692372567; `check_docs` G9 passed (41 files); every board hash matched.
 - 2026-11-25 — T-025 H1.5 amendment: one company membership per account with `UNIQUE (user_id)`,
   no company chooser/switcher/selection APIs or screens, platform administration without a
   membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
