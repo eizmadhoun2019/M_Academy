@@ -80,6 +80,7 @@ branch's commit.
 | `Masheed-Academy-UX-Batch-1-Review.zip` | Design package | Same; review material only |
 | `docs/ui/reference/masheed-academy-screens.pdf` + `pages/page-*.png` | Interim visual reference | Replaced by R01–R14; its sampled palette conflicts with the tokens |
 | `.docs-package-backup/` | Local doc backups | Duplicated/older copies of governance and UI docs kept in the project root |
+| `INSTALLATION_AR.md` | Superseded document-package note, 2026-11-23 | Installs a retired doc package, cites the old PDF, the single-organization/Hub assumptions and D-026–D-030; was never tracked in Git |
 
 Their interaction and accessibility lessons may be read for context, but their routes, providers,
 stack and Hub assumptions must not be revived.

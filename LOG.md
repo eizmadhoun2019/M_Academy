@@ -36,7 +36,9 @@
   `Academy-UX-Handoff-v1.0.zip`, `Masheed-Academy-UX-Batch-1-Review.zip`, the interim
   `masheed-academy-screens.pdf` with its page renders, and the local `.docs-package-backup/` were
   removed from the active tree and preserved in `../_design-archive/` outside the repository. Boards
-  are now Git-ignored under `.design-references/`; root-level ZIPs are ignored. `RULES.md` makes
+  are now Git-ignored under `.design-references/`; root-level ZIPs are ignored. The untracked,
+  superseded `INSTALLATION_AR.md` document-package note (2026-11-23) was archived with its content
+  hash unchanged. `RULES.md` makes
   Mobile First (Mobile 390 → Tablet 768 → Desktop 1440 → Large Desktop), verification at
   320/390/768/1024/1440/1920 px in ar/en, the single master shell, token-only styling, shared
   components and rendered-baseline visual regression permanent; CHARTER REQ-05/REQ-15, plan
@@ -48,7 +50,10 @@
   started and still needs «كمل» after this task merges.
 - **Evidence:** Reference hash/dimension verification output and `REFERENCE_INDEX.csv` (all 14
   match); before/after root listing; `python scripts/check_docs.py` → `G9 documentation check passed
-  (41 markdown files)`; `git status` showed no design binary tracked. Content commit `165d261` on
+  (41 markdown files)`; `git status` showed no design binary tracked. Restore rehearsal: the
+  archived ZIP was extracted to a scratch directory and all 14 boards were re-hashed against
+  `REFERENCE_INDEX.csv` (14/14 match); the scratch copy was deleted. The capability matrix was
+  re-counted at 23 rows. Content commit `165d261` on
   `task/T-035-design-reference-adoption` passed CI run
   [45692372567](https://github.com/eizmadhoun2019/M_Academy/actions/runs/45692372567).
 - **Approved by:** Owner delivered and approved the package (D-045); merge to `main` pending owner
