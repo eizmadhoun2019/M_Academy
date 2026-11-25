@@ -92,6 +92,56 @@ class TargetEmpty(AcademyError):
     code = "target_empty"
 
 
+class ProgressSkipRejected(AcademyError):
+    """A heartbeat that claims more playback than the clock allows (400, §7.3 step 5)."""
+
+    code = "progress_skip_rejected"
+
+    def __init__(self, allowed_seconds: float, detail: str = "") -> None:
+        super().__init__(
+            detail or "the playback position is ahead of what the server has credited",
+            fields={"allowed_seconds": round(allowed_seconds, 1)},
+        )
+
+
+class LessonNotEligible(AcademyError):
+    """A lesson below its watch threshold (409, ``lesson_not_eligible``)."""
+
+    code = "lesson_not_eligible"
+
+    def __init__(self, coverage_percent: float, required_percent: int) -> None:
+        super().__init__(
+            "the lesson has not been watched far enough",
+            fields={
+                "coverage_percent": coverage_percent,
+                "required_percent": required_percent,
+            },
+        )
+
+
+class EnrollmentIncomplete(AcademyError):
+    """An enrollment with lessons or an acknowledgment outstanding (409, §7.7)."""
+
+    code = "enrollment_incomplete"
+
+    def __init__(
+        self, blocking_lesson_ids: list[str], *, acknowledgment_required: bool = False
+    ) -> None:
+        fields: dict[str, Any] = {
+            "blocking_lesson_ids": blocking_lesson_ids,
+            "blocking_count": len(blocking_lesson_ids),
+        }
+        if acknowledgment_required:
+            fields["acknowledgment_required"] = True
+        super().__init__("the enrollment is not complete yet", fields=fields)
+
+
+class AcknowledgmentNotRequired(AcademyError):
+    """An acknowledgment on a version that does not ask for one (409)."""
+
+    code = "acknowledgment_not_required"
+
+
 class PublishInvalid(AcademyError):
     """A draft that breaks the publish rules (422, ``docs/api.md`` §8)."""
 

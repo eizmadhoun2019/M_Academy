@@ -94,7 +94,7 @@ column is the compatibility `role_plus_grants` map, not an H1 grant of authority
 | DELETE | `manage/assignments/{id}/` | Cancel | Soft cancel + cancel active enrollments with reason `unassigned` |
 | GET | `manage/courses/{id}/enrollments/` | Enrollment roster | Filters: `status`, `overdue`, `department_ref` |
 | POST | `manage/enrollments/{id}/cancel/` | Cancel one enrollment | Audited |
-| POST | `manage/enrollments/{id}/complete/` | Admin override completion | `academy.admin`; `method='admin_override'`; audited with reason |
+| POST | `manage/enrollments/{id}/complete/` | Admin override completion | `academy.admin`; body `{reason}` (required, 400 when blank); `method='admin_override'`; audited `enrollment.completed_override` with ids-only metadata; a cancelled enrollment answers 409 `conflict` |
 
 Scope rules (D-015, D-017):
 - A `department` target must be inside the caller's `academy.assign` scope; a `user` target is

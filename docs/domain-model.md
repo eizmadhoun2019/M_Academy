@@ -463,9 +463,13 @@ Server clock only. Client timestamps, durations and ids are ignored.
    `skip_attempts += 1`, and respond **HTTP 400** `{"code": "progress_skip_rejected",
    "detail": …, "fields": {"allowed_seconds": ceiling}}`. This is the REQ-09 “forward skip
    rejected by server” behavior. `skip_attempts` feeds an abuse metric and is never surfaced
-   to the learner as a warning.
-6. **Rewind** (`to_seconds <= position_seconds`): accept the position, credit nothing
-   (rewatching an already-covered range adds no coverage). Update `last_heartbeat_at`.
+   to the learner as a warning. The counter is committed even though the request fails, and
+   `last_heartbeat_at` is left alone, so waiting and retrying is credited normally.
+6. **Rewind** (`to_seconds <= position_seconds`): credit nothing (rewatching an already-covered
+   range adds no coverage) and update `last_heartbeat_at`. On the first heartbeat nothing is
+   credited at all: `credit_window` is 0, so the tolerance widens the ceiling but never hands
+   out coverage. Because `frontier_seconds <= position_seconds` is a table check (§2.8), the
+   position keeps its high-water mark instead of falling back behind earned coverage.
 7. **Forward within ceiling:** credit the interval
    `[max(from_seconds, position_seconds), to_seconds]`, but never more than
    `credit_window * rate`. If `from_seconds < position_seconds - RANGE_MERGE_GAP_SECONDS`,
@@ -478,7 +482,9 @@ Server clock only. Client timestamps, durations and ids are ignored.
 9. `position_seconds = to_seconds`, `last_heartbeat_at = now`. Commit.
 10. Respond `200` with the authoritative state:
     `{"position_seconds", "watched_seconds", "frontier_seconds", "coverage_percent", "skippable_seconds"}`.
-    `coverage_percent = watched_seconds / duration_seconds × 100` (0 when duration is 0).
+    `coverage_percent = watched_seconds / duration_seconds × 100` (0 when duration is 0) and
+    `skippable_seconds` is the ceiling this heartbeat applied — the furthest position the
+    next one may claim.
 
 ### 7.4 Idempotency and concurrency
 - Replaying an identical heartbeat credits 0 (elapsed is 0 and the ranges already cover it)
@@ -503,6 +509,7 @@ content for a locked lesson, so the lock is not a UI-only affordance.
 ### 7.6 Lesson completion
 `POST /enrollments/{id}/lessons/{lesson_id}/complete/` (explicit, learner-initiated):
 - Requires `watched_seconds / duration_seconds × 100 >= required_watch_percent`.
+  `duration_seconds` is the duration of the lesson's own media asset.
 - `duration_seconds` of 0 (text/pdf lessons) completes on explicit confirmation.
 - Idempotent: a second call returns the same completion with `200`.
 - Not eligible → **409** `{"code": "lesson_not_eligible"}` with

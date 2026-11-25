@@ -37,6 +37,13 @@ from academy.api.media import (
     MediaUploadCreateView,
     PlaybackView,
 )
+from academy.api.progress import (
+    AcknowledgeView,
+    EnrollmentCompleteView,
+    EnrollmentOverrideCompleteView,
+    LessonCompleteView,
+    LessonProgressView,
+)
 from academy.api.views import MeCapabilitiesView
 
 app_name = "academy_api"
@@ -127,6 +134,11 @@ urlpatterns = [
         EnrollmentCancelView.as_view(),
         name="manage-enrollment-cancel",
     ),
+    path(
+        "manage/enrollments/<uuid:enrollment_id>/complete/",
+        EnrollmentOverrideCompleteView.as_view(),
+        name="manage-enrollment-complete",
+    ),
     path("my/courses/", MyCoursesView.as_view(), name="my-courses"),
     path("my/enrollments/", MyEnrollmentsView.as_view(), name="my-enrollments"),
     path(
@@ -138,5 +150,25 @@ urlpatterns = [
         "enrollments/<uuid:enrollment_id>/lessons/<uuid:lesson_id>/playback/",
         PlaybackView.as_view(),
         name="lesson-playback",
+    ),
+    path(
+        "enrollments/<uuid:enrollment_id>/lessons/<uuid:lesson_id>/progress/",
+        LessonProgressView.as_view(),
+        name="lesson-progress",
+    ),
+    path(
+        "enrollments/<uuid:enrollment_id>/lessons/<uuid:lesson_id>/complete/",
+        LessonCompleteView.as_view(),
+        name="lesson-complete",
+    ),
+    path(
+        "enrollments/<uuid:enrollment_id>/acknowledge/",
+        AcknowledgeView.as_view(),
+        name="enrollment-acknowledge",
+    ),
+    path(
+        "enrollments/<uuid:enrollment_id>/complete/",
+        EnrollmentCompleteView.as_view(),
+        name="enrollment-complete",
     ),
 ]
