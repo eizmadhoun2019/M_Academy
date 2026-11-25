@@ -1,15 +1,22 @@
 # Skill: Tenant-isolation test matrix
 
-**Purpose:** Prove no query path leaks across organizations.
-**When to Use:** Every new service, selector, and endpoint.
+**Purpose:** Prove no query, cache, task, storage or report path leaks across companies.
+**When to Use:** Every new service, selector, endpoint, task, export or cached value.
 
 ## Steps
-1. Use the shared two-organization fixture; create rows in org A and org B via factories.
-2. Act as org B and assert: (a) lists contain nothing from A; (b) get/update/delete of A's
-   ids returns not-found/forbidden; (c) no write touches A's rows.
-3. Keep the meta-tests green: every concrete model subclasses `TenantModel`; every `*_id`
-   lookup in selectors includes `organization_id`.
+1. Use the shared fixtures: company A with two departments, company B, a user with memberships in
+   both, a suspended membership and a removed membership.
+2. Act as each principal and assert: (a) lists contain nothing from the other company;
+   (b) get/update/delete of a foreign id returns 404/403 without side effects; (c) no write
+   touches the other company; (d) a department manager cannot read a sibling department;
+   (e) a platform user without `platform.organization.access` cannot read training data.
+3. Check every layer touched: ORM queryset, Redis key (`org:<id>:` segment), Celery task argument
+   and payload, storage prefix `org/<id>/`, CSV/report row, notification recipient and audit row.
+4. Keep the meta-tests green: every concrete company-owned model has `organization_id` and a
+   company-scoped manager; every `*_id` lookup includes the company; no global table without an
+   approved exception.
 
 ## Validation
-Run `docker compose exec -T web pytest academy/tests/test_tenant_isolation.py` (same
-check as CI gate G7). A leak must fail the suite.
+Run the isolation suite (gate G7) locally and in CI. Deliberately remove one `organization_id`
+filter and confirm the suite fails (detector proof), then restore it. A leak must fail the suite,
+not be explained away.

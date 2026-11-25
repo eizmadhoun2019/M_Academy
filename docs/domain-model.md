@@ -1,94 +1,262 @@
 # DOMAIN MODEL — Entities, Constraints, State Machines and the Progress Algorithm
 
-**Status:** Canonical schema specification. `ARCHITECTURE.md` §5 summarizes; this file decides.
-**Last updated:** 2026-11-22
-**Implements:** REQ-03, REQ-06, REQ-07, REQ-08, REQ-09, REQ-10, REQ-11, REQ-13, REQ-19
-**Depends on:** `docs/decisions.md` (D-013…D-017, D-003), `docs/api.md`, `docs/hub-contract.md`
+**Status:** Canonical schema specification. `ARCHITECTURE.md` §5/§7 summarizes; this file decides.
+**Last updated:** 2026-11-25
+**Implements:** REQ-03, REQ-06…REQ-14, REQ-19, REQ-21…REQ-25, REQ-28
+**Depends on:** `docs/decisions.md` (D-003, D-013…D-017, D-031…D-042), `docs/access-control.md`,
+`docs/security.md`, `docs/api.md`, `docs/hub-contract.md`
 
 Any change here follows `docs/skills/model-change.md`. PostgreSQL is the only supported
-database (ADR 008); SQLite is never used, not even in tests.
+database (ADR-008); SQLite is never used, not even in tests.
 
 ---
 
 ## 1. Conventions
 
-### 1.1 Base model
-Every concrete model subclasses `academy.models.TenantModel` (meta-test enforced):
+### 1.1 Base models
+Every **tenant-owned** model subclasses `academy.models.TenantModel` (meta-test enforced):
 
 | Column | Type | Rules |
 |---|---|---|
-| `id` | `uuid` (v4) | Primary key, generated in Python |
-| `organization_id` | `uuid` | NOT NULL. Never a FK — the organization lives in Hub |
+| `id` | `uuid` | Primary key, generated in Python (v4 today; v7 for new tables when D-041's condition is met) |
+| `organization_id` | `uuid` FK → `Organization` | NOT NULL, `ON DELETE PROTECT` |
 | `created_at` | `timestamptz` | NOT NULL, set once, `timezone.now()` only |
 | `updated_at` | `timestamptz` | NOT NULL, auto |
 
+Global models subclass `academy.models.BaseModel` (id + timestamps, no organization):
+`Organization`, `User`, `AccountToken`, `MFADevice`, `RecoveryCode`, `UserSession`,
+`Permission`, and `AuditEvent` (nullable organization). `Role` is global for system templates
+(`organization_id IS NULL`) and tenant-owned for company roles; that exception is declared in
+the model and in the meta-test allowlist.
+
 - Managers: `objects` (unrestricted, migrations and tests only) and
-  `TenantModel.objects.for_org(organization_id)` — every runtime read goes through `for_org`.
-- Every index whose first column is not a unique key **must** start with `organization_id`.
-- No FK points to a user. Users appear only as opaque `*_ref` strings (`VARCHAR(64)`,
-  `^[A-Za-z0-9._:-]{1,64}$`). Department refs use the same pattern. Names and emails are
-  never stored.
+  `TenantModel.objects.for_org(organization_id)`. Every runtime read goes through `for_org` or a
+  selector that requires the organization.
+- Every non-unique index on a tenant table starts with `organization_id`.
+- Foreign keys to tenant entities use **composite keys** `(organization_id, <parent>_id)` where
+  the parent is tenant-owned, so a child cannot reference another company's row. This requires a
+  `UNIQUE (organization_id, id)` on each referenced parent.
 - Enumerations are Django `TextChoices` **plus** a `CheckConstraint` (no DB enum types, so
   adding a value is a plain code change).
+- Lifecycle is soft for history-bearing rows (company archive, membership removed, account
+  anonymized). Hard deletion is a platform command with audit and a backup check.
 
-### 1.2 Reference table
+### 1.2 Reference columns after the identity migration
 | Column | Meaning |
 |---|---|
-| `*_ref` | Opaque Hub reference (user or department) |
-| `actor_ref` | Who performed an audited action; `"system"` for scheduled work |
+| `*_id` FK | Normal relation (account, membership, department, role, media) |
+| `actor_id` (audit/logs) | UUID snapshot of the acting user; immutable, survives anonymization |
 | `dedupe_key` | Idempotency key of an outbound side effect |
+| `user_ref` | **Legacy only** until T-028 completes; mapped to `User.id` / `Membership.id`; no new column may use it |
+
+Names and email **are stored** on `User` as minimal authentication data (D-037); they are
+never copied into business tables, audit payloads, logs or metrics.
 
 ---
 
 ## 2. Entities
 
-Order is the migration order. “Derived” means it is computed and never stored.
+Order is the migration order. “Derived” means computed and never stored.
 
-### 2.1 `Course`
-Container for versions.
+### 2.0 Identity and tenancy
+
+#### 2.0.1 `Organization` (global)
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `name_ar` | varchar(200) | no | — | Non-blank |
+| `name_en` | varchar(200) | yes | `NULL` | Falls back to `name_ar` |
+| `slug` | varchar(60) | no | — | `UNIQUE`, lowercase `[a-z0-9-]`, immutable after creation |
+| `status` | varchar(16) | no | `active` | `active \| suspended \| archived` |
+| `default_language` | varchar(5) | no | `ar` | `ar \| en` |
+| `timezone` | varchar(64) | no | `Asia/Riyadh` | Valid IANA zone (validated) |
+| `reminder_hour` | smallint | no | `8` | `CHECK BETWEEN 0 AND 23`, local time |
+| `sender_name` | varchar(120) | yes | `NULL` | Mail from-name; platform default if null |
+| `settings` | jsonb | no | `'{}'` | Reserved; typed fields above are authoritative |
+| `archived_at` | timestamptz | yes | `NULL` | NOT NULL iff `status='archived'` |
+
+Indexes: `UNIQUE (slug)`, `(status)`. No hard delete while any tenant row exists.
+
+#### 2.0.2 `User` (global account)
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `email` | citext | no | — | `UNIQUE`, normalized lowercase; login attribute, **not** a relation key |
+| `display_name` | varchar(150) | no | — | Trimmed, non-blank |
+| `password` | varchar(128) | no | — | Django Argon2 hash; never logged |
+| `status` | varchar(16) | no | `active` | `unverified \| active \| suspended \| deactivated` |
+| `is_email_verified` | boolean | no | `false` | Set by verification or invitation acceptance |
+| `preferred_language` | varchar(5) | no | `ar` | `ar \| en` |
+| `last_login_at` | timestamptz | yes | `NULL` | Server clock |
+| `password_changed_at` | timestamptz | yes | `NULL` | Used to revoke older sessions |
+| `anonymized_at` | timestamptz | yes | `NULL` | PII replaced; row kept for history |
+
+Constraints: `CHECK (status IN (...))`, unique lower(email) (citext). Index `(status)`.
+`email` is replaced with `anon+<uuid>@invalid` on anonymization; `display_name` with
+`Deleted user`. One account may hold many memberships; the account is never company-scoped.
+
+#### 2.0.3 `Membership` (tenant)
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `user_id` | uuid FK → User | no | — | `ON DELETE PROTECT` |
+| `status` | varchar(16) | no | `invited` | `invited \| active \| suspended \| removed` |
+| `joined_at` | timestamptz | yes | `NULL` | Set on activation |
+| `removed_at` | timestamptz | yes | `NULL` | Required iff `removed` |
+| `invited_by_id` | uuid FK → User | yes | `NULL` | `SET NULL` |
+| `department_id` | uuid FK → Department | yes | `NULL` | Composite tenant FK; primary department |
+
+Constraints: `UNIQUE (organization_id, user_id)`, `UNIQUE (organization_id, id)`,
+`CHECK (status='removed') = (removed_at IS NOT NULL)`, `CHECK (status<>'active' OR joined_at IS NOT NULL)`.
+Indexes: `(organization_id, status)`, `(organization_id, department_id)`.
+Membership history survives removal; training rows keep pointing at it with `PROTECT`.
+
+#### 2.0.4 `Department` (tenant)
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `name_ar` | varchar(200) | no | — | Non-blank |
+| `name_en` | varchar(200) | yes | `NULL` | |
+| `parent_id` | uuid FK → Department | yes | `NULL` | Composite `(organization_id, parent_id)`; no cycles (service) |
+| `status` | varchar(16) | no | `active` | `active \| archived` |
+| `position` | integer | no | `0` | Sibling display order |
+
+Constraints: `UNIQUE (organization_id, id)`, `UNIQUE (organization_id, parent_id, name_ar)`,
+`CHECK (parent_id <> id)`. Index `(organization_id, status)`.
+Depth limit 5 (service). Archiving requires no active memberships or assignments in the subtree.
+
+#### 2.0.5 `Permission` (global catalogue)
+| Field | Type | Null | Default | Constraints |
+|---|---|---|---|---|
+| `code` | varchar(60) | no | — | Primary key, e.g. `academy.content.publish` |
+| `label_ar`, `label_en` | varchar(120) | no | — | UI labels |
+| `allowed_scopes` | varchar(60) | no | — | Comma-joined subset of `PLATFORM,COMPANY,DEPARTMENT,SELF` |
+| `is_platform` | boolean | no | `false` | Platform permissions cannot be granted from a company |
+
+Seeded from `docs/access-control.md` §2; a data test compares the table with the document list.
+Rows are never deleted while a role or grant references them.
+
+#### 2.0.6 `Role`
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `organization_id` | uuid FK → Organization | yes | `NULL` | `NULL` = system template (visible to all companies, immutable) |
+| `key` | varchar(40) | no | — | `super_admin`, `company_admin`, …, `custom.<slug>` |
+| `name_ar`, `name_en` | varchar(120) | no | — | |
+| `is_system` | boolean | no | `false` | System roles cannot be edited/deleted |
+| `description` | varchar(300) | yes | `NULL` | |
+
+Constraints: `UNIQUE (organization_id, key)` with `NULLS NOT DISTINCT` (PostgreSQL 15+) so the
+global key is unique; `CHECK (is_system = (organization_id IS NULL))`.
+`Role.permissions` M2M → `Permission`. A company role may not include a `platform.*` permission.
+
+#### 2.0.7 `RoleAssignment` (tenant)
+| Field | Type | Null | Default | Constraints / notes |
+|---|---|---|---|---|
+| `membership_id` | uuid FK → Membership | no | — | Composite tenant FK |
+| `role_id` | uuid FK → Role | no | — | Role must be global or same company (service + trigger) |
+| `scope_type` | varchar(16) | no | — | `COMPANY \| DEPARTMENT \| SELF` (`PLATFORM` only on global platform assignments) |
+| `scope_department_id` | uuid FK → Department | yes | `NULL` | Required iff `scope_type='DEPARTMENT'` |
+| `granted_by_id` | uuid FK → Membership | yes | `NULL` | `SET NULL`; system seed may be null |
+| `expires_at` | timestamptz | yes | `NULL` | Optional for temporary roles |
+
+Constraints: `CHECK` scope arity; `UNIQUE (membership_id, role_id, scope_type, scope_department_id)
+WHERE revoked_at IS NULL` via partial index with `COALESCE`; `revoked_at`, `revoked_by_id` for
+history. Index `(organization_id, membership_id)`, `(organization_id, role_id)`.
+`RoleAssignment` is tenant-only (`organization_id` is non-null). Platform authority lives in a
+separate global table, `PlatformRoleAssignment(user_id, role_id, scope_type='PLATFORM',
+granted_by_id, revoked_at)`, so no fake tenant organization is created and a company query can
+never return a platform row. The last-platform-admin guard counts `PlatformRoleAssignment` rows.
+
+#### 2.0.8 `PermissionGrant` (tenant, exceptional)
+| Field | Type | Null | Default | Constraints |
+|---|---|---|---|---|
+| `membership_id` | uuid FK → Membership | no | — | |
+| `permission_id` | varchar(60) FK → Permission | no | — | Platform permissions rejected |
+| `scope_type` | varchar(16) | no | — | `COMPANY \| DEPARTMENT` |
+| `scope_department_id` | uuid FK → Department | yes | `NULL` | |
+| `reason` | varchar(500) | no | — | Non-blank, audited |
+| `expires_at` | timestamptz | no | — | Required, ≤ 90 days, > now at creation |
+| `granted_by_id` | uuid FK → Membership | yes | `NULL` | |
+| `revoked_at`, `revoked_by_id` | timestamptz / uuid | yes | `NULL` | |
+
+Constraints: partial `UNIQUE (membership_id, permission_id, scope_type, COALESCE(scope_department_id,'…')) WHERE revoked_at IS NULL`.
+Index `(organization_id, expires_at) WHERE revoked_at IS NULL`.
+
+#### 2.0.9 `Invitation` (tenant)
+| Field | Type | Null | Default | Constraints |
+|---|---|---|---|---|
+| `email` | citext | no | — | Normalized; no account required yet |
+| `token_hash` | char(64) | no | — | SHA-256 of a random 32-byte token; plaintext never stored |
+| `expires_at` | timestamptz | no | — | 7 days |
+| `accepted_at` | timestamptz | yes | `NULL` | |
+| `invited_by_id` | uuid FK → Membership | yes | `NULL` | |
+| `department_id` | uuid FK → Department | yes | `NULL` | |
+| `roles` | M2M → Role | — | — | Must be company roles or `learner` |
+
+Constraints: `UNIQUE (organization_id, email) WHERE accepted_at IS NULL` (one live invite),
+`CHECK (expires_at > created_at)`, index `(token_hash)` unique. Acceptance creates/reactivates
+the `User` and `Membership` and active assignments.
+
+#### 2.0.10 `AccountToken` (global)
+`user_id` FK, `purpose` (`verify_email|reset_password|unlock`), `token_hash` unique,
+`expires_at`, `used_at`, `created_at`. Single use; previous unused token of the same purpose is
+invalidated. Never logged.
+
+#### 2.0.11 `MFADevice` / `RecoveryCode` (global)
+`MFADevice`: `user_id`, `secret_encrypted` (Fernet/AES-GCM with `ACADEMY_MFA_ENCRYPTION_KEY`),
+`confirmed_at`, `last_used_at`, `label`; unique active device per user.
+`RecoveryCode`: `user_id`, `code_hash` (Argon2), `used_at`; 10 codes, regenerated as a set.
+
+#### 2.0.12 `UserSession` (global)
+`user_id`, `session_key_hash` unique, `created_at`, `last_seen_at`, `expires_at`,
+`revoked_at`, `ip_prefix` (truncated, optional), `user_agent_family`. Listed/revoked by the
+owner or a platform security admin; revoked on password change/reset and suspension.
+
+#### 2.0.13 `PlatformRoleAssignment` (global)
+`user_id` FK, `role_id` FK (global platform role), `granted_by_id` FK User nullable,
+`revoked_at`, `revoked_by_id`, `expires_at`. Partial unique on active
+`(user_id, role_id)`. Never mixed with tenant roles.
+
+### 2.1 `Course` (tenant)
+Container for versions. Adds real FKs to the new tenancy.
 
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
 | `title` | varchar(200) | no | — | Non-blank |
 | `description` | text | yes | `''` | |
-| `owner_department_ref` | varchar(64) | yes | `NULL` | D-013. `NULL` = general course (admin-only edit) |
+| `owner_department_id` | uuid FK → Department | yes | `NULL` | D-013: `NULL` = general course (COMPANY scope to edit) |
 | `status` | varchar(16) | no | `draft` | `draft \| published \| archived` |
-| `created_by_ref` | varchar(64) | no | — | |
+| `created_by_id` | uuid FK → Membership | no | — | `PROTECT` |
 
 Constraints: `CHECK (status IN ('draft','published','archived'))`,
-`CHECK (length(btrim(title)) > 0)`.
-Indexes: `(organization_id, status)`, `(organization_id, owner_department_ref)`.
+`CHECK (length(btrim(title)) > 0)`. Composite FK `(organization_id, owner_department_id)`.
+Indexes: `(organization_id, status)`, `(organization_id, owner_department_id)`.
 The published version is **derived** from `CourseVersion` (§2.2); there is no
 `Course.published_version` column (single source of truth).
 
-### 2.2 `CourseVersion`
+### 2.2 `CourseVersion` (tenant)
 An immutable snapshot once published.
 
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
-| `course_id` | uuid FK → Course | no | — | `ON DELETE RESTRICT` |
+| `course_id` | uuid FK → Course | no | — | Composite tenant FK, `PROTECT` |
 | `version_number` | integer | no | — | ≥ 1, assigned by the clone service |
 | `status` | varchar(16) | no | `draft` | `draft \| published \| archived` |
 | `acknowledgment_required` | boolean | no | `false` | Learner must tick acknowledgment |
-| `cover_media_id` | uuid FK → MediaAsset | yes | `NULL` | D-014, must belong to the same organization |
+| `cover_media_id` | uuid FK → MediaAsset | yes | `NULL` | D-014, same company |
 | `published_at` | timestamptz | yes | `NULL` | NOT NULL iff `status = 'published'` |
-| `published_by_ref` | varchar(64) | yes | `NULL` | Same rule |
-| `created_by_ref` | varchar(64) | no | — | |
+| `published_by_id` | uuid FK → Membership | yes | `NULL` | Same rule |
+| `created_by_id` | uuid FK → Membership | no | — | |
 
 Constraints:
-- `UNIQUE (course_id, version_number)`
+- `UNIQUE (organization_id, course_id, version_number)`
 - `UNIQUE (course_id) WHERE status = 'published'` — at most one published version per course.
-- `CHECK (status <> 'published' OR (published_at IS NOT NULL AND published_by_ref IS NOT NULL))`
+- `CHECK (status <> 'published' OR (published_at IS NOT NULL AND published_by_id IS NOT NULL))`
 - Immutability trigger `courseversion_immutable`: `UPDATE` of any column except
-  `status`/`published_at`/`published_by_ref` is rejected when the row is `published`; the
-  only allowed status transition is `published → archived`.
+  `status`/`published_at`/`published_by_id` is rejected when the row is `published`; the only
+  allowed status transition is `published → archived`.
 Indexes: `(organization_id, course_id)`, partial `(organization_id) WHERE status = 'published'`.
 
-### 2.3 `Section`
-
+### 2.3 `Section` (tenant)
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
-| `version_id` | uuid FK → CourseVersion | no | — | `ON DELETE CASCADE` |
+| `version_id` | uuid FK → CourseVersion | no | — | Composite tenant FK, `CASCADE` |
 | `title` | varchar(200) | no | — | Non-blank |
 | `position` | integer | no | — | ≥ 1 |
 
@@ -96,32 +264,30 @@ Constraints: `UNIQUE (version_id, position) DEFERRABLE INITIALLY DEFERRED`,
 `CHECK (position >= 1)`. Child writes are rejected when the version is `published`
 (trigger `version_content_frozen`).
 
-### 2.4 `Lesson`
-
+### 2.4 `Lesson` (tenant)
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
-| `section_id` | uuid FK → Section | no | — | `ON DELETE CASCADE` |
+| `section_id` | uuid FK → Section | no | — | Composite tenant FK, `CASCADE` |
 | `title` | varchar(200) | no | — | Non-blank |
 | `summary` | varchar(300) | yes | `NULL` | D-016 |
 | `body` | text | yes | `''` | Text/PDF lesson body |
 | `position` | integer | no | — | ≥ 1 |
 | `content_type` | varchar(16) | no | `video` | `video \| text \| pdf` |
-| `media_asset_id` | uuid FK → MediaAsset | yes | `NULL` | Required for `video` at publish time, not at draft |
+| `media_asset_id` | uuid FK → MediaAsset | yes | `NULL` | Required for `video` at publish time |
 | `required` | boolean | no | `true` | Non-required lessons are skipped by the lock chain |
 | `required_watch_percent` | smallint | no | `90` | `CHECK BETWEEN 50 AND 100` |
 
 Constraints: `UNIQUE (section_id, position) DEFERRABLE INITIALLY DEFERRED`,
 `CHECK (content_type IN ('video','text','pdf'))`, `CHECK (position >= 1)`,
-`CHECK (content_type <> 'pdf' OR body IS NOT NULL)` (service-validated at publish for video
-media readiness — see §4 invariants).
+`CHECK (content_type <> 'pdf' OR body IS NOT NULL)`; service validates video media readiness at
+publish (§4).
 
-### 2.5 `MediaAsset`
-
+### 2.5 `MediaAsset` (tenant)
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
-| `kind` | varchar(16) | no | `video` | `video \| image \| document` (D-014) |
-| `status` | varchar(20) | no | `awaiting_upload` | See state machine §5 |
-| `storage_key` | varchar(512) | yes | `NULL` | Prefix + UUID + extension; never a URL |
+| `kind` | varchar(16) | no | `video` | `video \| image \| document` |
+| `status` | varchar(20) | no | `awaiting_upload` | State machine §5 |
+| `storage_key` | varchar(512) | yes | `NULL` | `org/<organization_id>/media/<asset_id>/…`; never a URL |
 | `original_filename` | varchar(255) | yes | `NULL` | Display only, sanitized |
 | `content_type` | varchar(100) | yes | `NULL` | Trusted only after `stat` verification against an allowlist |
 | `size_bytes` | bigint | yes | `NULL` | `CHECK (size_bytes IS NULL OR size_bytes >= 0)` |
@@ -131,52 +297,52 @@ media readiness — see §4 invariants).
 | `error_code` | varchar(40) | yes | `NULL` | e.g. `probe_failed`, `transcode_failed` |
 | `attempt_count` | smallint | no | `0` | |
 | `ready_at` | timestamptz | yes | `NULL` | |
-| `created_by_ref` | varchar(64) | no | — | |
+| `created_by_id` | uuid FK → Membership | no | — | `PROTECT` |
 
-Constraints:
-- `CHECK (kind IN ('video','image','document'))`
-- `CHECK (status <> 'ready' OR storage_key IS NOT NULL)`
-- `CHECK (kind <> 'video' OR status <> 'ready' OR duration_seconds > 0)`
-- `CHECK (status <> 'failed' OR error_code IS NOT NULL)`
-Indexes: `(organization_id, status)`, `(organization_id, created_at)` for stale purging.
+Constraints: `CHECK (kind IN ('video','image','document'))`,
+`CHECK (status <> 'ready' OR storage_key IS NOT NULL)`,
+`CHECK (kind <> 'video' OR status <> 'ready' OR duration_seconds > 0)`,
+`CHECK (status <> 'failed' OR error_code IS NOT NULL)`.
+Indexes: `(organization_id, status)`, `(organization_id, created_at)`.
 
-### 2.6 `Assignment`
+### 2.6 `Assignment` (tenant)
 One target, one course.
 
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
-| `course_id` | uuid FK → Course | no | — | `ON DELETE RESTRICT` |
-| `target_type` | varchar(16) | no | — | `user \| department \| role \| organization` (D-015) |
-| `target_ref` | varchar(64) | yes | `NULL` | `NULL` iff `target_type = 'organization'` |
+| `course_id` | uuid FK → Course | no | — | Composite tenant FK, `PROTECT` |
+| `target_type` | varchar(16) | no | — | `membership \| department \| role \| organization` |
+| `target_membership_id` | uuid FK → Membership | yes | `NULL` | Required iff `membership` |
+| `target_department_id` | uuid FK → Department | yes | `NULL` | Required iff `department` |
+| `target_role_id` | uuid FK → Role | yes | `NULL` | Required iff `role`; role must be global or same company |
 | `due_at` | timestamptz | yes | `NULL` | Stored UTC |
 | `mandatory` | boolean | no | `true` | |
-| `assigned_by_ref` | varchar(64) | no | — | |
+| `assigned_by_id` | uuid FK → Membership | yes | `NULL` | `SET NULL` for imported history |
 | `note` | varchar(500) | yes | `NULL` | |
 | `cancelled_at` | timestamptz | yes | `NULL` | Soft cancel; never delete |
 
 Constraints:
-- `CHECK (target_type IN ('user','department','role','organization'))`
-- `CHECK ((target_type = 'organization' AND target_ref IS NULL) OR (target_type <> 'organization' AND target_ref IS NOT NULL))`
-- `UNIQUE (organization_id, course_id, target_type, target_ref) WHERE cancelled_at IS NULL`
-  — note: `NULL` in a unique index does not collide, so use a
-  `COALESCE(target_ref, '')` expression index for the `organization` case.
-- `CHECK (cancelled_at IS NULL OR cancelled_at >= created_at)`
+- `CHECK` target arity: exactly one target column is set and it matches `target_type`;
+  `organization` has none.
+- Three partial unique indexes (one per concrete target) over
+  `(organization_id, course_id, target_x) WHERE cancelled_at IS NULL`; one partial unique for
+  `organization` on `(organization_id, course_id) WHERE target_type='organization' AND cancelled_at IS NULL`.
+- `CHECK (cancelled_at IS NULL OR cancelled_at >= created_at)`.
 
-Expansion (T-019, D-017): the preview and the write share one selector. A `department` target
-resolves through `department_members` (descendants included), `role` through `role_members`, a
-`user` to that one reference, and `organization` to the union of `role_members` over every role
-the directory reports — the Hub has no "all members" route (hub-contract §3). Memberships are
-active only, the result is de-duplicated, and it is truncated at 5,000 with `capped = true`.
+Expansion (D-017): preview and write share one selector. `department` resolves through active
+memberships in the department subtree, `role` through active role assignments of that company, a
+`membership` to that one row, `organization` to every active membership. Memberships are active
+only, de-duplicated, truncated at 5,000 with `capped = true`.
 
-### 2.7 `Enrollment`
-Pins a learner to one published version.
+### 2.7 `Enrollment` (tenant)
+Pins a member to one published version.
 
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
 | `assignment_id` | uuid FK → Assignment | yes | `NULL` | `NULL` = direct/self enrollment |
 | `course_id` | uuid FK → Course | no | — | Denormalized for reporting |
 | `course_version_id` | uuid FK → CourseVersion | no | — | Pinned; never follows later publishes |
-| `user_ref` | varchar(64) | no | — | |
+| `membership_id` | uuid FK → Membership | no | — | `PROTECT`; the learner in this company |
 | `due_at` | timestamptz | yes | `NULL` | Copied from the assignment at creation |
 | `mandatory` | boolean | no | `true` | Copied at creation |
 | `status` | varchar(16) | no | `active` | `active \| completed \| cancelled` |
@@ -186,25 +352,22 @@ Pins a learner to one published version.
 | `cancel_reason` | varchar(40) | yes | `NULL` | `unassigned \| deactivated \| removed_from_target` |
 
 Constraints:
-- `UNIQUE (organization_id, user_ref, course_id) WHERE status = 'active'`
+- `UNIQUE (organization_id, membership_id, course_id) WHERE status = 'active'`
 - `CHECK (status <> 'completed' OR completed_at IS NOT NULL)`
 - `CHECK (status <> 'cancelled' OR cancelled_at IS NOT NULL)`
-- `CHECK (course_version_id IS NOT NULL)` — the service refuses to enroll onto a draft.
-- Re-enrollment inserts a **new** row: the partial unique index covers `active` rows only, so a
-  cancelled enrollment never blocks a new one, and reactivation never revives a cancelled row
-  (D-028).
-- `member_changed` enrols a member into every live assignment that reaches them and cancels the
-  rows whose assignment no longer does (`removed_from_target`); `member_deactivated` cancels
-  every active row (`deactivated`). Both run in the webhook's transaction.
-Indexes: `(organization_id, user_ref, status)`, `(organization_id, course_id, status)`,
+- Re-enrollment inserts a **new** row: the partial index covers `active` only, and reactivation
+  never revives a cancelled row (D-028).
+- `member_changed` enrols a member into every live assignment that reaches them and cancels rows
+  whose assignment no longer does (`removed_from_target`); `member_deactivated` cancels every
+  active row (`deactivated`). Both run in the same transaction as the state change.
+Indexes: `(organization_id, membership_id, status)`, `(organization_id, course_id, status)`,
 `(organization_id, due_at) WHERE status = 'active' AND due_at IS NOT NULL`.
 
-### 2.8 `LessonProgress`
-
+### 2.8 `LessonProgress` (tenant)
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
-| `enrollment_id` | uuid FK → Enrollment | no | — | `ON DELETE CASCADE` |
-| `lesson_id` | uuid FK → Lesson | no | — | |
+| `enrollment_id` | uuid FK → Enrollment | no | — | Composite tenant FK, `CASCADE` |
+| `lesson_id` | uuid FK → Lesson | no | — | Composite tenant FK, `PROTECT` |
 | `watched_ranges` | jsonb | no | `'[]'` | Ascending, disjoint `[[start, end], …]` seconds, 0.1 s precision |
 | `watched_seconds` | numeric(10,1) | no | `0` | Derived cache of the ranges sum |
 | `position_seconds` | numeric(10,1) | no | `0` | Last accepted position (server frontier source) |
@@ -213,23 +376,23 @@ Indexes: `(organization_id, user_ref, status)`, `(organization_id, course_id, st
 | `skip_attempts` | integer | no | `0` | Rejected forward jumps (abuse metric) |
 | `completed_at` | timestamptz | yes | `NULL` | Set by the completion service, not by heartbeat |
 
-Constraints: `UNIQUE (enrollment_id, lesson_id)`,
-`CHECK (watched_seconds >= 0)`, `CHECK (position_seconds >= 0)`,
-`CHECK (frontier_seconds >= 0)`, `CHECK (frontier_seconds <= position_seconds)`.
-The ranges invariant (ascending, disjoint, non-negative) is enforced in the service, not by
-a check constraint; the compaction task re-normalizes.
+Constraints: `UNIQUE (enrollment_id, lesson_id)`, `CHECK (watched_seconds >= 0)`,
+`CHECK (position_seconds >= 0)`, `CHECK (frontier_seconds >= 0)`,
+`CHECK (frontier_seconds <= position_seconds)`. The ranges invariant is enforced in the service;
+the compaction task re-normalizes.
 
-### 2.9 `CompletionRecord`
+### 2.9 `CompletionRecord` (tenant)
 Immutable proof of completion.
 
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
-| `enrollment_id` | uuid FK → Enrollment | no | — | |
+| `enrollment_id` | uuid FK → Enrollment | no | — | `UNIQUE`, `PROTECT` |
 | `course_id`, `course_version_id` | uuid | no | — | Snapshot for reporting |
-| `user_ref` | varchar(64) | no | — | Snapshot |
+| `membership_id` | uuid FK → Membership | no | — | Snapshot; `PROTECT` |
+| `user_id` | uuid | no | — | Snapshot of the account UUID |
 | `completed_at` | timestamptz | no | — | |
 | `method` | varchar(16) | no | `lessons` | `lessons \| admin_override` |
-| `actor_ref` | varchar(64) | no | — | Learner ref, or the admin for overrides |
+| `actor_id` | uuid | no | — | Learner user id, or the admin for overrides |
 
 Constraints: `UNIQUE (enrollment_id)`. Trigger rejects `UPDATE` and `DELETE`.
 
@@ -237,28 +400,30 @@ Constraints: `UNIQUE (enrollment_id)`. Trigger rejects `UPDATE` and `DELETE`.
 `Quiz` (`version_id`, `lesson_id` nullable, `title`, `pass_percent` 0–100, `max_attempts`),
 `QuizQuestion` (`quiz_id`, `position`, `prompt`, `kind` = `single|multiple`),
 `QuizChoice` (`question_id`, `position`, `label`, `is_correct`),
-`QuizAttempt` (`quiz_id`, `enrollment_id`, `started_at`, `submitted_at`, `score_percent`,
-`passed`), `QuizAttemptAnswer` (`attempt_id`, `question_id`, `choice_ids` jsonb, `correct`).
-Each with the standard tenant columns and `UNIQUE(quiz_id, enrollment_id, attempt_number)`.
-**No Phase 1 endpoint writes these tables**; they exist so Phase 2 needs no destructive
-migration.
+`QuizAttempt` (`quiz_id`, `enrollment_id`, `attempt_number`, `started_at`, `submitted_at`,
+`score_percent`, `passed`), `QuizAttemptAnswer` (`attempt_id`, `question_id`, `choice_ids` jsonb,
+`correct`). Each with tenant columns; `UNIQUE(quiz_id, enrollment_id, attempt_number)`.
+**No Phase 1 endpoint writes these tables**; they exist so Phase 2 needs no destructive migration.
 
-### 2.11 `ReminderLog`
+### 2.11 `ReminderLog` (tenant)
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
 | `enrollment_id` | uuid FK → Enrollment | no | — | |
 | `kind` | varchar(24) | no | — | `due_minus_3 \| due \| due_plus_1 \| manager_escalation` |
-| `recipient_ref` | varchar(64) | no | — | Learner, or the manager for escalation |
+| `recipient_membership_id` | uuid FK → Membership | no | — | Learner, or the manager for escalation |
+| `recipient_role` | varchar(12) | no | `learner` | `learner \| manager` |
 | `sent_at` | timestamptz | no | — | Server clock |
 
-`UNIQUE (enrollment_id, kind, recipient_ref)` — the idempotency mechanism.
+`UNIQUE (enrollment_id, kind, recipient_membership_id)` — the idempotency mechanism.
+`UNIQUE (organization_id, id)` for composite references.
 
-### 2.12 `NotificationLog`
+### 2.12 `NotificationLog` (tenant)
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
-| `kind` | varchar(32) | no | — | `course_assigned \| course_completed \| learner_completed \| manager_escalation` |
-| `dedupe_key` | varchar(128) | no | — | e.g. `completed:e-79`, `assigned:a-12:u-42` |
-| `recipient_ref` | varchar(64) | no | — | |
+| `kind` | varchar(32) | no | — | `course_assigned \| course_completed \| learner_completed \| manager_escalation \| account_*` |
+| `dedupe_key` | varchar(128) | no | — | e.g. `completed:e-79` |
+| `recipient_user_id` | uuid FK → User | no | — | Email resolved at send time |
+| `recipient_membership_id` | uuid FK → Membership | yes | `NULL` | Null for account-level mail |
 | `channel` | varchar(16) | no | `email` | `email \| in_app` |
 | `status` | varchar(16) | no | `pending` | `pending \| sent \| failed \| skipped` |
 | `attempt_count` | smallint | no | `0` | |
@@ -267,101 +432,92 @@ migration.
 
 `UNIQUE (organization_id, dedupe_key, channel)`, `CHECK (status <> 'sent' OR sent_at IS NOT NULL)`.
 
-### 2.13 `AuditEvent` (append-only)
+### 2.13 `AuditEvent` (append-only, nullable tenant)
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
-| `event_id` | uuid | no | — | Idempotency for the Hub mirror |
-| `actor_ref` | varchar(64) | no | — | `"system"` allowed |
-| `action` | varchar(64) | no | — | Dotted, e.g. `course.published`, `grant.denied` |
+| `event_id` | uuid | no | — | Idempotency |
+| `organization_id` | uuid FK → Organization | yes | `NULL` | `NULL` = platform event |
+| `actor_id` | uuid | no | — | User UUID snapshot; `system` events use the nil UUID + `actor_type='system'` |
+| `actor_type` | varchar(10) | no | `user` | `user \| system` |
+| `actor_membership_id` | uuid | yes | `NULL` | Snapshot, no FK |
+| `action` | varchar(64) | no | — | Dotted, e.g. `role.updated`, `authorization.denied` |
 | `object_type` | varchar(32) | no | — | |
-| `object_id` | varchar(64) | no | — | UUID or opaque ref |
-| `metadata` | jsonb | no | `'{}'` | IDs only — never names, emails, IPs or free text |
-| `occurred_at` | timestamptz | no | — | Same instant as the caller's transaction |
+| `object_id` | varchar(64) | no | — | UUID or code |
+| `metadata` | jsonb | no | `'{}'` | IDs and non-secret before/after only |
+| `request_id` | varchar(64) | yes | `NULL` | |
+| `occurred_at` | timestamptz | no | — | Caller's transaction instant |
 
-`UNIQUE (organization_id, event_id)`; index `(organization_id, object_type, object_id)`,
-`(organization_id, occurred_at)`; `BEFORE UPDATE OR DELETE` trigger raises (`academy_guard_audit_event`, migration `0004`).
-Rows are written only through `academy.audit.record`, which validates the action name and
-the ids-only metadata and returns the existing row for a repeated `event_id`.
+`UNIQUE (organization_id, event_id)` with `NULLS NOT DISTINCT`; indexes
+`(organization_id, object_type, object_id)`, `(organization_id, occurred_at)`,
+`(actor_id)`. `BEFORE UPDATE OR DELETE` trigger raises. Rows are written only through
+`academy.audit.record`, which validates the action name and ids-only metadata and is idempotent
+per `event_id`. Platform rows are readable only with `platform.audit.view`.
 
-### 2.14 `PermissionGrant`
+### 2.14 `AccessSuspension` (tenant, history)
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
-| `user_ref` | varchar(64) | no | — | |
-| `capability` | varchar(24) | no | — | `learn \| manage_content \| assign \| view_reports \| admin` |
-| `scope_type` | varchar(16) | no | — | `organization \| department` |
-| `scope_ref` | varchar(64) | no | `''` | Department ref; empty iff organization scope |
-| `granted_by_ref` | varchar(64) | no | — | |
-| `expires_at` | timestamptz | yes | `NULL` | |
-| `revoked_at` | timestamptz | yes | `NULL` | |
-| `revoked_by_ref` | varchar(64) | yes | `NULL` | |
-
-Constraints:
-- `CHECK ((scope_type = 'organization' AND scope_ref = '') OR (scope_type = 'department' AND scope_ref <> ''))`
-- `UNIQUE (organization_id, user_ref, capability, scope_type, scope_ref) WHERE revoked_at IS NULL`
-- `CHECK (revoked_at IS NULL OR revoked_by_ref IS NOT NULL)`
-
-### 2.15 `AccessSuspension` (Academy-local)
-
-D-028: a local administrative suspension makes stored grants ineffective without deleting
-them, and never changes Hub membership.
-
-| Field | Type | Null | Default | Constraints |
-|---|---|---|---|---|
-| `user_ref` | varchar(64) | no | — | |
+| `membership_id` | uuid FK → Membership | no | — | |
 | `reason` | varchar(500) | no | — | Non-blank |
-| `suspended_at` | timestamptz | no | — | Set by the service, `timezone.now()` |
-| `suspended_by_ref` | varchar(64) | no | — | Effective `academy.admin` |
+| `suspended_at` | timestamptz | no | — | `timezone.now()` |
+| `suspended_by_id` | uuid FK → Membership | yes | `NULL` | |
 | `lifted_at` | timestamptz | yes | `NULL` | Manual lift only |
-| `lifted_by_ref` | varchar(64) | yes | `NULL` | Required iff `lifted_at` is set |
+| `lifted_by_id` | uuid FK → Membership | yes | `NULL` | Required iff lifted |
 
-Constraints: `UNIQUE (organization_id, user_ref) WHERE lifted_at IS NULL`,
-`CHECK (lifted_at IS NULL OR lifted_by_ref IS NOT NULL)`, `CHECK (length(btrim(reason)) > 0)`.
-Enforcement is in the authorization layer: an active row yields no effective capability, the
-next request is denied with `403 access_suspended`, and the learner sees screen X2. No local
-membership row and no session store are added.
+Constraints: partial `UNIQUE (membership_id) WHERE lifted_at IS NULL`,
+`CHECK (lifted_at IS NULL OR lifted_by_id IS NOT NULL)`, `CHECK (length(btrim(reason)) > 0)`.
+Enforcement is in the authorization layer: an active row yields no effective tenant capability
+and the next request is denied with `403 access_suspended`; the learner sees X2. Roles and grants
+are retained but ineffective. No local session store is tied to this table.
 
-### 2.16 Hub webhook receipts
-`academy_hubwebhookevent` — the durable half of the webhook idempotency in
-`docs/hub-contract.md` §4. A delivery is accepted once per event id; a repeat with identical
-bytes is answered as a duplicate, and the same id with different bytes is a conflict.
+### 2.15 Hub webhook receipts (tenant, optional integration)
+`academy_hubwebhookevent` — durable half of webhook idempotency (`docs/hub-contract.md` §4).
+A delivery is accepted once per event id; a repeat with identical bytes is a duplicate, and the
+same id with different bytes is a conflict.
 
 | Field | Type | Null | Default | Constraints |
 |---|---|---|---|---|
 | `event_id` | uuid | no | — | `UNIQUE (organization_id, event_id)` |
 | `event_type` | varchar(32) | no | — | `member_changed` or `member_deactivated` |
-| `user_ref` | varchar(64) | no | — | | 
-| `body_sha256` | char(64) | no | — | Lowercase hex of the exact request body |
+| `user_ref` | varchar(64) | no | — | Legacy Hub reference during migration |
+| `body_sha256` | char(64) | no | — | Lowercase hex of the exact body |
 | `received_at` | timestamptz | no | `timezone.now()` | |
 
-The row is written in the same transaction as the event's effects (directory cache
-invalidation and the deactivation hook), so a crash between them cannot acknowledge an event
-whose effects were rolled back.
+The row is written in the same transaction as the event's effects, so a crash cannot
+acknowledge an event whose effects rolled back.
 
-### 2.17 Deliberately absent
+### 2.16 Deliberately absent
 | Not stored | Why |
 |---|---|
 | Per-heartbeat rows | Volume (14 req/s → 1.2 M rows/day) and privacy; merged ranges suffice (ADR-013) |
-| IP address, user agent, device id | Privacy minimization; not needed for the requirements |
-| Local membership projection | Hub is the directory; membership is read on demand and cached 60 s (ADR-012) |
-| User names and emails | Never stored; fetched per request when a notification needs them |
-| Player session tokens | Signed identity per request; no Academy-side session store in production |
+| Phone, address, birth date, photo, national ID | Not needed (D-037) |
+| Precise IP, full user agent, device fingerprint | Privacy minimization; truncated prefix only for security, 90 d |
+| Local Hub membership projection | Replaced: membership is now first-class (D-032) |
+| Player session tokens | Playback uses short-lived presigned URLs; no Academy player token |
+| Names/emails copied into business tables | Single source is `User`; reports join it under scope |
 
 ---
 
 ## 3. Relationships
 
 ```
+Organization 1─n Membership n─1 User
+Organization 1─n Department 1─n Department (parent)
+Organization 1─n Role (custom) ; Role n─n Permission
+Membership 1─n RoleAssignment n─1 Role
+Membership 1─n PermissionGrant n─1 Permission
+User 1─n PlatformRoleAssignment n─1 Role (global platform roles)
+Organization 1─n Invitation n─n Role
+User 1─n AccountToken / MFADevice / RecoveryCode / UserSession
 Course 1─n CourseVersion 1─n Section 1─n Lesson
-CourseVersion n─1 MediaAsset (cover)
-Lesson n─1 MediaAsset (video)
+CourseVersion n─1 MediaAsset (cover) ; Lesson n─1 MediaAsset (video)
 Course 1─n Assignment
-Assignment 1─n Enrollment   (0..n when a learner joins the target later)
-CourseVersion 1─n Enrollment  (pinned)
+Assignment 1─n Enrollment (0..n when a member joins the target later)
+CourseVersion 1─n Enrollment (pinned) ; Membership 1─n Enrollment
 Enrollment 1─n LessonProgress n─1 Lesson
 Enrollment 1─1 CompletionRecord
-Enrollment 1─n ReminderLog
-Quiz 1─n QuizQuestion 1─n QuizChoice;  Enrollment 1─n QuizAttempt 1─n QuizAttemptAnswer
-Organization ─n AuditEvent / NotificationLog / PermissionGrant
+Enrollment 1─n ReminderLog ; Organization/User 1─n NotificationLog
+Quiz 1─n QuizQuestion 1─n QuizChoice ; Enrollment 1─n QuizAttempt 1─n QuizAttemptAnswer
+Organization 0..1─n AuditEvent (platform events have no organization)
 ```
 
 ---
@@ -370,22 +526,36 @@ Organization ─n AuditEvent / NotificationLog / PermissionGrant
 
 | Invariant | Enforced by |
 |---|---|
-| Tenant isolation on every read | `for_org` (service/selector) + meta-test |
+| Tenant isolation on every read | `for_org` (service/selector) + meta-test + composite FKs |
+| No relation crosses companies | Composite foreign keys |
+| One membership per account per company | Unique index |
 | One published version per course | Partial unique index |
 | Published version content is frozen | Triggers on `CourseVersion`/`Section`/`Lesson` |
-| `target_ref` null iff target is the organization | `CHECK` |
-| One active enrollment per learner per course | Partial unique index |
+| Assignment target arity | `CHECK` + partial unique indexes |
+| One active enrollment per member per course | Partial unique index |
 | Completion requires every required lesson complete | Service (`complete_enrollment`) |
 | Progress ranges are merged and disjoint | Service (`record_heartbeat`) |
 | Completion and audit rows cannot change | Triggers |
-| Side effects happen at most once | `NotificationLog`/`ReminderLog` unique keys |
+| Side effects happen at most once | `NotificationLog`/`ReminderLog` unique keys + `dedupe_key` |
 | Every video lesson has a `ready` asset before publish | Publish service (`publish_version`) |
 | A version has ≥ 2 sections and ≥ 2 lessons | Publish service |
-| Last active admin cannot be revoked | Grant service, inside the transaction |
+| Last platform/company admin cannot be removed | Role service, inside the transaction |
+| Platform permissions never granted from a company | Catalogue `is_platform` + grant service |
+| No self-escalation | Grant service (grantor must hold the permission at equal/broader scope) |
 
 ---
 
 ## 5. State machines
+
+**Organization:** `active → suspended → active`, `active|suspended → archived` (no reverse).
+Suspension blocks tenant access for every member; archive is read-only for the platform.
+
+**User:** `unverified → active → suspended → active`, `active|suspended → deactivated`;
+deactivation revokes sessions. Anonymization is a separate irreversible step after retention.
+
+**Membership:** `invited → active → suspended → active`, `active|suspended → removed` (no
+reverse; re-invitation creates a new membership row only after removal history is kept).
+Removal cancels unfinished enrollments; suspension does not.
 
 **CourseVersion:** `draft → published → archived`. `published` requires §4 publish checks.
 No reverse transitions.
@@ -400,22 +570,22 @@ awaiting_upload ──(24 h stale purge)──> failed(error_code='stale_upload'
 ```
 Only `ready` assets may be attached to a published lesson or streamed.
 
-**Enrollment:** `active → completed`, `active → cancelled`, `completed → active` is never
+**Assignment:** `active → cancelled` only; cancelled rows are history.
+
+**Enrollment:** `active → completed`, `active → cancelled`; `completed → active` is never
 allowed (a re-assignment creates a new enrollment row after archival).
 
-**Assignment:** `active → cancelled` only; `cancelled` rows are history.
-
-**PermissionGrant:** `active → revoked`; `active → expired` is derived from `expires_at` at
-read time, never written.
+**PermissionGrant / RoleAssignment:** `active → revoked`; expiry is derived from `expires_at`
+at read time, never written.
 
 ---
 
 ## 6. Video playback authorization
 
-1. Learner calls `POST /enrollments/{id}/lessons/{lesson_id}/playback/`.
-2. Service checks: enrollment ownership, tenant, lesson accessible (§7 gating), asset `ready`.
-3. Service presigns the variant playlist and rewrites segment/variant URIs with presigned
-   URLs, TTL `max(30 min, 3 × duration)`, key-scoped to that asset prefix.
+1. Learner calls `POST /api/v1/academy/enrollments/{id}/lessons/{lesson_id}/playback/`.
+2. Service checks: enrollment membership = caller, tenant, lesson accessible (§7.5), asset `ready`.
+3. Service presigns the variant playlist and rewrites segment/variant URIs with presigned URLs,
+   TTL `max(30 min, 3 × duration)`, scoped to that asset's company prefix.
 4. Response is `private, no-store`. URLs are never cached or logged.
 
 ---
@@ -423,7 +593,7 @@ read time, never written.
 ## 7. Progress, gating and completion algorithm (normative)
 
 This is the specification REQ-09 is tested against. Constants live in
-`academy/settings`-independent `academy/progress.py` as module constants so tests can patch them.
+`academy/progress.py` as module constants so tests can patch them.
 
 ### 7.1 Constants
 | Name | Value | Purpose |
@@ -441,75 +611,60 @@ This is the specification REQ-09 is tested against. Constants live in
 `POST /api/v1/academy/enrollments/{enrollment_id}/lessons/{lesson_id}/progress/`
 
 ```json
-{
-  "from_seconds": 120.0,
-  "to_seconds": 135.0,
-  "playback_rate": 1.0
-}
+{"from_seconds": 120.0, "to_seconds": 135.0, "playback_rate": 1.0}
 ```
 Server clock only. Client timestamps, durations and ids are ignored.
 
 ### 7.3 Server algorithm
-1. Lock the `LessonProgress` row (`SELECT … FOR UPDATE`) for the enrollment+lesson,
-   creating it on first heartbeat. Reject if the lesson is not accessible (§7.5).
+1. Lock the `LessonProgress` row (`SELECT … FOR UPDATE`) for the enrollment+lesson, creating it
+   on first heartbeat. Reject if the lesson is not accessible (§7.5).
 2. `elapsed = now - coalesce(last_heartbeat_at, now)` (0 on the first heartbeat).
    `credit_window = min(elapsed, MAX_HEARTBEAT_GAP_SECONDS)`.
 3. `rate = clamp(playback_rate, MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE)`.
    If `playback_rate < MIN_PLAYBACK_RATE`, credit is 0.
 4. `ceiling = position_seconds + credit_window * rate + SKIP_TOLERANCE_SECONDS`.
-   On the first heartbeat, `position_seconds` is 0, so only ~2 s may be credited — the
-   learner must earn coverage, never declare it.
-5. **Skip check:** if `to_seconds > ceiling` → no state change except
-   `skip_attempts += 1`, and respond **HTTP 400** `{"code": "progress_skip_rejected",
-   "detail": …, "fields": {"allowed_seconds": ceiling}}`. This is the REQ-09 “forward skip
-   rejected by server” behavior. `skip_attempts` feeds an abuse metric and is never surfaced
-   to the learner as a warning. The counter is committed even though the request fails, and
-   `last_heartbeat_at` is left alone, so waiting and retrying is credited normally.
-6. **Rewind** (`to_seconds <= position_seconds`): credit nothing (rewatching an already-covered
-   range adds no coverage) and update `last_heartbeat_at`. On the first heartbeat nothing is
-   credited at all: `credit_window` is 0, so the tolerance widens the ceiling but never hands
-   out coverage. Because `frontier_seconds <= position_seconds` is a table check (§2.8), the
-   position keeps its high-water mark instead of falling back behind earned coverage.
-7. **Forward within ceiling:** credit the interval
-   `[max(from_seconds, position_seconds), to_seconds]`, but never more than
-   `credit_window * rate`. If `from_seconds < position_seconds - RANGE_MERGE_GAP_SECONDS`,
-   the gap between `position_seconds` and `from_seconds` is **not** credited.
-8. Merge the credited interval into `watched_ranges`:
-   sort by start; merge when `next.start - current.end <= RANGE_MERGE_GAP_SECONDS`; clamp to
-   `[0, duration_seconds]`; round to 0.1 s. Recompute `watched_seconds` as the exact sum.
-   Recompute `frontier_seconds` = end of the first range starting at 0, extended while the
-   next range starts within `RANGE_MERGE_GAP_SECONDS`.
+   On the first heartbeat, `position_seconds` is 0, so only ~2 s may be credited — the learner
+   must earn coverage, never declare it.
+5. **Skip check:** if `to_seconds > ceiling` → no state change except `skip_attempts += 1`, and
+   respond **HTTP 400** `{"code": "progress_skip_rejected", "detail": …, "fields":
+   {"allowed_seconds": ceiling}}`. The counter is committed and `last_heartbeat_at` is left
+   alone, so waiting and retrying is credited normally.
+6. **Rewind** (`to_seconds <= position_seconds`): credit nothing and update `last_heartbeat_at`.
+   On the first heartbeat nothing is credited at all (`credit_window` is 0, tolerance only widens
+   the ceiling). `frontier_seconds <= position_seconds` keeps the high-water mark.
+7. **Forward within ceiling:** credit `[max(from_seconds, position_seconds), to_seconds]`, never
+   more than `credit_window * rate`. If `from_seconds < position_seconds -
+   RANGE_MERGE_GAP_SECONDS`, the gap is not credited.
+8. Merge the credited interval into `watched_ranges`: sort by start; merge when
+   `next.start - current.end <= RANGE_MERGE_GAP_SECONDS`; clamp to `[0, duration_seconds]`;
+   round to 0.1 s. Recompute `watched_seconds` and `frontier_seconds`.
 9. `position_seconds = to_seconds`, `last_heartbeat_at = now`. Commit.
-10. Respond `200` with the authoritative state:
-    `{"position_seconds", "watched_seconds", "frontier_seconds", "coverage_percent", "skippable_seconds"}`.
-    `coverage_percent = watched_seconds / duration_seconds × 100` (0 when duration is 0) and
-    `skippable_seconds` is the ceiling this heartbeat applied — the furthest position the
-    next one may claim.
+10. Respond `200` with `{"position_seconds", "watched_seconds", "frontier_seconds",
+    "coverage_percent", "skippable_seconds"}`. `coverage_percent = watched_seconds /
+    duration_seconds × 100` (0 when duration is 0).
 
 ### 7.4 Idempotency and concurrency
-- Replaying an identical heartbeat credits 0 (elapsed is 0 and the ranges already cover it)
-  and never corrupts state — merging is monotone.
-- One writer per row: the row lock serializes concurrent heartbeats; the second sees the
-  updated position and its ceiling. No lost updates, no double credit.
+- Replaying an identical heartbeat credits 0 and never corrupts state — merging is monotone.
+- One writer per row: the row lock serializes concurrent heartbeats; the second sees the updated
+  position and its ceiling. No lost updates, no double credit.
 - Heartbeats are **not** audited (volume) and **not** stored individually (ADR-013).
 
 ### 7.5 Sequential gating
 `lesson_accessible(enrollment, lesson)`:
 1. The lesson belongs to `enrollment.course_version` (otherwise 404).
-2. Every **required** lesson earlier in reading order
-   (`section.position`, then `lesson.position`) that belongs to the same version has
-   `completed_at IS NOT NULL`.
-3. Non-required lessons are skipped by the chain; they can be opened at any time but do not
-   gate later lessons.
+2. Every **required** lesson earlier in reading order (`section.position`, then
+   `lesson.position`) in the same version has `completed_at IS NOT NULL`.
+3. Non-required lessons are skipped by the chain; they can be opened at any time but do not gate
+   later lessons.
 
-Violating (2) returns **403** `{"code": "lesson_locked"}` with
-`fields.{"next_lesson_id"}` pointing at the blocking lesson. The API never returns lesson
-content for a locked lesson, so the lock is not a UI-only affordance.
+Violating (2) returns **403** `{"code": "lesson_locked"}` with `fields.{"next_lesson_id"}`
+pointing at the blocking lesson. The API never returns lesson content for a locked lesson, so the
+lock is not a UI-only affordance.
 
 ### 7.6 Lesson completion
 `POST /enrollments/{id}/lessons/{lesson_id}/complete/` (explicit, learner-initiated):
-- Requires `watched_seconds / duration_seconds × 100 >= required_watch_percent`.
-  `duration_seconds` is the duration of the lesson's own media asset.
+- Requires `watched_seconds / duration_seconds × 100 >= required_watch_percent`;
+  `duration_seconds` is the lesson's own media asset duration.
 - `duration_seconds` of 0 (text/pdf lessons) completes on explicit confirmation.
 - Idempotent: a second call returns the same completion with `200`.
 - Not eligible → **409** `{"code": "lesson_not_eligible"}` with
@@ -517,27 +672,28 @@ content for a locked lesson, so the lock is not a UI-only affordance.
 - Sets `LessonProgress.completed_at`, emits `lesson_completed` on commit.
 
 ### 7.7 Enrollment completion
-Requires: every required lesson of the pinned version completed, **and** acknowledgment
-recorded when `CourseVersion.acknowledgment_required` is true.
-Then, inside one transaction: `Enrollment.status = 'completed'`, `completed_at = now`,
-insert `CompletionRecord` (unique on enrollment makes a double submit a no-op), and emit
-`enrollment_completed` on commit for REQ-10 notifications. Response is `200`, never `201`.
+Requires every required lesson of the pinned version completed, **and** acknowledgment recorded
+when `CourseVersion.acknowledgment_required`. Then, in one transaction:
+`Enrollment.status='completed'`, `completed_at=now`, insert `CompletionRecord` (unique on
+enrollment makes a double submit a no-op), emit `enrollment_completed` on commit. Response is
+`200`, never `201`.
 
 ### 7.8 Reminder and escalation evaluation
-Daily beat task at 08:00 `ACADEMY_BUSINESS_TZ` (D-002):
-- `due_minus_3`, `due`, `due_plus_1` for active enrollments with `due_at` on that day,
-  skipping completed/cancelled ones; each insert into `ReminderLog` is the idempotency gate.
-- `manager_escalation` at `due + 3 days`: one digest per manager per day covering their
-  overdue learners. Manager resolution: `Assignment.assigned_by_ref` when it is a human,
-  otherwise Hub `manager` lookup for the learner.
-- Re-running the task on the same day writes nothing (unique keys).
+Hourly beat task evaluates companies whose **local** time is `reminder_hour` (D-038), then:
+- `due_minus_3`, `due`, `due_plus_1` for active enrollments with `due_at` on that local day,
+  skipping completed/cancelled; each insert into `ReminderLog` is the idempotency gate.
+- `manager_escalation` at `due + 3 days`: one digest per manager per day. Manager resolution:
+  `Assignment.assigned_by_id` when present, otherwise active memberships holding the
+  `training_manager` role for the learner's department; if none, the Company Admin. Never more
+  than one digest per recipient per day.
+- Re-running on the same day writes nothing (unique keys), including across a DST change because
+  the idempotency key is the local date, not the hour.
 
 ### 7.9 Accepted residual risk
-A forged client can claim up to `credit_window × rate` per heartbeat, i.e. it must sustain
-heartbeats to accumulate coverage. Mitigations: coverage is computed server-side from merged
-ranges, `skip_attempts` is tracked, and manager reports expose completion time versus
-assignment time. This is documented rather than solved because no browser-side signal is
-trustworthy (CHARTER risk table).
+A forged client can claim up to `credit_window × rate` per heartbeat, so it must sustain
+heartbeats to accumulate coverage. Mitigations: server-side merged ranges, `skip_attempts`, and
+reports exposing completion time versus assignment time. Documented rather than solved because no
+browser-side signal is trustworthy (CHARTER risk table).
 
 ---
 
@@ -545,26 +701,49 @@ trustworthy (CHARTER risk table).
 
 | Table | Retention | Privacy handling |
 |---|---|---|
-| `CompletionRecord`, `AuditEvent` | 5 y | `export_user_data` / `anonymize_user` cover both |
-| `LessonProgress` | Life of enrollment; ranges compacted after 12 mo | Ranges are the learner's own behavior data |
-| `NotificationLog`, `ReminderLog` | 90 d | Recipients are refs only |
-| `MediaAsset` rows for stale uploads | 24 h then purged | Storage object deleted with the row |
-| `Enrollment` | Life of employment + retention period | Anonymization replaces `user_ref` with a tombstone |
-| `AccessSuspension` | 5 y with the audit trail | The reason text may carry personal context; export/anonymize cover it |
+| `User` | Account life + 90 d after last membership removal | Anonymize email/name; keep UUID for history |
+| `Membership` | Life + 5 y (training evidence) | Department/state only; no email |
+| `Invitation` | 30 d after expiry/acceptance | Email deleted with the row |
+| `AccountToken`, `UserSession` | Tokens 24 h / sessions 30 d | Hashed; purged by jobs |
+| `MFADevice`, `RecoveryCode` | Until removed/used | Encrypted secret / Argon2 hashes |
+| `CompletionRecord`, `AuditEvent` | 5 y | Export/anonymize by user UUID |
+| `LessonProgress` | Life of enrollment; ranges compacted after 12 mo | Learner behavior data |
+| `NotificationLog`, `ReminderLog` | 90 d | User/membership ids only |
+| `MediaAsset` stale uploads | 24 h | Storage object deleted with the row |
+| `Enrollment` | Life + retention period | Keeps membership FK; anonymization is on `User` |
+| `AccessSuspension` | 5 y with audit | Reason may contain personal context; export covers it |
 
-The meta-test in `academy/tests/test_privacy.py` fails when a model with a `user_ref`-like
-column is missing from the export/anonymize registry (REQ-19).
+The meta-test in `academy/tests/test_privacy.py` fails when a model with account-level PII or a
+`user_ref`-like column is missing from the export/anonymize registry (REQ-19).
 
 ---
 
-## 9. Test obligations produced by this document
-- `test_progress_skip_matrix`: forward jump rejected; rewind credits nothing; paused gap does
-  not credit beyond `MAX_HEARTBEAT_GAP_SECONDS`; rate 3.0 credits at 2.0; duplicate heartbeat
-  is a no-op.
+## 9. Index, integrity and performance obligations
+- Tenant indexes lead with `organization_id`; a data test lists every tenant index and fails on a
+  leading column that is not `organization_id` or a unique key.
+- No index is added “just in case”: each new index names the query/report it serves in the PR.
+- Composite FKs require `UNIQUE (organization_id, id)` on parents; the migration adds these
+  constraints before the FKs.
+- `EXPLAIN (ANALYZE, BUFFERS)` evidence is recorded for: enrollment list, report aggregation,
+  due-reminder scan, audit search, media stale purge.
+- Partitioning is not implemented. Revisit trigger: > 50 M rows in `AuditEvent` /
+  `LessonProgress`, or p95 degradation attributable to them (D-041).
+- RLS is not enabled; isolation evidence is the G7 architecture/isolation suite plus composite
+  FKs (D-041).
+
+## 10. Test obligations produced by this document
+- `test_progress_skip_matrix`: forward jump rejected; rewind credits nothing; paused gap does not
+  credit beyond `MAX_HEARTBEAT_GAP_SECONDS`; rate 3.0 credits at 2.0; duplicate heartbeat is a
+  no-op.
 - `test_gating_matrix`: locked lesson returns 403 and no body; non-required lessons skipped.
 - `test_completion_idempotency`: double submit yields one `CompletionRecord` and one
   notification key.
-- `test_access_suspension`: a suspended user has no effective capability, keeps every stored
-  grant, and a lift restores exactly those grants.
+- `test_access_suspension`: a suspended membership has no effective capability, keeps every
+  stored role/grant, and a lift restores exactly those.
+- `test_tenancy_constraints`: every composite FK rejects a cross-company parent; the isolation
+  suite covers every entity with a two-company fixture.
+- `test_identity_lifecycle`: invitation → active; removal keeps history; anonymization keeps the
+  UUID and clears PII; email is unique and changeable.
+- `test_role_matrix`: the catalogue matches `docs/access-control.md` §2 and every default role's
+  permission set matches §3.
 - Constraint tests: every `CHECK`/unique index above has one `IntegrityError` test.
-- Isolation: every entity here appears in the two-organization fixture.

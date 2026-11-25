@@ -39,26 +39,33 @@ Each row describes the reading order and panel placement. RTL reverses inline pl
 
 The component showcase includes acknowledgment hidden, disabled, available and checked, plus completion disabled, enabled, submitting and done. The planned course action rules are recorded in `docs/domain-model.md` §5 (state machines) and `docs/api.md` §4 (course/version actions). The [HTML email](emails/escalation-digest.html) and [text email](emails/escalation-digest.txt) are presentation artifacts.
 
-## G. Permissions
+## G → N2. Roles and grants (formerly “Permissions”)
 
-Show the **Permissions** tab in Academy management only to users with effective `academy.admin`. Use the T-013 shell, responsive table and status styles from [pages 5 and 22](reference/pages/), and the [page 17 dialog pattern](reference/pages/page-17.png).
+The old single tab is replaced by the company administration screen **N2 — Roles & grants**,
+visible only with `academy.role.manage` or `academy.grant.manage`. It uses the T-013 shell,
+responsive table and status styles from [pages 5 and 22](reference/pages/), and the
+[page 17 dialog pattern](reference/pages/page-17.png).
 
 | Area | Wide layout | Phone and tablet |
 |---|---|---|
-| Entry and actions | Management tabs → Permissions heading → **Grant access** | Same reading order. Keep the main action visible above the user list. |
-| Users and access | User, capability, department scope, source, expiry, and status in a table. In H1 `grants_only`, show individual Academy grants as the effective source; Hub roles may be shown as identity metadata but **never** as automatic training-management authority. | User rows become labeled cards on phones. Keep capability, scope, expiry and action together. |
-| Grant dialog | Choose one user and capability. Select all departments or choose allowed departments. Add an optional expiry date and submit. | Stack fields and show validation next to the field. Scoped admins only see departments they can administer. |
-| Revoke | A **Revoke** action appears for individual grants the viewer can administer. The confirmation shows the user, capability and scope. | Reuse the same confirmation. Keep revoked history visible and label active, expired and revoked states in text. If revocation would remove the last active admin, show the reason. |
+| Entry and actions | Administration → **Roles & grants** → tabs **Members**, **Roles**, **Grants** → primary action per tab | Same reading order; primary action remains above the list |
+| Members | Member, department(s), roles, effective scope, state, last change | Rows become labelled cards; role/scope/action stay together |
+| Roles | System roles (read-only description) and custom company roles; permission count; members count | Stacked cards; “view permissions” opens a drawer |
+| Grants | Member, permission, scope, reason, expiry, state (`active`, `expired`, `revoked`), grantor | Same fields in a card; revoke in the card menu |
+| Grant dialog | Member → permission (filtered to what the actor may delegate) → scope (company/departments) → expiry → reason → confirm | Stacked fields, inline validation; platform permissions never offered |
+| Revoke | Confirmation names member, permission and scope; optional reason; history retained | Same confirmation; disabled with a reason if it would remove the last admin |
 
-The layout mirrors for Arabic RTL and supports English LTR, keyboard operation, and the T-013 phone, tablet and desktop widths. T-016 provides a development-only example with synthetic user rows, scope selection, sample validation, a revoke confirmation, and a protected last-admin row. The production tab and permission writes are represented by this wireframe and protected by the server-side checks in ARCHITECTURE §7 when connected to the production interface.
+Scoped admins only see departments they can administer. The UI mirrors for Arabic RTL, supports
+English LTR and keyboard operation at the three widths. The current T-016 preview remains sample
+data only; production writes are defined by `docs/api.md` and enforced server-side.
 
 ## Model gaps
 
 | Visual item | Current schema or contract | Decision |
 |---|---|---|
-| Course owner department and the “general” option | `Course.owner_department_ref` (nullable; `NULL` = general course) — `docs/domain-model.md` §2.1 | D-013 (resolved) |
+| Course owner department and the “general” option | `Course.owner_department_id` (nullable; `NULL` = general course) — `docs/domain-model.md` §2.1 | D-013 (resolved) |
 | Cover image | `CourseVersion.cover_media` (nullable FK) and `MediaAsset.kind = 'image'` — see `docs/domain-model.md` §2.2 | D-014 (resolved) |
-| Assignment target “everyone” | `Assignment.target_type` includes `organization` — `docs/domain-model.md` §2.6 | D-015 (resolved) |
+| Assignment target “everyone” | `Assignment.target_type` includes `company` — `docs/domain-model.md` §2.6 | D-015 (resolved) |
 | Short lesson summary | `Lesson.summary` (300 chars) — `docs/domain-model.md` §2.4 | D-016 (resolved) |
 | Recipient-count preview | `POST /manage/assignments/preview/` returns a count only — `docs/api.md` §5 | D-017 (resolved) |
 
@@ -74,27 +81,48 @@ to move between the sections and the two reading directions. Screen G is at `/ac
 Both account screens use the shared canvas and card in Arabic (RTL) and English (LTR). The development sign-in stacks a title, labeled username and password fields, any validation messages, and the sign-in button. The inactive-account screen stacks its title, a short message directing members to their organization administrator, and the sign-out button.
 
 
-## H1 screen additions and navigation
+## H1.5 screen additions and navigation
 
-The owner-approved H1 UX target is described in
-[`screen-specification.md`](screen-specification.md). These additions **do not
-rename or replace** the PDF reference screens A–G:
+The owner-approved target is [`screen-specification.md`](screen-specification.md). It **does not
+rename or replace** the PDF reference screens A–G; it adds public, auth, learner, administration
+and platform screens.
 
-- **L1 Personal Dashboard:** assignments, active learning, progress and resume.
-- **L2 My Courses:** own courses, status and due dates.
-- **L3 Course Details:** summary, ordered lessons, locked/unlocked states.
-- **L4 Achievements:** completed courses and dates, without Phase 1 certificates.
-- **S1 Audit:** scoped read-only audit table for authorized `academy.admin`.
-- **X1 Local Sign-in:** standalone mode only; Hub entry has no Academy login.
+- **P1–P5 Public:** home, about, programmes, contact, privacy/terms on `/`, no session.
+- **X1–X7 Auth:** login, forgot/reset, verify, accept invitation, choose company, access denied.
+- **L1–L4 + E Learner:** dashboard, my courses, course details, achievements, player.
+- **N1–N4 + S1 Company administration:** members, roles & grants, departments, settings, audit.
+- **N5–N8 + S2 Platform administration:** overview, companies, platform users, platform settings,
+  platform audit.
+- **A–F Training management:** the PDF screens, now company-scoped and permission-gated.
 
-**Academy sidebar:** My Learning (Dashboard, My Courses, Achievements);
-Training Management (Courses & Content, Assignments, Reports); System Management
-(Permissions, Audit). Each management link is individually permission-gated,
-and a section is hidden when it has no visible child links. A contextual
-Return to Hub link is optional only in integrated mode. Server-side checks
-remain mandatory. On phones the sidebar becomes an accessible drawer.
+**Sidebar groups:** My Learning (Dashboard, My Courses, Achievements); Training Management
+(Courses & Content, Assignments, Reports); Company Administration (Members, Departments, Roles &
+Grants, Settings, Audit); Platform Administration (Overview, Companies, Platform Users, Platform
+Settings, Audit). A group is hidden when it has no visible child, every item is permission-gated,
+and server checks remain mandatory. On phones the sidebar is an accessible drawer. The public
+header uses simple links and a Sign in button; there is no application sidebar.
 
-**Design source:** continue to use the approved PDF's navy, gold, white cards,
-RTL/LTR patterns and responsive layouts. The new screen specification defines
-content, behavior and states; it does **not** claim new screen mockups have
-been approved or built.
+**Design source:** continue with the approved PDF's navy, gold, white cards, RTL/LTR patterns and
+responsive layouts. The new specification defines content, behavior and states; it does **not**
+claim new mockups are approved or built. Preview routes under `/academy/preview/` remain sample
+data and are extended by T-029 (public/auth/shell) and T-030 (administration).
+
+## Screen-by-screen wireframe coverage
+| Screen | Wireframe source | Status |
+|---|---|---|
+| A–F | PDF pages 5, 11, 16, 17, 21, 22 | approved reference |
+| N2 (was G) | PDF page 5/17 patterns, above | specified |
+| L1–L4, E | PDF cards/player language | specified; no pixel mockup |
+| P1–P5 | token system, public layout | specified; no pixel mockup |
+| X1–X7 | existing account screen pattern | specified; X1/X7 implemented in T-013/T-014 |
+| N1, N3–N8, S1–S2 | PDF table/dialog patterns | specified; no pixel mockup |
+
+## Model gaps
+
+| Visual item | Current schema or contract | Decision |
+|---|---|---|
+| Course owner department and the “general” option | `Course.owner_department_id` (nullable; `NULL` = general course) — `docs/domain-model.md` §2.1 | D-013 (resolved) |
+| Cover image | `CourseVersion.cover_media` (nullable FK) and `MediaAsset.kind = 'image'` — `docs/domain-model.md` §2.2 | D-014 (resolved) |
+| Assignment target “everyone” | `Assignment.target_type` includes `company` — `docs/domain-model.md` §2.6 | D-015 (resolved) |
+| Short lesson summary | `Lesson.summary` (300 chars) — `docs/domain-model.md` §2.4 | D-016 (resolved) |
+| Recipient-count preview | `POST /manage/assignments/preview/` returns a count only — `docs/api.md` §5 | D-017 (resolved) |

@@ -5,34 +5,38 @@
 performance_profile:
   workload_tier: medium
   workload:
-    expected_users: 1000            # registered learners (single organization, Phase 1)
-    concurrent_users: 200           # concurrent video viewers (~14 heartbeat req/s)
-    largest_dataset: "100 courses / 500 lessons / 100_000 progress rows; 20 concurrent admins"
-    update_frequency: "heartbeats ~14/s; uploads and admin writes sporadic"
+    expected_users: 5000            # registered learners across 10 companies (design envelope)
+    expected_companies: 10          # not a hard cap; each new company is a data/ops review trigger
+    concurrent_users: 500           # concurrent video viewers (~33 heartbeat req/s at 15 s interval)
+    largest_dataset: "10 companies / 500 courses / 2_500 lessons / 1_000_000 progress rows; 50 concurrent admins"
+    update_frequency: "heartbeats ~33/s at peak; uploads, imports and admin writes sporadic"
     critical_workloads:
-      - "video playback start < 3 s on 5 Mbps"
-      - "heartbeat processing (anti-skip correctness under concurrency)"
-      - "reminder/notification dispatch at due-date scale"
+      - "video playback start < 3 s on 5 Mbps (CDN-backed HLS)"
+      - "heartbeat processing and anti-skip correctness under concurrency"
+      - "per-company reminder/notification dispatch at due-date scale"
+      - "company-scoped reports over 1M progress rows"
   targets:
     primary_user_journey: "learner: open my courses -> resume lesson -> watch -> next lesson unlocked"
     api_or_operation_latency: "p95 < 300 ms non-media; heartbeat p95 < 150 ms at design capacity"
-    throughput_or_completion_time: "200 concurrent viewers; 14 heartbeats/s without degradation"
+    throughput_or_completion_time: "500 concurrent viewers; 33 heartbeats/s without degradation; report p95 < 300 ms"
+    platform_report_latency: "p95 < 500 ms for a 10-company aggregate, read-only"
   page_budgets: "LCP <= 2.5 s; CLS <= 0.1; INP <= 200 ms on mid-range phone over 4G (excl. video)"
   availability: "99.5% monthly (planned maintenance excluded); 99.9% is a Phase-3 target"
   recovery: "RPO <= 24 h (daily encrypted off-host backup); RTO <= 4 h; restore drill before release and quarterly"
   safeguards:
-    pagination_or_result_limits: "page size 25; body limit 2 MiB API / large media via presigned storage"
-    query_regression_tests: "query-count assertions on list selectors and endpoints; N+1 review at release"
-    performance_ci_budget: "load test (Locust) at design capacity before release gate"
+    pagination_or_result_limits: "page size 25 (cursor for large lists); body limit 2 MiB API / large media via presigned storage"
+    query_regression_tests: "query-count assertions on list selectors and endpoints, company-scoped indexes, N+1 review at release"
+    performance_ci_budget: "Locust load test at design capacity before the release gate; EXPLAIN ANALYZE on the five slowest queries"
   cost:
-    infrastructure_assumptions: "two-server topology (Hub + Academy), object storage behind CDN in production"
-    paid_services: "storage/bandwidth for video (provider open, D-001)"
-    scaling_cost_risks: "video bandwidth grows with concurrent viewers; HLS renditions cap per-viewer bitrate"
-    vendor_lock_in: "storage kept behind StorageAdapter; Hub behind 4 adapters"
+    infrastructure_assumptions: "one Academy application environment (web + workers + PostgreSQL + Redis + object storage/CDN); no Hub server required for standalone"
+    paid_services: "storage/bandwidth for video (provider open, D-001); optional managed PostgreSQL/Redis"
+    scaling_cost_risks: "video bandwidth grows with concurrent viewers; HLS renditions cap per-viewer bitrate; per-company growth is a review trigger"
+    vendor_lock_in: "storage kept behind StorageAdapter; mail behind MailTransport; Hub behind integration adapters"
   revisit_triggers:
-    - user or data growth beyond design capacity
+    - more than 10 companies or 5000 registered users
     - measured p95 degradation in load test or production
     - new critical workload (e.g. quizzes, certificates in Phase 2)
     - storage provider or cost change (D-001)
+    - rows in a tenant table above ~5M (partitioning study)
   reviewed_by: "Project owner"
-  last_reviewed: "2026-11-22"
+  last_reviewed: "2026-11-25"

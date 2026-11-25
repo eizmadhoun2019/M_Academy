@@ -1,196 +1,272 @@
-# API — Endpoint Inventory
+# API — Contracts, Endpoints and Compatibility
 
-**Status:** Canonical API surface. `ARCHITECTURE.md` §6 summarizes; this file decides.
-**Last updated:** 2026-11-22
-**Implements:** REQ-06…REQ-14, REQ-19
-**Depends on:** `docs/domain-model.md` (fields, constraints, algorithms), `docs/hub-contract.md`
-(webhook and identity), `docs/decisions.md`
+**Status:** Canonical API surface. `ARCHITECTURE.md` §8 summarizes; this file decides.
+**Last updated:** 2026-11-25
+**Implements:** REQ-06…REQ-14, REQ-19, REQ-22…REQ-26, REQ-28
+**Depends on:** `docs/domain-model.md`, `docs/access-control.md`, `docs/security.md`,
+`docs/hub-contract.md` (optional webhook/identity), `docs/decisions.md`
 
 ## 1. Conventions
-
-- Base path: `/api/v1/academy/` on the Academy service. Through Hub it appears as
-  `/academy/api/v1/academy/` (prefix stripped once at the proxy).
-- Auth: `ACADEMY_ACCESS_MODE=hub` accepts only a verified Hub identity header; `standalone`
-  (development now, production target per D-026) uses a database session with trusted local
-  membership. Missing/invalid identity → **401**. Verified but inactive → **403
-  `account_inactive`**. Locally suspended → **403 `access_suspended`**. Denied capability →
-  **403 `forbidden`**. Wrong tenant → **404** for object routes, empty list for collections.
-- Errors: `{"code": "...", "detail": "...", "fields": {...}}`. Codes are stable; `detail` is
-  localized human text. Domain exceptions map here in the view layer, never in services.
-- Pagination: `page` (1-based) + `page_size` (default 25, max 100), cursor allowed for
-  reports. Response `{"count", "next", "previous", "results"}`.
+- Base path `/api/v1/academy/` on Academy's own origin (D-035). The route namespace is
+  `academy_api`; web routes are separate namespaces (`public`, `app`, `manage`, `platform`).
+- **Authentication:** browser session cookie (`m_academy_sessionid`) + CSRF for unsafe methods;
+  unauthenticated → **401 `unauthorized`**. Verified but inactive/suspended account → **403
+  `account_inactive`**; inactive membership → **403 `membership_inactive`**; company suspended →
+  **403 `organization_suspended`**; locally suspended membership → **403 `access_suspended`**.
+  Hub-signed identity is accepted only when the optional integration is explicitly enabled
+  (`ACADEMY_HUB_ENABLED=true`) and is verified per `docs/hub-contract.md` §2.
+- **Company context:** server-side, taken from the session's selected company and validated
+  against an active membership (or an audited platform-access session). Endpoints never accept
+  `organization_id` as authority; a body/query value is ignored or rejected. Requests that need a
+  company without a valid context → **409 `organization_context_required`**.
+- **Authorization:** each operation declares one permission from `docs/access-control.md` §2 and
+  its allowed scopes. Denied → **403 `forbidden`**. Objects outside the caller's company or scope
+  → **404 `not_found`** (never 403), so existence does not leak.
+- Errors: `{"code": "...", "detail": "...", "fields": {...}, "request_id": "..."}`. Codes are
+  stable; `detail` is localized. Domain exceptions map in the view layer only.
+- Pagination: `page` (1-based) + `page_size` (default 25, max 100); `{"count","next","previous",
+  "results"}`. Reports may use a cursor.
 - Personalised responses: `Cache-Control: private, no-store`.
-- Mutations: `Idempotency-Key` header accepted on POSTs that create side effects
-  (assignments, grants, notifications-triggering actions). Same key + same body returns the
-  original result; reused key with a different body → **409 `idempotency_conflict`**.
-- CSRF: required on every unsafe browser request (cookie `academy_csrftoken`,
-  `Path=/academy/`) — see hub-contract §1.
-- Throttles: per identity and per route class (learner reads, heartbeats, management writes,
-  exports). Limits live in settings; exceeded → **429 `throttled`** with `Retry-After`.
-- Tenant scoping is applied by services/selectors from the verified `organization_id`; no
-  endpoint accepts an `organization_id` from the client.
+- Mutations: `Idempotency-Key` required on side-effect POSTs (assignments, invitations, grants,
+  notifications-triggering actions). Same key + same body replays the result; different body →
+  **409 `idempotency_conflict`**.
+- CSRF required on every unsafe browser request (cookie `academy_csrftoken`, `Path=/`).
+- Throttles per identity and route class; exceeded → **429 `throttled`** + `Retry-After`.
+- All timestamps ISO-8601 UTC (`Z`); display conversion happens in the UI using the company/user
+  time zone.
+- API versioning: additive fields and new endpoints within `v1`; a breaking change requires `v2`,
+  a documented migration window of at least one minor release, and owner approval (REQ-28).
 
-## 2. Capabilities
+## 2. Effective access payload
+`GET /me/capabilities/` returns the server-computed authority used by the UI. Clients must not
+infer authority from role names.
 
-| Capability | Default holders (Hub role) | Grants |
-|---|---|---|
-| `academy.learn` | `employee`, `department_manager`, `platform_admin` | addable |
-| `academy.manage_content` | `department_manager` (own departments), `platform_admin` (all) | addable |
-| `academy.assign` | `department_manager` (own departments), `platform_admin` | addable |
-| `academy.view_reports` | `department_manager` (own departments), `platform_admin` | addable |
-| `academy.admin` | `platform_admin` | addable, last-admin protected |
+```json
+{
+  "user": {"id": "uuid", "display_name": "...", "email": "...", "preferred_language": "ar"},
+  "active_organization": {"id": "uuid", "name": "...", "timezone": "Asia/Riyadh", "status": "active"},
+  "membership": {"id": "uuid", "status": "active", "department_id": "uuid"},
+  "permissions": [{"code": "academy.report.view", "scope": "DEPARTMENT", "department_ids": ["uuid"]}],
+  "platform_permissions": ["platform.organization.view"],
+  "mfa_enabled": true,
+  "platform_access": false
+}
+```
+`permissions` is the union after role, grant, scope and suspension evaluation; an empty list is
+valid. `platform_access` is true only inside an audited read-only platform-access session.
 
-Effective capability = Hub role defaults ∪ active grants, unless grants-only mode is enabled.
-H1 production sets `ACADEMY_AUTHORIZATION_MODE=grants_only` (D-027): the "Default holders"
-column is the compatibility `role_plus_grants` map, not an H1 grant of authority. The first
-`academy.admin` is provisioned once through a guarded setup check, and a local suspension
-(D-028) removes effective capability without deleting the stored grants.
-
-## 3. Learner endpoints (`academy.learn`)
-
+## 3. Authentication and account endpoints (`/api/v1/academy/auth/`)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `my/courses/` | Courses assigned to me | Includes enrollment status, due date, progress % |
+| POST | `login/` | Email + password (+ `mfa_code`) | 200 with session; 401 `mfa_required` + `challenge_id` when TOTP is needed; generic 401 `invalid_credentials`; 429 `throttled` |
+| POST | `mfa/verify/` | Complete an MFA challenge | 5-minute single-use challenge; 401 `mfa_invalid` |
+| POST | `logout/` | End the session | Idempotent; audited |
+| POST | `password/reset/request/` | Send reset mail | Always 202 `accepted` (no account enumeration) |
+| POST | `password/reset/confirm/` | Consume token + set password | 400 `token_invalid`; revokes other sessions; audited |
+| POST | `password/change/` | Change own password | Current password required; revokes other sessions |
+| POST | `email/verify/request/` | Resend verification | Throttled; 202 always |
+| POST | `email/verify/confirm/` | Consume verification token | 400 `token_invalid` |
+| POST | `invitations/accept/` | Accept company invitation | Token + password + display name; creates/activates account and membership; 400 `invitation_invalid` |
+| GET | `sessions/` | List own sessions | Device family, last seen, current flag |
+| DELETE | `sessions/{id}/` | Revoke one session | Ownership rechecked; audited |
+| POST | `mfa/enroll/` | Start TOTP enrolment | Password re-entry; returns secret + otpauth URI once |
+| POST | `mfa/confirm/` | Confirm TOTP + receive recovery codes | Codes shown once |
+| POST | `mfa/disable/` | Disable MFA | Password + TOTP/recovery code; audited |
+
+`GET /me/` (profile) and `PATCH /me/` (display name, preferred language) are the only
+self-service profile writes. Email change is a separate verified flow (`POST /me/email/change/`
+→ confirm token) and revokes other sessions.
+
+## 4. Company context and memberships
+| Method | Path | Purpose | Notes |
+|---|---|---|---|
+| GET | `me/memberships/` | Companies the caller may enter | Active/suspended with company name and department names; no other members |
+| POST | `me/active-organization/` | Select/switch company | Body `{organization_id}`; validates active membership; audited `context.switched` |
+| GET | `me/organizations/` | Alias kept for clients | Same as memberships |
+
+## 5. Learner endpoints (`academy.learn`, SELF)
+| Method | Path | Purpose | Notes |
+|---|---|---|---|
+| GET | `my/courses/` | Courses assigned to me | Enrollment status, due date, progress % |
 | GET | `my/enrollments/` | My enrollments, filter `status` | Paginated |
-| GET | `enrollments/{id}/` | Enrollment detail + outline | Returns sections, lessons, `locked`, `completed`, progress, acknowledgment state |
-| POST | `enrollments/{id}/lessons/{lesson_id}/progress/` | Heartbeat | `docs/domain-model.md` §7.2–7.4. 400 `progress_skip_rejected`, 403 `lesson_locked` |
-| POST | `enrollments/{id}/lessons/{lesson_id}/complete/` | Complete a lesson | 409 `lesson_not_eligible` when under threshold |
-| POST | `enrollments/{id}/lessons/{lesson_id}/playback/` | Presigned HLS URLs | 409 `media_not_ready`; response `private, no-store` |
+| GET | `enrollments/{id}/` | Enrollment detail + outline | Sections, lessons, `locked`, `completed`, progress, acknowledgment |
+| POST | `enrollments/{id}/lessons/{lesson_id}/progress/` | Heartbeat | `docs/domain-model.md` §7.2–7.4; 400 `progress_skip_rejected`, 403 `lesson_locked` |
+| POST | `enrollments/{id}/lessons/{lesson_id}/complete/` | Complete a lesson | 409 `lesson_not_eligible` |
+| POST | `enrollments/{id}/lessons/{lesson_id}/playback/` | Presigned HLS URLs | 409 `media_not_ready`; `private, no-store` |
 | POST | `enrollments/{id}/acknowledge/` | Record acknowledgment | Idempotent; 409 `acknowledgment_not_required` |
-| POST | `enrollments/{id}/complete/` | Complete the enrollment | 409 `enrollment_incomplete` with blocking lessons; idempotent, returns 200 |
-| GET | `me/capabilities/` | Effective capabilities and scopes | Used by both web and API clients |
+| POST | `enrollments/{id}/complete/` | Complete enrollment | 409 `enrollment_incomplete` with blocking lessons; returns 200 |
 
-## 4. Content management (`academy.manage_content`, department-scoped)
+Every route rechecks `enrollment.membership_id == principal.membership_id` and the active
+company; a foreign enrollment is 404.
 
+## 6. Content management (`academy.content.view/manage/publish`, `academy.media.manage`)
+| Method | Path | Purpose | Permission | Notes |
+|---|---|---|---|---|
+| GET | `manage/courses/` | List courses in scope | `academy.content.view` | Filters `status`, `owner_department_id`, `q` |
+| POST | `manage/courses/` | Create course | `academy.content.manage` | Creates draft version 1 |
+| GET | `manage/courses/{id}/` | Course + versions | `academy.content.view` | |
+| PATCH | `manage/courses/{id}/` | Title/description/owner department | `academy.content.manage` | 409 `course_published_locked` for frozen fields |
+| POST | `manage/courses/{id}/archive/` | Archive course | `academy.content.publish` | Published version becomes archived |
+| POST | `manage/courses/{id}/versions/` | Clone published version to draft | `academy.content.manage` | 409 `draft_exists` |
+| GET | `manage/versions/{id}/` | Version tree | `academy.content.view` | |
+| POST | `manage/versions/{id}/publish/` | Publish | `academy.content.publish` | 422 `publish_invalid` (§9) |
+| POST | `manage/versions/{id}/discard/` | Delete an unpublished draft | `academy.content.manage` | 409 `version_published` |
+| GET/POST | `manage/versions/{id}/sections/` | List/create section | `academy.content.manage` | |
+| PATCH/DELETE | `manage/sections/{id}/` | Rename/delete | `academy.content.manage` | Draft only |
+| POST | `manage/versions/{id}/sections/reorder/` | Reorder | `academy.content.manage` | 409 `position_mismatch` |
+| GET/POST | `manage/sections/{id}/lessons/` | List/create lesson | `academy.content.manage` | |
+| PATCH/DELETE | `manage/lessons/{id}/` | Edit/delete | `academy.content.manage` | |
+| POST | `manage/sections/{id}/lessons/reorder/` | Reorder | `academy.content.manage` | |
+| POST | `manage/media/uploads/` | Asset + presigned PUT | `academy.media.manage` | 400 `upload_too_large`, `unsupported_type` |
+| POST | `manage/media/{id}/complete/` | Verify and enqueue | `academy.media.manage` | 409 `upload_missing`, `checksum_mismatch` |
+| GET | `manage/media/{id}/` | Asset status | `academy.content.view` | |
+| POST | `manage/media/{id}/retry/` | Re-enqueue | `academy.media.manage` | 409 `retry_limit_reached` |
+
+Department-scoped callers see only courses whose `owner_department_id` is in scope; general
+courses (`NULL`) are readable but only COMPANY scope may edit or publish them.
+
+## 7. Assignments (`academy.assignment.view/manage`)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `manage/courses/` | List courses in scope | Filters: `status`, `owner_department_ref`, `q` |
-| POST | `manage/courses/` | Create course | Creates a draft version 1 |
-| GET | `manage/courses/{id}/` | Course + versions | |
-| PATCH | `manage/courses/{id}/` | Title, description, owner department | 409 `course_published_locked` for fields frozen by publish rules |
-| POST | `manage/courses/{id}/archive/` | Archive course | Published version becomes `archived` |
-| POST | `manage/courses/{id}/versions/` | Clone published version into a new draft | 409 `draft_exists` when a draft is open |
-| GET | `manage/versions/{id}/` | Version tree | Sections, lessons, media status |
-| POST | `manage/versions/{id}/publish/` | Publish | Validation list in §8; 422 `publish_invalid` with per-item reasons |
-| POST | `manage/versions/{id}/discard/` | Delete an unpublished draft | 409 `version_published` |
-| GET/POST | `manage/versions/{id}/sections/` | List / create section | Position auto-appended unless supplied |
-| PATCH/DELETE | `manage/sections/{id}/` | Rename / delete | Delete allowed only on drafts |
-| POST | `manage/versions/{id}/sections/reorder/` | Reorder | Body: ordered id list; 409 on mismatch |
-| GET/POST | `manage/sections/{id}/lessons/` | List / create lesson | |
-| PATCH/DELETE | `manage/lessons/{id}/` | Edit / delete | |
-| POST | `manage/sections/{id}/lessons/reorder/` | Reorder within a section | |
-| POST | `manage/media/uploads/` | Create asset + presigned PUT | Body: `kind`, `original_filename`, `content_type`, `size_bytes`; 400 `upload_too_large`, 400 `unsupported_type` |
-| POST | `manage/media/{id}/complete/` | Verify upload and enqueue processing | `stat` verify; 409 `upload_missing`, 409 `checksum_mismatch` |
-| GET | `manage/media/{id}/` | Asset status | `status`, `error_code`, `renditions` |
-| POST | `manage/media/{id}/retry/` | Re-enqueue a failed asset | 409 `retry_limit_reached` |
+| GET | `manage/assignments/` | List in scope | Filters `course`, `target_type`, `active` |
+| POST | `manage/assignments/` | Create + expand | `Idempotency-Key`; 422 `target_empty` |
+| POST | `manage/assignments/preview/` | Recipient count only | D-017: `{target_type, target_id?}` → `{count, capped}`; cap 5,000 |
+| DELETE | `manage/assignments/{id}/` | Cancel | Soft cancel + cancel enrollments `unassigned` |
+| GET | `manage/courses/{id}/enrollments/` | Roster | Filters `status`, `overdue`, `department_id` |
+| POST | `manage/enrollments/{id}/cancel/` | Cancel one | Audited |
+| POST | `manage/enrollments/{id}/complete/` | Admin override | Requires `academy.member.manage` at COMPANY; body `{reason}`; `method='admin_override'`; audited |
 
-## 5. Assignment (`academy.assign`)
+Scope rules: a department target must be inside the caller's scope; a membership target must
+belong to a department in scope; `role` and `organization` targets span the company and require
+COMPANY scope (otherwise 403). Out-of-scope targets/assignments answer 404. Preview and write
+share one selector. A missing/archived published version → 409 `course_not_published`.
 
+## 8. Reports (`academy.report.view/export`)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `manage/assignments/` | List assignments in scope | Filters: `course`, `target_type`, `active` |
-| POST | `manage/assignments/` | Create assignment and expand to enrollments | `Idempotency-Key` required. 422 `target_empty` when expansion yields nobody |
-| POST | `manage/assignments/preview/` | Recipient count only | D-017: `{target_type, target_ref}` → `{count, capped: bool}`; no identities, cap 5,000 |
-| DELETE | `manage/assignments/{id}/` | Cancel | Soft cancel + cancel active enrollments with reason `unassigned` |
-| GET | `manage/courses/{id}/enrollments/` | Enrollment roster | Filters: `status`, `overdue`, `department_ref` |
-| POST | `manage/enrollments/{id}/cancel/` | Cancel one enrollment | Audited |
-| POST | `manage/enrollments/{id}/complete/` | Admin override completion | `academy.admin`; body `{reason}` (required, 400 when blank); `method='admin_override'`; audited `enrollment.completed_override` with ids-only metadata; a cancelled enrollment answers 409 `conflict` |
-
-Scope rules (D-015, D-017):
-- A `department` target must be inside the caller's `academy.assign` scope; a `user` target is
-  accepted when that member belongs to one of those departments. `role` and `organization`
-  targets span the tenant, so they require all-department scope (otherwise **403 `forbidden`**).
-- An out-of-scope target or assignment answers **404**, so the API never confirms that an
-  object the caller cannot reach exists.
-- The preview and the write resolve the same expansion: `department_members` (descendants
-  included), `role_members`, or — for `organization` — the union of every role's members, which
-  is how the Hub directory describes a whole tenant (hub-contract §3). A missing or archived
-  published version answers **409 `course_not_published`**.
-- The roster and the assignment list apply the same visibility rule; an enrollment that came
-  from an assignment is visible to whoever may see that assignment, and a direct enrollment
-  (no assignment) only to an all-department holder.
-
-## 6. Reports (`academy.view_reports`)
-
-| Method | Path | Purpose | Notes |
-|---|---|---|---|
-| GET | `manage/reports/summary/` | Completion %, overdue count, average time | Grouped by `course` or `department_ref` |
+| GET | `manage/reports/summary/` | Completion %, overdue, average time | Group by `course` or `department` |
 | GET | `manage/reports/overdue/` | Overdue learners | Sorted by days overdue |
-| GET | `manage/reports/completion/` | Per-learner completion rows | Paginated, cursor supported |
-| GET | `manage/reports/export.csv` | CSV export | Neutralizes formula injection (`= + - @ \t \r`); `Content-Disposition: attachment`; audited |
+| GET | `manage/reports/completion/` | Per-learner rows | Cursor pagination |
+| GET | `manage/reports/export.csv` | CSV export | Requires `academy.report.export`; formula-neutralized; audited |
+| GET | `platform/reports/summary/` | Cross-company aggregate | Requires `platform.organization.view`; explicit `organization_id` filter; never mixes companies without a label |
 
-All report queries are department-scoped for `department_manager`; a `department_ref` or
-`course` outside that scope is `403 forbidden`, never an empty list. `from > to` is
-`400 invalid_range`; the numbers themselves are defined in `docs/reports.md`. Query count is
-asserted in tests (no N+1 over enrollments).
+Reports use `docs/reports.md` formulas. Department scope is applied before aggregation; an
+out-of-scope filter is 403, never an empty list. `from > to` → 400 `invalid_range`.
 
-## 7. Administration (`academy.admin`)
-
-| Method | Path | Purpose | Notes |
-|---|---|---|---|
-| GET | `manage/grants/` | List grants | Filters: `user_ref`, `capability`, `state` (`active \| expired \| revoked`) |
-| POST | `manage/grants/` | Grant | `Idempotency-Key`; audited in the same transaction |
-| DELETE | `manage/grants/{id}/` | Revoke | 409 `last_admin` when it would remove the last active admin; audited |
-| GET | `manage/access/` | Local suspensions | Filters: `user_ref`, `state` (`suspended \| lifted`) |
-| POST | `manage/access/{user_ref}/suspend/` | Suspend Academy access locally | `academy.admin` in scope; reason required; audited `access.suspended`; stored grants kept |
-| POST | `manage/access/{user_ref}/lift/` | Lift a local suspension | Reason required; audited `access.lifted`; never changes Hub membership |
-| GET | `manage/settings/` | Organization settings | Completion threshold default, retention values, grants-only mode |
-| PATCH | `manage/settings/` | Update settings | Audited |
-| GET | `manage/audit/` | Audit search | Filters: `action`, `object_type`, `object_id`, `actor_ref`, date range |
-| POST | `manage/users/{user_ref}/export/` | Privacy export | REQ-19; audited; returns a JSON bundle |
-| POST | `manage/users/{user_ref}/anonymize/` | Anonymize | Requires reason; audited; irreversible |
-
-## 8. Publish validation (422 `publish_invalid`)
-
-`fields.items[]` carries `{code, section_id?, lesson_id?}`. Codes:
+## 9. Publish validation (422 `publish_invalid`)
+`fields.items[]` carries `{code, section_id?, lesson_id?}`:
 `too_few_sections` (<2), `too_few_lessons` (<2), `section_without_lessons`,
-`lesson_without_title`, `lesson_media_missing`, `lesson_media_not_ready`,
-`text_lesson_empty`, `position_gap`, `cover_media_invalid`.
+`lesson_without_title`, `lesson_media_missing`, `lesson_media_not_ready`, `text_lesson_empty`,
+`position_gap`, `cover_media_invalid`.
 
-## 9. Internal and operational routes (not proxied to browsers)
+## 10. Company administration (`academy.member.*`, `academy.department.manage`, `academy.role.manage`, `academy.grant.manage`, `academy.audit.view`, `academy.settings.manage`)
+| Method | Path | Purpose | Permission |
+|---|---|---|---|
+| GET | `manage/members/` | Members, filters `status`, `department_id`, `q` | `academy.member.view` |
+| POST | `manage/invitations/` | Invite by email with role(s) + department | `academy.member.manage` |
+| POST | `manage/invitations/{id}/resend/` | Re-issue (invalidates previous token) | `academy.member.manage` |
+| DELETE | `manage/invitations/{id}/` | Revoke | `academy.member.manage` |
+| GET | `manage/members/{id}/` | Membership detail | `academy.member.view` |
+| PATCH | `manage/members/{id}/` | Department/status (activate/suspend) | `academy.member.manage`; reason required for suspension |
+| DELETE | `manage/members/{id}/` | Remove membership | `academy.member.manage`; 409 `last_admin`; cancels enrollments |
+| GET/POST | `manage/members/{id}/roles/` | List/assign roles | `academy.role.manage`; no escalation |
+| DELETE | `manage/members/{id}/roles/{assignment_id}/` | Revoke | `academy.role.manage`; 409 `last_admin` |
+| GET/POST | `manage/departments/` | Tree/create | `academy.member.view` / `academy.department.manage` |
+| PATCH/DELETE | `manage/departments/{id}/` | Rename/re-parent/archive | `academy.department.manage` |
+| GET/POST | `manage/roles/` | Company roles | `academy.role.manage` |
+| PATCH/DELETE | `manage/roles/{id}/` | Edit/delete custom role | `academy.role.manage`; system roles 409 `role_system` |
+| GET/PUT | `manage/roles/{id}/permissions/` | Replace permission set | `academy.role.manage`; platform permissions rejected |
+| GET/POST | `manage/grants/` | Exceptional grants | `academy.grant.manage`; reason + expiry required |
+| DELETE | `manage/grants/{id}/` | Revoke | `academy.grant.manage` |
+| GET | `manage/audit/` | Audit search | `academy.audit.view`; filters action/object/actor/date |
+| GET/PATCH | `manage/settings/` | Company settings | `academy.settings.manage` |
+| POST | `manage/users/{id}/export/` | Privacy export | `academy.member.manage`; audited; JSON bundle |
+| POST | `manage/users/{id}/anonymize/` | Anonymize | `academy.member.manage`; reason required; irreversible; audited |
 
+## 11. Platform administration (`platform.*`)
+| Method | Path | Purpose | Permission |
+|---|---|---|---|
+| GET/POST | `platform/organizations/` | List/create companies | `platform.organization.view` / `platform.organization.manage` |
+| GET | `platform/organizations/{id}/` | Company detail + counts | `platform.organization.view` |
+| PATCH | `platform/organizations/{id}/` | Name, settings | `platform.organization.manage` |
+| POST | `platform/organizations/{id}/suspend/` | Suspend | `platform.organization.manage`; reason required |
+| POST | `platform/organizations/{id}/reactivate/` | Reactivate | `platform.organization.manage` |
+| POST | `platform/organizations/{id}/archive/` | Archive | `platform.organization.manage`; blocked while active members exist |
+| GET | `platform/users/` | Platform users | `platform.user.manage` |
+| POST | `platform/users/{id}/roles/` | Assign platform role | `platform.user.manage`; 409 `last_admin` |
+| DELETE | `platform/users/{id}/roles/{assignment_id}/` | Revoke | `platform.user.manage`; 409 `last_admin` |
+| POST | `platform/organizations/{id}/access/` | Start audited read-only access | `platform.organization.access`; returns context + audit id |
+| DELETE | `platform/organizations/{id}/access/` | End access | `platform.organization.access` |
+| GET | `platform/audit/` | Platform audit search | `platform.audit.view` |
+| GET | `platform/settings/` | Platform settings + integration flags | `platform.settings.manage` |
+| GET | `platform/reports/summary/` | Per-company aggregate (explicit filter) | `platform.organization.view` |
+
+Platform access is read-only. Write attempts inside it → **403 `platform_access_readonly`**; every
+start/end is audited with the company id.
+
+## 12. Internal and operational routes
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| POST | `/internal/hub/webhooks/` | `member_changed`, `member_deactivated` | Signed per hub-contract §4; not exposed at the Hub |
-| GET | `/healthz` | Liveness/readiness | Checks DB, Redis, storage; 200/503 only |
-| GET | `/api/schema` | OpenAPI 3 document | Development/staging route; the production deployment keeps it disabled (T-024 check) |
+| POST | `/internal/hub/webhooks/` | `member_changed`, `member_deactivated` | Only mounted when Hub is enabled; signed per hub-contract §4; 404 otherwise |
+| GET | `/healthz` | Liveness | Process; 200 while serving |
+| GET | `/readyz` | Readiness | DB, Redis, storage, migrations; 200/503 only |
+| GET | `/api/schema` | OpenAPI 3 | Development/staging; disabled in production by configuration |
+| GET | `/metrics` | Prometheus | Internal network only |
 
-## 10. Web pages (server-rendered, same services)
-
-| Route (under `/academy/`) | Screen | Capability |
+## 13. Web pages (server-rendered, same services)
+| Route | Screen | Permission |
 |---|---|---|
-| `/` | A · Academy (course list) | `learn` or `manage_content` |
-| `/manage/courses/new/` | B · New course | `manage_content` |
-| `/manage/courses/{id}/edit/` | C · Lessons and upload | `manage_content` |
-| `/manage/assignments/new/` | D · Assignment dialog | `assign` |
-| `/learn/{enrollment_id}/` | E · Course player | `learn` + ownership |
-| `/manage/team/` | F · Team training | `view_reports` |
-| `/manage/permissions/` | G · Permissions | `admin` |
-| `/manage/audit/` | S1 · Audit log | `admin` |
-| `/dashboard/` | L1 · My dashboard | `learn` |
-| `/my/courses/` | L2 · My courses | `learn` |
-| `/my/courses/{course_id}/` | L3 · Course details | `learn` + enrolled |
-| `/my/achievements/` | L4 · Achievements | `learn` |
-| `/login/` | X1 · Local sign-in | `standalone` mode only |
-| `/preview/…` | Preview showcase (dev only) | Dev profile only |
+| `/` | P1 · Public home | public |
+| `/about/`, `/programmes/`, `/contact/`, `/privacy/`, `/terms/` | P2–P5 · Public pages | public |
+| `/academy/login/`, `/academy/password/reset/`, `/academy/password/reset/{token}/`, `/academy/verify/{token}/`, `/academy/invite/{token}/` | X1, X3–X5 | public (rate-limited) |
+| `/academy/denied/` | X7 · Access denied | any authenticated/blocked state |
+| `/academy/` | Application entry → L1 dashboard | `academy.learn` |
+| `/academy/select-company/` | X6 · Company selection | authenticated |
+| `/academy/dashboard/` | L1 · My dashboard | `academy.learn` |
+| `/academy/my/courses/` | L2 · My courses | `academy.learn` |
+| `/academy/my/courses/{course_id}/` | L3 · Course details | `academy.learn` + enrolled |
+| `/academy/my/achievements/` | L4 · Achievements | `academy.learn` |
+| `/academy/learn/{enrollment_id}/` | E · Course player | `academy.learn` + owner |
+| `/academy/manage/courses/…` | B, C · Course authoring | `academy.content.*` |
+| `/academy/manage/assignments/…` | D · Assignment | `academy.assignment.*` |
+| `/academy/manage/reports/` | F · Team training | `academy.report.view` |
+| `/academy/manage/members/` | N1 · Members & invitations | `academy.member.*` |
+| `/academy/manage/roles/` | N2 · Roles & grants | `academy.role.manage` |
+| `/academy/manage/departments/` | N3 · Departments | `academy.department.manage` |
+| `/academy/manage/settings/` | N4 · Company settings | `academy.settings.manage` |
+| `/academy/manage/audit/` | S1 · Company audit | `academy.audit.view` |
+| `/academy/platform/` | N5 · Platform overview | `platform.organization.view` |
+| `/academy/platform/organizations/…` | N6 · Companies | `platform.organization.*` |
+| `/academy/platform/users/` | N7 · Platform users | `platform.user.manage` |
+| `/academy/platform/settings/` | N8 · Platform settings | `platform.settings.manage` |
+| `/academy/platform/audit/` | S2 · Platform audit | `platform.audit.view` |
+| `/academy/preview/…` | Preview showcase (dev only) | Dev profile only |
 
-The web layer derives everything from the same services and selectors as the API; it must
-not add business rules.
+The web layer derives everything from the same services/selectors as the API and adds no
+business rules.
 
-## 11. Error codes (complete list)
-`validation_error` 400 · `invalid_range` 400 · `progress_skip_rejected` 400 · `upload_too_large` 400 ·
-`unsupported_type` 400 · `unauthorized` 401 · `account_inactive` 403 · `forbidden` 403 ·
-`lesson_locked` 403 · `access_suspended` 403 · `not_found` 404 · `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·
+## 14. Error codes (complete list)
+`validation_error` 400 · `invalid_range` 400 · `progress_skip_rejected` 400 ·
+`upload_too_large` 400 · `unsupported_type` 400 · `token_invalid` 400 ·
+`invitation_invalid` 400 · `invalid_credentials` 401 · `mfa_required` 401 · `mfa_invalid` 401 ·
+`unauthorized` 401 · `account_inactive` 403 · `membership_inactive` 403 ·
+`organization_suspended` 403 · `forbidden` 403 · `lesson_locked` 403 ·
+`access_suspended` 403 · `platform_access_readonly` 403 · `not_found` 404 ·
+`method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·
 `version_published` 409 · `course_published_locked` 409 · `position_mismatch` 409 ·
-`upload_missing` 409 ·
-`checksum_mismatch` 409 · `retry_limit_reached` 409 · `media_not_ready` 409 ·
-`lesson_not_eligible` 409 · `enrollment_incomplete` 409 · `acknowledgment_not_required` 409 ·
-`last_admin` 409 · `course_not_published` 409 · `publish_invalid` 422 · `target_empty` 422 ·
-`throttled` 429 ·
-`unavailable` 503.
+`upload_missing` 409 · `checksum_mismatch` 409 · `retry_limit_reached` 409 ·
+`media_not_ready` 409 · `lesson_not_eligible` 409 · `enrollment_incomplete` 409 ·
+`acknowledgment_not_required` 409 · `last_admin` 409 · `role_system` 409 ·
+`course_not_published` 409 · `organization_context_required` 409 · `escalation_denied` 403 ·
+`publish_invalid` 422 · `target_empty` 422 · `throttled` 429 · `unavailable` 503.
 
-## 12. Test obligations
-Every endpoint gets the matrix from `docs/skills/api-endpoint.md`: success, validation error,
-401 anonymous, 403 capability, other-tenant 404, other-user object, pagination, and a
-query-count assertion for lists. Heartbeat and completion add the matrices in
-`docs/domain-model.md` §9.
+## 15. Compatibility and test obligations
+- Additive changes only in `v1`; removing/renaming a field or changing an error code requires
+  `v2` and owner approval. Deprecations are announced in `LOG.md` and kept for one minor release.
+- Every endpoint runs the matrix in `docs/skills/api-endpoint.md`: success, validation error,
+  anonymous 401, wrong permission 403, other-company 404, other-user object, pagination, and a
+  query-count assertion for lists.
+- Auth endpoints additionally test enumeration, throttling, token replay, MFA challenge replay,
+  session revocation and the dev-login-absent-in-production assertion.
+- The OpenAPI schema must have zero warnings (G5) and is regenerated in CI; a changed schema is
+  reviewed as a contract change.
