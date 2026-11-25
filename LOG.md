@@ -52,7 +52,8 @@
   caching and invalidation, idempotency, unreachable Hub); ruff, format, mypy,
   `makemigrations --check`, OpenAPI validation and G7/G9 green locally; CI run `45572535250`
   green on `41d0dc0` (the first run `45572186106` failed G6 because the deploy check lacked the
-  now-mandatory Hub settings, supplied in `41d0dc0`).
+  now-mandatory Hub settings, supplied in `41d0dc0`), fast-forwarded to `main` as `f4eea00`
+  with CI run `45573329413` green.
 - **Approved by:** Project owner («كمل» instruction of 2026-11-25).
 - **References:** T-015, D-004, D-010, `docs/hub-contract.md` §1–§5.
 
