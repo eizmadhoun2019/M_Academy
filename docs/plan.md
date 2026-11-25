@@ -54,6 +54,7 @@
 | **T-032** | Tenant-aware notifications, reminders and reports | `[ ]` | T-027, T-028 | GATE-1 |
 | **T-033** | Hub quarantine as an optional integration | `[ ]` | T-026 | GATE-1 |
 | **T-034** | Release hardening, operations, security/privacy evidence, pilot (was T-024) | `[ ]` | T-030…T-033 | GATE-1 |
+| **T-035** | Official UI/UX reference adoption and repository hygiene | `[~]` (owner review; docs only) | T-025 | — |
 
 Dependency graph:
 ```
@@ -63,6 +64,8 @@ T-025 → T-026 → T-027 → T-028 → T-029 → T-030 ─┐
 T-026 → T-033 ─────────────────────────────────┘
 ```
 T-031 and T-032 may run in parallel after T-028; T-033 may run in parallel with T-027/T-028.
+T-035 is a documentation prerequisite for the UI tasks (T-029–T-031) and does not block backend
+checkpoints.
 
 ## 3. Impact on completed work (no duplicate delivery)
 | Task | Kept | Needs revalidation / extension | Where |
@@ -222,13 +225,14 @@ bilingual application shell under `/academy/`.
 login, reset, verification and invitation-accept pages; app shell with dynamic sidebar and
 header; English catalogue; RTL/LTR; mobile-first layouts; state contract (loading/empty/error/
 forbidden/…); accessibility fixes; public SEO basics (title/description, no analytics).
-Each screen group records its approved visual reference (or an explicit owner waiver) before
-implementation (D-044).
+Each screen group records its approved reference and owner approval (or an explicit waiver) in
+`docs/ui/wireframes.md` before implementation; the official package and its gaps are in
+`docs/ui/design-reference.md` (D-044/D-045).
 **Depends on:** T-028.
 **Acceptance criteria:**
-1. Every P/X/shell screen renders in Mobile-first order and passes at 320, 390, 768 and 1440 px
-   in ar and en with no unjustified page-level horizontal overflow; content reflows instead of
-   shrinking, and core functions remain reachable by touch and keyboard.
+1. Every P/X/shell screen renders in Mobile-first order and passes at 320, 390, 768, 1024, 1440
+   and 1920 px in ar and en with no unjustified page-level horizontal overflow; content reflows
+   instead of shrinking, and core functions remain reachable by touch and keyboard.
 2. Public pages contain no application data and no UUID; login button targets `/academy/login/`.
 3. Auth pages complete the T-027 flows and land directly on the permitted dashboard; no company
    chooser exists; errors use the documented states; no success message before a server response.
@@ -239,8 +243,8 @@ implementation (D-044).
    and touch targets meet the documented minimum.
 7. The design gate for this group records the approved reference or owner waiver; no screen claims
    pixel compliance without it.
-**Tests:** route/render tests, permission-to-nav matrix, axe smoke, 4-width snapshots (320/390/768/
-1440) in both languages, visual baselines where an approved reference exists.
+**Tests:** route/render tests, permission-to-nav matrix, axe smoke, six-width snapshots
+(320/390/768/1024/1440/1920) in both languages, visual baselines where an approved reference exists.
 **Risks:** design drift; mitigated by the binding reference/tokens, screen spec and visual
 regression. Missing translations; CI check for untranslated new msgids.
 **Docs:** ui/screen-specification, wireframes, api §13, configuration, security CSP.
@@ -265,7 +269,7 @@ action reasons.
 5. Role editor cannot include platform permissions; last-admin guards surface as disabled actions
    with a reason.
 6. Platform access is read-only and visibly marked; write attempts are refused and audited.
-7. All screens implement the documented states and pass axe at 320/390/768/1440 px, mobile-first,
+7. All screens implement the documented states and pass axe at 320/390/768/1024/1440/1920 px, mobile-first,
    with no horizontal overflow; each administration group has an approved visual reference or
    recorded owner waiver.
 8. Platform company access uses an explicit company id on platform routes, creates no membership,
@@ -290,12 +294,12 @@ player states (loading, stalled, ended, locked, offline); CSV export UI.
 3. A training manager creates a course with two sections and video lessons, publishes it,
    assigns it, and sees the roster/report.
 4. Empty/loading/error/forbidden/offline states follow the screen contract; no duplicate submit.
-5. All screens work keyboard-only and at 320/390/768/1440 px in ar and en with no overflow; axe
+5. All screens work keyboard-only and at 320/390/768/1024/1440/1920 px in ar and en with no overflow; axe
    zero critical/serious; each group records an approved visual reference or owner waiver and
    visual baselines where the reference exists.
 6. No raw UUID is shown where a name exists; dates/numbers follow the active locale and company
    time zone.
-**Tests:** Playwright journey, permission-to-action matrix, axe, 4-width responsive and visual
+**Tests:** Playwright journey, permission-to-action matrix, axe, six-width responsive and visual
 snapshots, API state assertions.
 **Risks:** video UX on mobile; device testing. Scope creep into quiz UI; explicitly excluded.
 **Docs:** ui spec, wireframes, api §5–§8, notifications links.
@@ -373,8 +377,9 @@ audit; gate evidence.
    CSP/HSTS/cookies verified on staging.
 6. Privacy export and anonymization tests pass; retention jobs dry-run produces the expected
    counts.
-7. Full journey E2E passes in ar/en at 320/390/768/1440 px, mobile-first; axe zero critical/
-   serious; visual regression passes against every approved reference (or its recorded waiver).
+7. Full journey E2E passes in ar/en at 320/390/768/1024/1440/1920 px, mobile-first; axe zero
+   critical/serious; visual regression passes against every approved implemented baseline (or its
+   recorded waiver).
 8. Pilot completes a real course with ≥ 1 company and ≥ 10 learners; feedback triaged.
 9. All gates G1–G12 green on `main`; documentation check passes; `STATUS.md` links every evidence
    item; `LOG.md` has a `[RELEASE]` entry.
@@ -385,6 +390,39 @@ audit; gate evidence.
 required before production go-live, not before staging.
 **Docs:** operations, performance-profile, security, traceability, STATUS, LOG.
 **Evidence:** CI run, restore transcript, load report, ASVS checklist, axe report, pilot notes.
+
+### T-035 — Official UI/UX reference adoption and repository hygiene
+**Goal:** one approved design source of truth, a clean repository root and permanent Mobile First
+/ responsive / single-shell governance before UI work starts.
+**Scope:** adopt the owner's `Masheed-Academy-Official-UI-UX-v1.0`; verify reference fingerprints;
+merge its text specifications and tokens into `docs/ui/`; record provenance, archive and restore;
+archive the superseded UX packages, interim PDF and local document backups outside the repository;
+Git-ignore local visual references; reconcile screen IDs with tasks and the gate record; update
+RULES, ARCHITECTURE, decisions, traceability, README, skills, STATUS and LOG.
+**Out of scope:** UI implementation, T-026 CP1, code/templates/stylesheets, data model,
+migrations, API/Hub contracts, infrastructure, gate weakening.
+**Depends on:** T-025.
+**Acceptance criteria:**
+1. The package is intact: all 14 boards match the published SHA-256 and dimensions, and no file is
+   missing from the 24-file manifest.
+2. `docs/ui/design-system.md` and `design-tokens.json` are the only visual authority; no second
+   design system, token set or conflicting wireframe remains in the active tree.
+3. Superseded packages, the interim PDF and the local document backup are removed from the active
+   repository but preserved outside it, with hashes and a restore procedure recorded.
+4. No design binary or package is tracked; `.design-references/` and root-level ZIPs are ignored.
+5. Every screen group maps to a reference board, a plan task and a pending owner gate; no gate is
+   recorded as passed.
+6. Mobile First, the six verification widths, the single master shell and rendered-baseline visual
+   regression are binding in `RULES.md` and the UI documents, without duplicating values.
+7. `python scripts/check_docs.py` passes, links resolve, and the root contains no untracked design
+   material other than the documented local references; no code, migration or dependency changed.
+**Tests:** documentation checker, link/retired-identifier scan, reference hash verification,
+`git status`, manual consistency pass across the UI documents.
+**Risks:** losing a visual reference; mitigated by the external archive + fingerprints. Accidentally
+publishing mockups; mitigated by ignore rules and the public-repository warning.
+**Docs:** design-system, design-tokens, design-reference, wireframes, screen-specification, RULES,
+ARCHITECTURE, decisions D-045, traceability, README, SKILLS, STATUS, LOG.
+**Evidence:** commit + CI docs job, hash table, before/after root listing, final report.
 
 ## 5. GATE-1 — H1.5 foundation
 GATE-1 closes when:

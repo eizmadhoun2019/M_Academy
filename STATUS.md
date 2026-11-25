@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-25 (T-025 merged and closed)
-**Updated by:** AI agent (T-025), under the owner's delegation
+**Last updated:** 2026-11-25 (T-035 design reference adoption, in review)
+**Updated by:** AI agent (T-035), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 is merged on `main`; T-026 CP1 is next and has not started; no application code changed
+**Overall status:** Active — T-025 is merged; T-035 (official UI/UX reference adoption and repository hygiene) is complete on its task branch and awaits owner approval; T-026 CP1 has not started; no application code changed
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -32,6 +32,7 @@ T-025 is merged as `b592498` (CI run 45687216183, success); implementation start
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
+| T-035 | Official UI/UX reference adoption and repository hygiene | `[~]` — branch `task/T-035-design-reference-adoption`, content commit `165d261`, CI success 45692372567; owner approval and merge pending | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; `check_docs` 41 files |
 | T-026 | Tenancy and account foundation | `[ ]` next — do not start without «كمل» | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
 | T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
@@ -44,6 +45,16 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
+- 2026-11-25 — **T-035 in review (docs only).** The owner's official
+  `Masheed-Academy-Official-UI-UX-v1.0` was verified (14/14 board fingerprints and dimensions), its
+  text specifications and tokens were merged into `docs/ui/`, and it is now the single design
+  authority (D-045). The superseded `Academy-UX-Handoff-v1.0` and `Masheed-Academy-UX-Batch-1-Review`
+  packages, the interim PDF/page renders and the local document backup were removed from the active
+  tree and archived in `../_design-archive/`; boards are Git-ignored and no design binary is
+  tracked. Mobile First, the six verification widths (320/390/768/1024/1440/1920) and the master
+  shell are permanent in `RULES.md` and `docs/ui/design-system.md`. No screen group gate was closed,
+  and no code, template, stylesheet, migration, API or dependency changed. Content commit `165d261`
+  passed CI run 45692372567; `check_docs` G9 passed (41 files); every board hash matched.
 - 2026-11-25 — T-025 H1.5 amendment: one company membership per account with `UNIQUE (user_id)`,
   no company chooser/switcher/selection APIs or screens, platform administration without a
   membership, D-043/D-044 and the capability-preservation matrix; Mobile First at 390/768/1440
@@ -92,12 +103,14 @@ Single register: [`docs/decisions.md`](docs/decisions.md). This file does not du
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-T-025 is **closed**: owner-approved and merged as `b592498`, CI success 45687216183. The next
-eligible checkpoint is **T-026 CP1** (tenancy schema expand), exactly as `docs/plan.md` §4 defines
-it, but it has **not** started. T-033 remains `[ ]` and may start only after T-026 is `[x]`, in
-parallel with T-027/T-028; T-026 CP1 alone is not sufficient. D-001, D-005 and D-009 remain open.
-Say «كمل» to authorize T-026 CP1; the agent does one checkpoint, commits, pushes, reports evidence
-and stops.
+**T-035 is in review**: the branch is pushed and CI evidence is recorded in `LOG.md`. The owner
+should review the package adoption, archive and permanent UI rules and approve the merge to `main`.
+After that merge, **T-026 CP1** (tenancy schema expand) is the next eligible checkpoint, exactly as
+`docs/plan.md` §4 defines it, but it has **not** started. T-033 remains `[ ]` and may start only
+after T-026 is `[x]`, in parallel with T-027/T-028; T-026 CP1 alone is not sufficient. D-001, D-005
+and D-009 remain open. Screen groups remain **pending owner approval**; the official logo, Rubik
+binaries and licensed photography are still missing assets. Say «كمل» after T-035 is merged to
+authorize T-026 CP1.
 
 ## Update rules
 - Update when project state changes. Do not turn this file into a diary (`LOG.md` owns history).

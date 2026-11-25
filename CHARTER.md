@@ -98,7 +98,7 @@ manual checks before a gate closes. Detailed task mapping: `docs/plan.md`; cover
 | REQ-02 | Adapter layer + host stub with contract suites | Must | Identity/organization/notify/storage contracts pass for stub and HTTP fakes | Tech authority |
 | REQ-03 | Full schema with migrations, tenant and identity integrity | Must | Every tenant table scoped; composite FKs prevent cross-company relations; migrations apply/reverse; isolation suite passes | Tech authority |
 | REQ-04 | Domain events on commit + append-only audit | Must | Events fire only after commit; audit rows immutable at DB level; platform actions audited | Tech authority |
-| REQ-05 | Bilingual mobile-first design system for public site and application | Must | Tokens, components and shells committed; 320/390/768/1440 px in ar+en; no unjustified horizontal overflow; Mobile → Tablet → Desktop → Large Desktop order | Tech authority |
+| REQ-05 | Bilingual mobile-first design system for public site and application | Must | One master shell and tokens committed; 320/390/768/1024/1440/1920 px in ar+en; no unjustified horizontal overflow; Mobile → Tablet → Desktop → Large Desktop order | Tech authority |
 | REQ-06 | Course authoring, versions, publish | Must | ≥2 sections/lessons, publish validation, immutability, prior version archived | Tech authority |
 | REQ-07 | Media upload → HLS processing → secure playback | Must | Presigned PUT; ffmpeg→HLS `ready`; failures retryable; playback authorized per learner and company | Tech authority |
 | REQ-08 | Assignment + auto-enroll on membership change | Must | Target matrix, due date, mandatory flag; join/leave enrols and cancels | Tech authority |
@@ -108,7 +108,7 @@ manual checks before a gate closes. Detailed task mapping: `docs/plan.md`; cover
 | REQ-12 | Scoped reports + CSV | Must | Completion %, overdue, average time per course/department; formula-safe CSV; cross-scope refused | Tech authority |
 | REQ-13 | Permission grants and scoped authorization | Must | Allow/deny/scope matrix tested in API and web; denial audited; no client-supplied authority | Project owner |
 | REQ-14 | Learner + management web UI | Must | Screens L1–L4, E, A–C, D, F, S1 per `docs/ui/screen-specification.md`; manual checks recorded | Tech authority |
-| REQ-15 | Journey/E2E, accessibility, responsiveness | Must | Full journey test; Playwright at 320/390/768/1440 px in ar+en; axe zero critical/serious; visual regression against approved references | Tech authority |
+| REQ-15 | Journey/E2E, accessibility, responsiveness | Must | Full journey test; Playwright at 320/390/768/1024/1440/1920 px in ar+en; axe zero critical/serious; visual regression against approved implemented baselines | Tech authority |
 | REQ-16 | Operations | Must | Staging deploy from CI; daily backup; recorded restore drill; monitored `/healthz` with alerts | Tech authority |
 | REQ-17 | Performance at design capacity | Must | Targets in `docs/performance-profile.yaml` met, or an owner-accepted deviation recorded | Project owner |
 | REQ-18 | Security review | Must | OWASP ASVS L1 checklist complete; dependency and image scans clean; CSP and session controls verified | Tech authority |
@@ -131,9 +131,11 @@ LCP ≤ 2.5 s, CLS ≤ 0.1, INP ≤ 200 ms on a mid-range phone over 4G; availab
 RPO ≤ 24 h, RTO ≤ 4 h; OWASP ASVS L1 + WCAG 2.2 AA; latest two versions of Chrome, Edge,
 Firefox, Safari and Samsung Internet; ar (default, RTL) + en; coverage ≥ 85% on business-logic
 packages. **Mobile first is mandatory for every screen:** design and implement Mobile (390 px),
-then Tablet (768 px), Desktop (1440 px) and Large Desktop, and test intermediate widths from
-320 px. Desktop is never the base design shrunk down; core functions, forms, tables and reports
-must remain usable and accessible with no unjustified page-level horizontal scrolling.
+then Tablet (768 px), Desktop (1440 px) and Large Desktop, and verify **320, 390, 768, 1024,
+1440 and 1920 px** in both Arabic RTL and English LTR. Desktop is never the base design shrunk
+down; core functions, forms, tables and reports must remain usable and accessible with no
+unjustified page-level horizontal scrolling. Tokens and the single master shell are in
+`docs/ui/design-system.md`.
 
 ## 7. Project profile
 ### Scale
@@ -187,7 +189,7 @@ Canonical location: `docs/performance-profile.yaml` (owned by this charter).
 | Hub contract or availability changes | Hub dormant and optional; adapters and contract tests; reactivation gate | Project owner + Hub owner |
 | Video storage/bandwidth cost growth | Rendition policy; storage adapter; production provider decision D-001 | Project owner |
 | Clients bypass skip protection | Server-authoritative heartbeat (REQ-09); abuse counter and report comparison | Tech authority |
-| Accessibility/mobile found late | Mobile-first from the first screen; 320/390/768/1440 checks and axe in T-029/T-030/T-031/T-034 | Tech authority |
+| Accessibility/mobile found late | Mobile-first from the first screen; 320/390/768/1024/1440/1920 checks and axe in T-029/T-030/T-031/T-034 | Tech authority |
 | Base-image vulnerabilities block CI | Time-boxed owner-approved exception process (`RULES.md` → Exceptions) | Project owner |
 | Operator error on a shared host destroys another stack | Isolation table and prohibitions in `docs/operations/environments.md`; project-scoped commands only | Tech authority |
 | A change silently drops a previously approved capability | Capability-preservation matrix in `docs/traceability.md`; no removal without an explicit owner decision; regression evidence before GATE-1 | Project owner |

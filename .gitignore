@@ -39,6 +39,11 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Design references and design packages (D-045). Visual boards stay local; only text specs and
+# tokens are tracked. Packages are archived outside the repository — see docs/ui/design-reference.md.
+.design-references/
+/*.zip
+
 # Docs build artifacts
 docs/**/*.tmp
 
