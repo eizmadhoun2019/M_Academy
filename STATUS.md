@@ -82,7 +82,7 @@ and verified here.
 | T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[x]` done on main (commit `22f38a4`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45617783011` on `task/T-018-media` green at that commit; presigned PUT with tenant keys, `stat` verification, the ffmpeg→HLS pipeline with poster and playback playlists; 459 tests including the slow HLS integration, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
 | T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[x]` done on main (commit `1d5fc56`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45624655284` on `task/T-019-assignments` green at that commit; one shared expansion selector for preview and write, scoped assignment/roster services, Hub-driven enrolment and cancellation, `lesson_locked` gating in the outline and playback; 37 new tests, 496 at merge, ruff/format/mypy and G7/G9 clean) | Tech authority | T-017 | REQ-08, sequential-lock matrix |
 | T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[x]` done on main (commit `cff7c9b`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45634497939` on `task/T-020-progress-heartbeat-completion` green at that commit; `academy/progress.py` owns the §7 write path, the refusal commits its skip counter, completion is idempotent and the enrollment block lists its blockers; 32 new tests, 528 at merge, ruff/format/mypy and G7/G9 clean) | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
-| T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[ ]` | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
+| T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[x]` done on main (commit `4aafd75`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45652976135` on `task/T-021-notifications-reminders` green at that commit; one catalogue of seven ar/en messages, a queue whose row is written before the send so the dedupe key is the idempotency gate, the −3/0/+1 learner reminders, the due+3 manager escalation with a daily digest, suppression codes and a repair sweep; 32 new tests, 560 at merge, ruff/format/mypy, G3/G7/G9 clean) | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
 | T-022 | Reports + CSV export (scoped selectors, formula-safe CSV) | `[ ]` | Tech authority | T-020 | REQ-12; query-count + scope tests; columns and CSV per `docs/reports.md` |
 | T-023 | Learner + management web UI (bilingual, responsive, accessible, player) | `[ ]` | Tech authority | T-020, T-022 | REQ-14 + screens L1–L4, S1, X1–X2 per `docs/ui/screen-specification.md`; manual checks recorded in LOG |
 | T-024 | Journey test + E2E + accessibility + load test + ops (deploy/backup/restore/alerts) + security review + privacy tooling + pilot | `[ ]` | Tech authority | T-023 | REQ-15…REQ-20 evidence in LOG; alert thresholds in `docs/operations/environments.md` §8 |
@@ -92,6 +92,7 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-25 — T-021 notifications: seven catalogued ar/en messages leave through one queue whose row is written before the send, so a retry, a second worker or the repair sweep cannot send the same message twice; the −3/0/+1 reminders are anchored on the business date, the manager hears once a day at due+3, and a message that became unnecessary is skipped with its code instead of leaving with stale facts. See LOG.md.
 - 2026-11-25 — T-020 heartbeat and completion: the server credits only the elapsed window at
   the reported rate, a forward jump is refused with the ceiling it allowed, and a replay or a
   rewind adds nothing; lesson completion is idempotent, enrollment completion blocks on the
@@ -199,8 +200,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-020 (heartbeat/anti-skip and the completion flow) is complete on `main` and waits for owner
-review; **T-021** (notifications and reminders) follows it.
+T-021 (notifications, reminders and the escalation digest) is complete on `main` and waits for
+owner review; **T-022** (reports and CSV export) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one

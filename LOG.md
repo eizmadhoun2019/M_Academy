@@ -21,6 +21,45 @@
 
 ## Entries
 
+### [2026-11-25] — T-021 notifications, reminders and the escalation digest
+
+- **Type:** Milestone
+- **Status:** Implemented
+- **Summary:** `academy/notifications/` now owns the seven messages of
+  `docs/notifications.md`: one catalogue renders every ar/en subject and body from the ids in the
+  dedupe key, so copy is drawn at send time and a message that waited in the queue still names
+  the course as it is. `service.queue()` writes the `NotificationLog` row and enqueues the send
+  `on_commit`, `service.deliver()` is the only sender and the row's status is the gate: a
+  duplicate key, a second worker, a retried task or the repair sweep all find the row already
+  `sent` or `pending` and stop, and a message that became unnecessary is marked `skipped` with
+  its code (`recipient_inactive`, `already_completed`, `enrollment_cancelled`,
+  `context_missing`, `directory_unavailable`). The enrollment events subscribe to the existing
+  domain signals (`N-1`, `N-2`, `N-3`); `academy/notifications/reminders.py` evaluates the
+  business-date offsets −3 / 0 / +1 (`N-4`…`N-6`) once a day, refuses to remind an enrollment
+  that is acknowledged, completed or cancelled, and escalates at due+3 (`N-7`) to the human
+  assigner or else the Hub manager, skipping the learner when they are their own manager. The
+  `ReminderLog` insert is the escalation's gate and `send_digest` groups the owing rows by
+  manager and due date, so several escalations of one day leave in one digest; the bare
+  `academy.escalations.digest` task re-sends every batch still owed, which repairs a run that
+  died between evaluation and delivery. Delivery goes through the `NotifyAdapter` only. Beat
+  gained the sweep (15 min) and the two 08:00-business-time entries, converted to the UTC hour at
+  start-up, and `ACADEMY_ORGANIZATION_NAME` names the sender (default `مشيد`).
+- **Impact:** REQ-10 and REQ-11 are implemented end to end with frozen-time evidence, so T-022
+  reports and T-023's screens can rely on a delivery trail that cannot send twice. Removing the
+  deprecated `queue=` task attribute in favour of the existing `CELERY_TASK_ROUTES` also made the
+  first test that touches a task finalize the Celery app without a deprecation error, which
+  exposed a wall-clock race in two T-020 progress tests; their clock is now pinned per test, so
+  the documented numbers are asserted exactly.
+- **Evidence:** 32 new tests in `tests/test_notifications.py` and `tests/test_reminders.py` (the
+  catalogue and its length limits, idempotency across retries and workers, every suppression
+  code, an unreachable directory, both enrollment events, the full date matrix with frozen
+  time, one digest per manager-day, the bare-task repair, the beat entries); 560 tests at merge;
+  ruff, format, mypy, `makemigrations --check`, OpenAPI validation, G3/G7/G9 green locally; CI
+  run `45652976135` green on `4aafd75`, fast-forwarded to `main` as `4aafd75`.
+- **Approved by:** Project owner («كمل» instruction of 2026-11-25).
+- **References:** T-021, D-002, `docs/notifications.md`, `docs/background-jobs.md` §1/§4,
+  `docs/configuration.md` §1.
+
 ### [2026-11-25] — T-017 content services and API
 
 - **Type:** Milestone
