@@ -864,3 +864,29 @@ overrides require.
 - **References:** T-013, `docs/ui/screen-specification.md` §5, `docs/api.md` §10,
   `docs/operations/environments.md`.
 
+## 2026-11-25 — T-018 media upload, verification and HLS pipeline
+
+- **Why:** REQ-07 needs a video lesson the platform can actually deliver; until now the
+  `MediaAsset` model had no way in and no way out.
+- **What changed:** `academy/media/service.py` issues a presigned `PUT` for a per-asset tenant
+  key (`org/<id>/media/<asset>/original.<ext>`), enforces the kind/size/content-type policy
+  from §3 and verifies the object with `stat` before the asset leaves `awaiting_upload`, so a
+  client cannot declare success for bytes the bucket never received. `complete`/`retry`
+  enqueue the worker through `transaction.on_commit`; the worker probes the original, builds
+  the rendition ladder from `ACADEMY_HLS_RENDITIONS`, drops a rendition taller than the
+  source, and writes `hls/<name>/index.m3u8` plus a poster, all inside the asset prefix so one
+  `delete_prefix` cleans it up. `manage/media/` exposes create/detail/complete/retry and
+  `playback` returns presigned playlists with `Cache-Control: private, no-store`.
+- **Impact:** media state is now durable and visible: every failure keeps a stable
+  `error_code` (`upload_missing`, `checksum_mismatch`, `unsupported_type`, `upload_too_large`,
+  `transcode_failed`, `storage_unavailable`) and `attempt_count`, and a retry stops at
+  `ACADEMY_TRANSCODE_ATTEMPTS`.
+- **Evidence:** `pytest -q` → 459 passed, including 15 new media tests (the slow pair runs a
+  real two-second `ffmpeg` clip and asserts the playlists, segments and `360p` entry);
+  `ruff check`, `ruff format --check`, `mypy .` (126 files), `makemigrations --check` and
+  `spectacular --validate --fail-on-warn` (0 warnings) clean, G7 and G9 pass. CI run
+  `45617783011` on `task/T-018-media` is green.
+- **Approved by:** Project owner (2026-11-25): «كمل».
+- **References:** T-018, `docs/api.md` §3–§4, `docs/configuration.md` §3–§4,
+  `docs/domain-model.md` §2.5/§5, `docs/background-jobs.md` §1.
+

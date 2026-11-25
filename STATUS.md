@@ -76,7 +76,7 @@ and verified here.
 | T-015 | Hub HTTP integration: signed identity, webhooks, HubHttp adapters, loopback fake | `[x]` done on main (commit `f4eea00`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45573329413` on `main` green at that commit; 399 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-014 |
 | T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[x]` done on main (commit `17fe415`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45577563757` on `main` green at that commit; `PermissionGrant` migration `0007`, grant/revoke services with audit, `manage/grants/` API with idempotency, `provision_admin`, last-admin guard; 423 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-009 |
 | T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[x]` done on main (commit `6cc59c9`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45586286539` on `main` green at that commit; scope-checked services, publish validation and the `manage/` content routes; 444 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
-| T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[ ]` | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
+| T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[x]` done on main (commit `22f38a4`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45617783011` on `task/T-018-media` green at that commit; presigned PUT with tenant keys, `stat` verification, the ffmpeg→HLS pipeline with poster and playback playlists; 459 tests including the slow HLS integration, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
 | T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[ ]` | Tech authority | T-017 | REQ-08, sequential-lock matrix |
 | T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[ ]` | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
 | T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[ ]` | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
@@ -89,6 +89,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-25 — T-018 media pipeline: presigned uploads under per-asset tenant keys, `stat`
+  verification before an asset leaves `awaiting_upload`, the worker transcode to HLS with a
+  poster and playback playlists. See LOG.md.
 - 2026-11-25 — T-017 content services: courses, versions, sections and lessons through
   scope-checked services, draft clone, publish validation with every reason, and the
   `manage/…` routes behind `academy.manage_content`. See LOG.md.
@@ -185,8 +188,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-017 (content services and API) is complete on `main` and waits for owner review; **T-018**
-(media upload and processing) follows it.
+T-018 (media upload and processing) is complete on `main` and waits for owner review;
+**T-019** (assignments and auto-enrolment) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
