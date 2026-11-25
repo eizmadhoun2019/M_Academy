@@ -28,7 +28,7 @@ at T-026 after the owner merges this branch.
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
-| T-025 | Documentation and governance consolidation | `[~]` — review/commit | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch pushed; final report |
+| T-025 | Documentation and governance consolidation | `[~]` — committed `96f78d2`, awaiting review | AI agent | owner approval | `docs/plan.md` §4 T-025; `check_docs` green; branch `task/T-025-docs-consolidation` |
 | T-026 | Tenancy and account foundation | `[ ]` next | AI agent after T-025 merge | T-025 | `docs/plan.md` §4 T-026 |
 | T-033 | Hub quarantine | `[ ]` parallel candidate | AI agent | T-026 | `docs/plan.md` §4 T-033 |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
@@ -44,7 +44,7 @@ that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 repl
 - 2026-11-25 — T-025 documentation consolidation: one plan (T-025…T-034), charter 2.4,
   standalone/multi-company architecture, local identity and RBAC specifications, Hub marked
   dormant, per-company jobs/mail/reports/operations, migration and ADR-023…028; no code changed.
-  Commit/CI evidence in `LOG.md`.
+  Commit `96f78d2`; `check_docs` G9 passed; CI pending on push.
 - 2026-11-25 — T-022 reports: one selector module defines every number, department scope includes
   general courses and refuses a cross-department read, streamed BOM CSV with formula-safe cells
   and an audited export. See `LOG.md`.

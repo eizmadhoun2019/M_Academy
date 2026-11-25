@@ -21,6 +21,28 @@
 
 ## Entries
 
+### [2026-11-25] — T-025 documentation and governance consolidation
+
+- **Type:** Change
+- **Status:** Implemented
+- **Summary:** Rebuilt the project's governance set around charter 2.4 and H1.5: standalone-first
+  architecture with Hub dormant, first-class organizations/memberships/departments, local
+  accounts with Django Auth, dynamic scoped RBAC, public site on `/` and application under
+  `/academy/`, per-company settings/time zone/mail, tenant-aware jobs and reports, migration and
+  operations plans. Added `docs/plan.md` (T-025…T-034, checkpoints, acceptance criteria, GATE-1),
+  `docs/traceability.md` (G1–G12, REQ-01…REQ-28, sources of truth), `docs/security.md`,
+  `docs/access-control.md`, `docs/migration-h1.5.md`, ADR-023…ADR-028 and the permission-change
+  skill. Marked T-023/T-024 superseded rather than deleting them; no application code, template,
+  migration, API contract, Hub activation, infrastructure or dependency was changed.
+- **Impact:** A new agent can start from `README.md` → `RULES.md` → `STATUS.md` → `docs/plan.md`
+  and continue with «كمل». Implementation begins at T-026 only after owner approval; current
+  single-company/Hub code is explicitly documented as the pre-H1.5 state.
+- **Evidence:** Branch `task/T-025-docs-consolidation`, commit `96f78d2`; `python
+  scripts/check_docs.py` → G9 passed (38 markdown files); cross-document review covered
+  scope/tenancy/permissions/API/UI/tasks; no application tests were run because no code changed.
+- **Approved by:** Project owner (delegation in the consolidation prompt, 2026-11-25).
+- **References:** T-025, D-031…D-042, ADR-023…ADR-028, `docs/plan.md`, `STATUS.md`.
+
 ### [2026-11-25] — T-022 reports and CSV export
 
 - **Type:** Milestone
