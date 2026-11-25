@@ -890,3 +890,41 @@ overrides require.
 - **References:** T-018, `docs/api.md` §3–§4, `docs/configuration.md` §3–§4,
   `docs/domain-model.md` §2.5/§5, `docs/background-jobs.md` §1.
 
+
+## 2026-11-25 — T-019 assignments, auto-enrolment and gating
+
+- **Why:** REQ-08 needs a manager to reach a group of learners and needs a Hub membership
+  change to materialise as an enrollment, without a second code path.
+- **What changed:** `academy/assignments/` now owns the write path and its selectors.
+  `expansion.expand_target` is the single D-017 selector the preview and the write share:
+  `department_members` (descendants included), `role_members`, one `user`, and — for
+  `organization` — the union of `role_members` over every reported role, because the Hub has no
+  all-members route; the result is de-duplicated, truncated at 5,000 and reports `capped`.
+  `service.create_assignment` validates the target shape and scope, refuses an archived course
+  or one without a published version (409 `course_not_published`), refuses an expansion that
+  reaches nobody (422 `target_empty`), and writes the assignment, its enrollments, the audit row
+  and one `assignment.created` event (carrying the count, not 5,000 payloads) in one
+  transaction. Cancelling an assignment cancels its active enrollments as `unassigned`;
+  cancelling one enrollment is audited as `removed_from_target`.
+- **Auto-enrolment:** `member_changed` now enrols a member into every live assignment that
+  reaches them and cancels rows whose assignment no longer does (`removed_from_target`);
+  `member_deactivated` cancels every active row (`deactivated`). Both run inside the webhook
+  transaction, so a rolled-back delivery leaves nothing behind, and a repeat is a no-op because
+  the partial unique index already pins one active enrollment per learner and course.
+- **Gating:** `gating.state_for` / `require_accessible` implement §7.5 — a required lesson is
+  locked while any earlier required lesson is incomplete, optional lessons open at any time and
+  never gate later ones. `playback` now consults it before presigning, so a locked lesson
+  answers 403 `lesson_locked` with `fields.next_lesson_id` instead of a rendition URL.
+- **API:** `manage/assignments/` (list/create with a required `Idempotency-Key` and replay),
+  `manage/assignments/preview/`, `manage/assignments/{id}/` (DELETE), the course roster,
+  `manage/enrollments/{id}/cancel/`, and the learner reads `my/courses/`, `my/enrollments/`
+  and `my/enrollments/{id}/` with the outline. Out-of-scope objects answer 404.
+- **Evidence:** `pytest -q` → 496 passed (37 new assignment tests: expansion cap, scope matrix,
+  idempotency, cancellation reasons, webhook-driven enrolment, gating matrix, outline, playback
+  lock, learner isolation); `ruff check` and `ruff format --check` clean, `mypy .` (133 files),
+  `makemigrations --check` (no changes), `spectacular --validate --fail-on-warn` (0 warnings),
+  G7 and G9 pass. CI run `45624655284` on `task/T-019-assignments` is green; merged to `main`
+  as `1d5fc56`.
+- **Approved by:** Project owner (2026-11-25): «كمل».
+- **References:** T-019, `docs/api.md` §3/§5/§11, `docs/domain-model.md` §2.6–§2.7/§7.5,
+  `docs/hub-contract.md` §3–§4, D-015, D-017, D-028.

@@ -2,7 +2,7 @@
 
 > Current state only. Historical detail belongs in `LOG.md`.
 
-**Last updated:** 2026-11-24 (T-013 UI foundation)
+**Last updated:** 2026-11-25 (T-019 assignments and gating)
 **Updated by:** Project owner (with AI agent assistance)
 **Current phase:** Phase 0 — Foundation (rebuild from scratch)
 **Project scale:** Medium
@@ -42,7 +42,10 @@ valid row, and the isolation suite writes each table in two organizations, asser
 `for_org` returns only its own row, and proves the detector fails on an unscoped query. The API
 skeleton (T-011) now serves `/api/v1/academy/` with one error envelope, page/page_size
 pagination, a 401 without identity, the `me/capabilities/` route backed by the authorization
-layer, and a generated OpenAPI document that validates with zero warnings. The audit service
+layer, and a generated OpenAPI document that validates with zero warnings. Assignments now close
+the loop from content to learner (T-019): a manager's target expands through the directory into
+enrollments, Hub membership changes enrol and cancel through the webhook transaction, and the
+sequential lock is enforced before a rendition URL is ever presigned. The audit service
 (T-012) is the accountability floor: `audit.record` appends one row inside the caller's
 transaction, validates the action name and ids-only metadata, and returns an existing row when
 the same `event_id` arrives twice, while a PostgreSQL trigger refuses every UPDATE and DELETE. `docs/domain-model.md` (schema, constraints, progress algorithm),
@@ -77,7 +80,7 @@ and verified here.
 | T-016 | Permission grants: model, grant/revoke services, enforcement, audit, last-admin protection | `[x]` done on main (commit `17fe415`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45577563757` on `main` green at that commit; `PermissionGrant` migration `0007`, grant/revoke services with audit, `manage/grants/` API with idempotency, `provision_admin`, last-admin guard; 423 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-009 |
 | T-017 | Content services/API: course CRUD, draft clone, sections/lessons, reorder, publish | `[x]` done on main (commit `6cc59c9`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45586286539` on `main` green at that commit; scope-checked services, publish validation and the `manage/` content routes; 444 tests, ruff/format/mypy and G7/G9 clean) | Tech authority | T-011, T-016 | REQ-06; immutability + publish validation |
 | T-018 | Media upload/processing/playback (presigned PUT, stat verify, ffmpeg→HLS, playlists) | `[x]` done on main (commit `22f38a4`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45617783011` on `task/T-018-media` green at that commit; presigned PUT with tenant keys, `stat` verification, the ffmpeg→HLS pipeline with poster and playback playlists; 459 tests including the slow HLS integration, ruff/format/mypy and G7/G9 clean) | Tech authority | T-004, T-017 | REQ-07 end-to-end; slow HLS integration test; upload/HLS policy in `docs/configuration.md` §3–§4 |
-| T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[ ]` | Tech authority | T-017 | REQ-08, sequential-lock matrix |
+| T-019 | Assignments + auto-enroll (`member_changed`) + gating/outline selector | `[x]` done on main (commit `1d5fc56`, merged 2026-11-25 on owner instruction with a fast-forward; CI run `45624655284` on `task/T-019-assignments` green at that commit; one shared expansion selector for preview and write, scoped assignment/roster services, Hub-driven enrolment and cancellation, `lesson_locked` gating in the outline and playback; 37 new tests, 496 at merge, ruff/format/mypy and G7/G9 clean) | Tech authority | T-017 | REQ-08, sequential-lock matrix |
 | T-020 | Heartbeat/anti-skip + completion flow (server frontier, idempotent completion) | `[ ]` | Tech authority | T-019 | REQ-09 matrix; double-submit = one record |
 | T-021 | Notifications + reminders (localized templates, digest, idempotency, beat) | `[ ]` | Tech authority | T-020 | REQ-10, REQ-11 with frozen time; copy per `docs/notifications.md`, schedule per `docs/background-jobs.md` §4 |
 | T-022 | Reports + CSV export (scoped selectors, formula-safe CSV) | `[ ]` | Tech authority | T-020 | REQ-12; query-count + scope tests; columns and CSV per `docs/reports.md` |
@@ -89,6 +92,9 @@ Schema tasks (T-006…T-008, T-012) are specified by `docs/domain-model.md`; end
 (T-011, T-016…T-022) by `docs/api.md`; the task/branch naming rule uses these IDs only.
 
 ## Recently completed
+- 2026-11-25 — T-019 assignments: one expansion selector serves the preview and the write,
+  `member_changed` enrols and cancels without a second path, and the §7.5 lock is enforced by
+  the outline and by playback alike. See LOG.md.
 - 2026-11-25 — T-018 media pipeline: presigned uploads under per-asset tenant keys, `stat`
   verification before an asset leaves `awaiting_upload`, the worker transcode to HLS with a
   poster and playback playlists. See LOG.md.
@@ -188,8 +194,8 @@ Single register: [`docs/decisions.md`](docs/decisions.md). STATUS does not dupli
   that file and must not reappear.
 
 ## Next action
-T-018 (media upload and processing) is complete on `main` and waits for owner review;
-**T-019** (assignments and auto-enrolment) follows it.
+T-019 (assignments, auto-enrolment and gating) is complete on `main` and waits for owner
+review; **T-020** (heartbeat/anti-skip and the completion flow) follows it.
 The H1 documentation alignment is merged to `main`
 (commit `fa75e87`, CI run `45345097262` green) and changed no task status. T-001 stays open until the owner resolves D-025 (storage image) and the CI run on the
 authorized first push is green. Say «كمل» to authorize the agent; the agent completes one
