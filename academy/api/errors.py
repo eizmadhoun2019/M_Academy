@@ -24,6 +24,7 @@ STATUS_BY_CODE = {
     "progress_skip_rejected": status.HTTP_400_BAD_REQUEST,
     "unauthorized": status.HTTP_401_UNAUTHORIZED,
     "account_inactive": status.HTTP_403_FORBIDDEN,
+    "membership_inactive": status.HTTP_403_FORBIDDEN,
     "access_suspended": status.HTTP_403_FORBIDDEN,
     "forbidden": status.HTTP_403_FORBIDDEN,
     "lesson_locked": status.HTTP_403_FORBIDDEN,

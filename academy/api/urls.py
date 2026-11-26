@@ -50,12 +50,13 @@ from academy.api.reports import (
     ReportOverdueView,
     ReportSummaryView,
 )
-from academy.api.views import MeCapabilitiesView
+from academy.api.views import MeCapabilitiesView, MeOrganizationView
 
 app_name = "academy_api"
 
 urlpatterns = [
     path("me/capabilities/", MeCapabilitiesView.as_view(), name="me-capabilities"),
+    path("me/organization/", MeOrganizationView.as_view(), name="me-organization"),
     path("manage/grants/", GrantListCreateView.as_view(), name="manage-grants"),
     path("manage/grants/<uuid:grant_id>/", GrantRevokeView.as_view(), name="manage-grant"),
     path("manage/courses/", CourseListCreateView.as_view(), name="manage-courses"),

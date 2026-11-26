@@ -84,6 +84,10 @@ class Principal:
     department_refs: frozenset[str] = frozenset()
     is_active: bool = True
     suspended: bool = False
+    # T-026 CP3: the account and its single membership the company was derived from. They stay
+    # ``None`` for a Hub claim, which carries only the signed identity (D-032, T-032).
+    user_id: UUID | None = None
+    membership_id: UUID | None = None
 
     @property
     def is_authenticated(self) -> bool:

@@ -53,6 +53,12 @@ class InactiveAccount(AcademyError):
     code = "account_inactive"
 
 
+class MembershipInactive(AcademyError):
+    """A signed-in account with no active company membership (403, ``docs/api.md`` §1)."""
+
+    code = "membership_inactive"
+
+
 class Conflict(AcademyError):
     """The current state refuses the operation (409)."""
 

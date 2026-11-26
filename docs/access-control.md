@@ -3,7 +3,7 @@
 **Status:** Canonical. This file is the only source for permission codes, default roles, scope
 semantics and authorization rules. Charter: REQ-21…REQ-25, REQ-28. Schema:
 `docs/domain-model.md` §2.0. Security controls: `docs/security.md`.
-**Last reviewed:** 2026-11-25
+**Last reviewed:** 2026-11-26
 
 ## 1. Concepts (separate on purpose)
 | Concept | Meaning | Table |
@@ -95,6 +95,11 @@ Rules:
   company from the single active membership; `organization_id` from the client is never
   authority. A platform route may carry an explicit company id under `platform.*` permission and
   audit, not a membership.
+- The standalone session stores the account reference plus the id of the membership it signed in
+  with. The company is re-derived from the membership on every request (T-026 CP3); a
+  session-held membership id that is not the account's own row, or an `organization_id` in the
+  session, is ignored and resolves no identity. A signed-in account with no active membership
+  gets `membership_inactive`, never a synthetic company.
 - Department scope never includes another department's content/assignments/reports just because
   the caller is a manager elsewhere.
 - Objects are re-checked: a department-scoped manager cannot read a company-wide course unless
