@@ -12,9 +12,14 @@ from typing import Any
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import NotAuthenticated
 
-from academy.access.principals import session_without_membership
+from academy.access.principals import session_email_unverified, session_without_membership
 from academy.authorization.core import Access
-from academy.exceptions import AccessSuspended, InactiveAccount, MembershipInactive
+from academy.exceptions import (
+    AccessSuspended,
+    EmailUnverified,
+    InactiveAccount,
+    MembershipInactive,
+)
 
 
 class AcademyAccessAuthentication(BaseAuthentication):
@@ -23,6 +28,9 @@ class AcademyAccessAuthentication(BaseAuthentication):
     def authenticate(self, request: Any) -> tuple[Any, Access]:
         access = getattr(request, "academy_access", None)
         if not isinstance(access, Access):
+            # A signed-in account that has not verified its address cannot reach tenant data.
+            if session_email_unverified(request):
+                raise EmailUnverified("verify the account email before using the API")
             # A signed-in account with no active membership has an identity but no company.
             if session_without_membership(request):
                 raise MembershipInactive("the account has no active company membership")

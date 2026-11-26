@@ -19,6 +19,7 @@ import uuid
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from django.contrib.auth.hashers import check_password, is_password_usable, make_password
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
@@ -103,7 +104,20 @@ class Organization(BaseModel):
 
 
 class User(BaseModel):
-    """One global account; login behaviour arrives with T-027."""
+    """One global account; e-mail and password authenticate it (T-027 CP1).
+
+    The model carries the small interface :func:`django.contrib.auth.authenticate` needs, but
+    the session is Academy's own (``academy.access.principals``), so no ``AUTH_USER_MODEL``
+    swap or ``django.contrib.auth.login`` is involved.
+    """
+
+    USERNAME_FIELD = "email"
+    EMAIL_FIELD = "email"
+    REQUIRED_FIELDS: list[str] = []
+    # Django's auth checks read these; Academy never puts this row behind request.user, but the
+    # model is still a valid ``AUTH_USER_MODEL`` for ``authenticate()`` and password validators.
+    is_anonymous = False
+    is_authenticated = True
 
     class Status(models.TextChoices):
         UNVERIFIED = "unverified", "Unverified"
@@ -157,6 +171,58 @@ class User(BaseModel):
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
+
+    @property
+    def is_active(self) -> bool:
+        """Accounts that may authenticate; suspension/deactivation refuses the credential."""
+        if self.anonymized_at is not None or self.must_set_email:
+            return False
+        return self.status in {User.Status.UNVERIFIED, User.Status.ACTIVE}
+
+    def get_username(self) -> str:
+        return self.email
+
+    def natural_key(self) -> tuple[str]:
+        return (self.email,)
+
+    def has_usable_password(self) -> bool:
+        return is_password_usable(self.password)
+
+    def set_password(self, raw_password: str) -> None:
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password: str) -> bool:
+        return check_password(raw_password, self.password)
+
+
+class AccountToken(BaseModel):
+    """One single-use, hashed account token — email verification or password reset (T-027 CP1).
+
+    Only the SHA-256 digest is stored, so a database read cannot replay a mailed link; the raw
+    token exists once, in the message. ``used_at`` makes consumption a single atomic update.
+    """
+
+    class Purpose(models.TextChoices):
+        VERIFY_EMAIL = "verify_email", "Verify email"
+        RESET_PASSWORD = "reset_password", "Reset password"
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="account_tokens")
+    purpose = models.CharField(max_length=24, choices=Purpose.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(purpose__in=["verify_email", "reset_password"]),
+                name="account_token_purpose_valid",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "purpose"], name="account_token_user_purpose")]
+
+    def __str__(self) -> str:
+        return f"{self.purpose} for {self.user_id}"
 
 
 class Department(TenantModel):

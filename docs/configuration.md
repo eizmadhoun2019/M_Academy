@@ -48,6 +48,7 @@ committed (`docs/operations/environments.md` §7).
 | `ACADEMY_LOGIN_IP_MAX_FAILURES` | `20` | Per IP per window |
 | `ACADEMY_MFA_ENCRYPTION_KEY` | — required in production | 32-byte urlsafe key for TOTP secrets; rotation re-encrypts |
 | `ACADEMY_MFA_REQUIRED_ROLES` | `super_admin,company_admin` | Enforced at login; additional roles may be added |
+| `ACADEMY_PUBLIC_ORIGIN` | empty | Absolute origin used in mailed account links; never the request's `Host` header |
 | `ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS` | `86400` | 24 h |
 | `ACADEMY_PASSWORD_RESET_TTL_SECONDS` | `3600` | 1 h |
 | `ACADEMY_INVITATION_TTL_SECONDS` | `604800` | 7 days |

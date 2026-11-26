@@ -261,6 +261,7 @@ business rules.
 `upload_too_large` 400 · `unsupported_type` 400 · `token_invalid` 400 ·
 `invitation_invalid` 400 · `invalid_credentials` 401 · `mfa_required` 401 · `mfa_invalid` 401 ·
 `unauthorized` 401 · `account_inactive` 403 · `membership_inactive` 403 ·
+`email_unverified` 403 ·
 `organization_suspended` 403 · `forbidden` 403 · `lesson_locked` 403 ·
 `access_suspended` 403 · `platform_access_readonly` 403 · `not_found` 404 ·
 `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·

@@ -35,6 +35,30 @@ class NotFound(AcademyError):
     code = "not_found"
 
 
+class InvalidCredentials(AcademyError):
+    """A sign-in that must not reveal whether the email exists (401)."""
+
+    code = "invalid_credentials"
+
+
+class TokenInvalid(AcademyError):
+    """An unknown, used or expired verification/reset token (400)."""
+
+    code = "token_invalid"
+
+
+class TooManyAttempts(AcademyError):
+    """The documented failure window has locked this email+IP pair (429)."""
+
+    code = "throttled"
+
+
+class EmailUnverified(AcademyError):
+    """A signed-in account must verify its address before tenant access (403)."""
+
+    code = "email_unverified"
+
+
 class Forbidden(AcademyError):
     """The caller lacks the capability or the object scope (403)."""
 
