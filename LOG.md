@@ -21,6 +21,20 @@
 
 ## Entries
 
+### [2026-11-26] — T-027 CP1 merged
+
+- **Type:** Milestone
+- **Status:** Merged
+- **Summary:** The owner approved CP1 and it merged into `main` with `--no-ff` as `6d72a63`
+  after its branch passed CI.
+- **Impact:** Local email/password sign-in, verification and reset are now on `main`. T-027 stays
+  `[~]`; CP2 (invitations, session listing/revocation, MFA) is the next eligible checkpoint and
+  CP3 (dev-login removal, production guard, mail transport) follows it. No other task moved.
+- **Evidence:** Branch `task/T-027-identity-cp1` at `c157739`, CI run 45786234699 success; merge
+  commit `6d72a63`.
+- **Approved by:** Project owner (2026-11-26): «معتمد CP1، ادمج وفق الحوكمة».
+- **References:** T-027 CP1, D-033, D-043, `STATUS.md`, `docs/plan.md` §4 T-027.
+
 ### [2026-11-26] — T-027 CP1: local email/password identity, verification and reset
 
 - **Type:** Change
