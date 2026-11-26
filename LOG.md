@@ -21,6 +21,37 @@
 
 ## Entries
 
+### [2026-11-26] — T-026 CP2 implemented: legacy mapping/backfill and reconciliation
+
+- **Type:** Change
+- **Status:** Implemented; awaiting owner merge approval
+- **Summary:** `manage.py backfill_tenancy` implements `docs/migration-h1.5.md` M2–M3. It reads
+  the owner's `legacy_user_ref,email,display_name` CSV (strict header, unique refs, no shared
+  mailbox), creates one disabled `User` per ref plus exactly one active `Membership`, creates one
+  `Department` per distinct legacy ref, and fills every nullable tenancy link in batches of
+  5,000 rows with one transaction per batch. An account without an address gets a
+  `pending+<uuid>@invalid.masheed` placeholder and `must_set_email`; nothing is guessed. All
+  learner/recipient/department refs must resolve or the run aborts before writing; unknown actor
+  refs stay `NULL` and are reported, and `system` actors stay null. The JSON report reconciles
+  distinct refs against created rows, names every unresolved ref and prints the
+  duplicate-membership/cross-company queries at zero. Role targets and legacy capability names
+  are reported as deferred to T-028, never dropped. Migration 0009 adds `User.legacy_ref`,
+  `User.must_set_email` and `Department.legacy_ref` with their conditional unique constraints,
+  and lets the append-only audit and immutable completion guards accept exactly one fill of
+  their new nullable links from `NULL` (any other edit, and any rewrite of a filled link, is
+  still refused; reversing 0009 restores the strict guards).
+- **Impact:** CP2 is code-complete on its branch; no read path, API, template, permission or UI
+  changed, and no real account was created — the owner's identity CSV is still required. T-026
+  remains `[~]` until CP2 is merged and CP3 lands.
+- **Evidence:** Branch `task/T-026-tenancy-cp2`, head `565a87c`, CI run 45768707833 success;
+  `tests/test_tenancy_backfill.py` (11 tests) plus two constraint tests; local `pytest -q` →
+  619 passed and only D-046 failed; migration 0009 applied → 0008 → 0009 on the dev database;
+  `makemigrations --check`, `ruff check`, `ruff format --check`, `mypy .` (153 files), G7 and G9
+  (40 files) clean; dry run against the empty dev database wrote a complete report with every
+  count at zero.
+- **Approved by:** Project owner (2026-11-26): «كمل» authorized CP2; merge approval still pending.
+- **References:** T-026 CP2, `docs/migration-h1.5.md` M2–M3, D-043, D-046.
+
 ### [2026-11-25] — T-026 CP1 merged; reminder-test debt recorded
 
 - **Type:** Milestone / Decision
