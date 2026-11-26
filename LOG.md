@@ -48,7 +48,7 @@
 - **Evidence:** `tests/test_auth.py` (18 tests: credential-only sessions, enumeration equality,
   case folding, disabled accounts, the five-failure lock, hashed/single-use/expired tokens,
   reset invalidation, weak-password refusal, change-password session semantics, unverified
-  refusal, logout, no-secret log grep); `pytest -q` → 651 passed, 1 failed (D-046 only);
+  refusal, logout, no-secret log grep); `pytest -q` → 653 passed, 1 failed (D-046 only);
   `ruff check`, `ruff format --check`, `mypy .`, `makemigrations --check`, G5, G7 and G9 green.
 - **Approved by:** Project owner (2026-11-26, «كمل» after T-026 closure authorises the next
   checkpoint); the merge itself still needs explicit approval.
