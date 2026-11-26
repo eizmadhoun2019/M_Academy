@@ -21,6 +21,34 @@
 
 ## Entries
 
+### [2026-11-26] — T-026 CP3 merged; legacy-data audit finds nothing to migrate
+
+- **Type:** Milestone / Verification
+- **Status:** Merged; T-026 closure pending owner acceptance of the audit
+- **Summary:** The owner approved CP3 and asked for a documented check of whether real legacy
+  data requires migration. `task/T-026-tenancy-cp3` (`cbd6e52`, CI run 45775863497 success) merged
+  with `--no-ff` as `5ae89f6` (CI run 45776614160 success). The new
+  `manage.py audit_legacy_data [--json]` counts, read-only and without printing any reference
+  value, every tenant table's rows, every nullable backfill link still `NULL`, the distinct
+  `*_ref` values per column and their union, and the duplicate-membership queries. Run against
+  the only existing database (development `academy`, PostgreSQL 16.14) it reported: 1 active
+  `masheed` company, 0 accounts, 0 departments, 0 memberships, 17 tenant tables with **0 rows**,
+  0 rows holding a `NULL` backfill link, 0 distinct legacy references across 21 `*_ref` columns,
+  0 duplicate memberships and 0 accounts in more than one company → `needs_migration: false`.
+  No staging or production database exists yet (T-034 / after the release decision) and no dump
+  or backup is present or tracked, so no other dataset was left unaudited.
+- **Impact:** CP2's command has no input to transform in this database and the identity CSV is
+  not required for it; the reconciliation condition can close on the owner's acceptance. T-026
+  remains `[~]` and T-027/T-033 do not start until then. D-046, the audit append-only guard and
+  the immutable completion guard are unchanged; nothing was written to any database.
+- **Evidence:** Merge `5ae89f6`; branch CI 45775863497 and `main` CI 45776614160 success;
+  `academy/management/commands/audit_legacy_data.py` with `tests/test_tenancy_audit.py` (3 tests,
+  one asserting no reference value is printed); `docs/migration-h1.5.md` §8; `docs/plan.md` §4
+  T-026 criterion 5; `STATUS.md`.
+- **Approved by:** Project owner (2026-11-26): «معتمد CP3، ادمج وفق الحوكمة» with the audit
+  request; acceptance of the audit is still pending.
+- **References:** T-026 CP3, `docs/migration-h1.5.md` M2–M3 and §8, D-043, D-046.
+
 ### [2026-11-26] — T-026 CP3 implemented: company context from the single membership
 
 - **Type:** Change

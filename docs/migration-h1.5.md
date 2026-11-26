@@ -130,3 +130,42 @@ No H2 features, no billing, no company self-registration, no Hub activation, no 
 partitioning or RLS during this migration. Multi-company user moves and multiple memberships
 are out of scope (D-043); enabling them later requires a new decision and migration. Those items
 have their own trigger and decision.
+
+## 8. Reconciliation audit (2026-11-26)
+
+The owner kept CP2's real-data mapping/reconciliation as an acceptance condition. This audit
+answers it with counts only: no name, e-mail, reference value or other row content is selected
+for the report, and nothing is written.
+
+**Databases in scope.** The workspace holds exactly one database: the development PostgreSQL
+16.14 instance of `docker-compose.yml` (container `m-academy-db-1`, database `academy`, reached
+by the application as the compose service `db`). Staging and production do not exist yet —
+`docs/operations/environments.md` §1 creates staging in T-034 and production only after the
+release decision — and no dump, backup or snapshot is present in the workspace or tracked in
+the repository. No other dataset exists that this audit could have missed.
+
+**Method.** `python manage.py audit_legacy_data [--json]` counts, read-only:
+
+- every tenant table's rows, and every nullable backfill link (§4 M3) still `NULL`;
+- distinct non-empty values per `*_ref` column and their union — only the numbers are printed;
+- the duplicate-membership queries the cutover must see at zero (D-043).
+
+**Result** (2026-11-26, database `academy`):
+
+| Group | Value |
+|---|---|
+| Organizations | 1 (`masheed`, `active`) |
+| Accounts / with a legacy ref / `must_set_email` | 0 / 0 / 0 |
+| Departments / with a legacy ref | 0 / 0 |
+| Memberships / active | 0 / 0 |
+| Tenant tables | 17 audited, **0 rows in total** |
+| Rows holding a `NULL` backfill link | 0 |
+| Distinct legacy references (union of 21 `*_ref` columns) | 0 |
+| Accounts with more than one membership / in more than one company | 0 / 0 |
+| Verdict | `needs_migration: false` |
+
+**Conclusion.** The only database contains no legacy row, so nothing has to be mapped: CP2's
+command has no input to transform and the owner's identity CSV is not required for it. The
+reconciliation condition can be closed on the owner's acceptance of this evidence. The same
+command runs against a restored production dump before cutover (§6 step 3); it prints counts
+only, so it is safe to run early and its output is the proof that the mapping is complete.

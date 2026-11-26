@@ -45,7 +45,7 @@
 | **T-023** | Learner + management web UI (old scope) | `[–]` **superseded by T-031** | — | — |
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
-| **T-026** | Tenancy and account foundation | `[~]` CP1 merged `a5373c0`; CP2 merged `e3f9715`; CP3 on branch `a6264ba` (CI 45775460129 success), awaiting merge; real-data reconciliation open | T-025 | GATE-1 |
+| **T-026** | Tenancy and account foundation | `[~]` CP1 `a5373c0`, CP2 `e3f9715`, CP3 `5ae89f6` merged; legacy-data audit 2026-11-26 = zero rows in the only database; closure pending owner acceptance | T-025 | GATE-1 |
 | **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
@@ -141,9 +141,11 @@ selects a seeded **user** (its membership supplies the company), never a company
    reports, media keys or audit (isolation suite expanded).
 5. Legacy org id and user refs migrate idempotently; duplicate memberships are reported and the
    migration aborts for manual resolution; counts reconcile; training/progress rows remain
-   attached to the same learner. CP2 delivers this in code (merged `e3f9715`); the reconciliation
-   against real data stays an **open acceptance condition** until the owner's identity file
-   arrives or the absence of rows requiring migration is proven.
+   attached to the same learner. CP2 delivers this in code (merged `e3f9715`). The reconciliation
+   audit of 2026-11-26 (`manage.py audit_legacy_data`, `docs/migration-h1.5.md` §8) found **zero
+   legacy rows** in the only existing database, so the absence of rows requiring migration is
+   proven for it; the condition closes when the owner accepts that evidence. Any database
+   provisioned later is audited the same way before cutover.
 6. Masheed exists once as an active company; its departments mirror the legacy department list.
 7. A second membership insert for any user fails at the database; the service maps it to
    `already_member`; a platform-only account has no membership and no synthetic company.
