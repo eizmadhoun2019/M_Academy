@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-26 (T-026 CP2 merged; real-data reconciliation is an open acceptance condition)
-**Updated by:** AI agent (T-026 CP2 merge), under the owner's delegation
+**Last updated:** 2026-11-26 (T-026 CP3 company context implemented on its branch, CI green)
+**Updated by:** AI agent (T-026 CP3), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is merged as `a5373c0`; CP2 (mapping/backfill and reconciliation report) is merged as `e3f9715` (branch `0ec430e`, CI 45769212077; merge CI run 45773205917), with the real-data mapping and reconciliation kept open as an acceptance condition until the owner's identity file arrives or the absence of rows requiring migration is proven; CP3 not started
+**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is merged as `a5373c0`; CP2 (mapping/backfill and reconciliation report) is merged as `e3f9715` (branch `0ec430e`, CI 45769212077; merge CI run 45773205917), with the real-data mapping and reconciliation kept open as an acceptance condition until the owner's identity file arrives or the absence of rows requiring migration is proven; CP3 (company context from the single membership, `/me/organization`, expanded isolation) is implemented on `task/T-026-tenancy-cp3` (head `a6264ba`, CI 45775460129 success) and awaits owner merge approval
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -34,14 +34,17 @@ API or UI change. CP2 adds `manage.py backfill_tenancy` (identity CSV → accoun
 each, departments per legacy ref, batched FK backfill) with an abort-on-unresolved preflight and
 a JSON reconciliation report, plus the `legacy_ref`/`must_set_email` columns; it creates no real
 account until the owner supplies the identity file, so the real-data mapping and reconciliation
-stay an open acceptance condition. CP3 (company context and isolation) remains open.
+stay an open acceptance condition. CP3 derives the company from the account's single membership
+(the session cannot name or switch it), adds `/me/organization` and the `membership_inactive`
+refusal, makes the local sign-in select a seeded account, and expands the isolation suite; it is
+implemented on its branch and awaits merge.
 
 ## Active work
 | ID | Task | Status | Owner | Depends on | Acceptance / evidence |
 |---|---|---|---|---|---|
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
 | T-035 | Official UI/UX reference adoption and repository hygiene | `[x]` — merged in `47638b0`; CI success 45694757748; owner approved 2026-11-25 | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; restore rehearsal 14/14; `check_docs` green |
-| T-026 | Tenancy and account foundation | `[~]` — CP1 merged `a5373c0` (CI 45700454330); CP2 merged `e3f9715` (CI 45773205917), real-data reconciliation open; CP3 not started | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
+| T-026 | Tenancy and account foundation | `[~]` — CP1 merged `a5373c0` (CI 45700454330); CP2 merged `e3f9715` (CI 45773205917); CP3 on branch head `a6264ba` (CI 45775460129 success), awaiting merge; real-data reconciliation open | AI agent | T-025 | `docs/plan.md` §4 T-026, CP1–CP3 |
 | T-033 | Hub quarantine | `[ ]` after T-026 closes | AI agent | T-026 | `docs/plan.md` §4 T-033; never before T-026 `[x]` |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
@@ -53,6 +56,20 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
+- 2026-11-26 — **T-026 CP3 implemented (branch).** The company is now derived from the caller's
+  single membership on every request: `academy/access/tenancy.py` resolves the account by its
+  legacy reference and requires one active membership, and a `membership_id` stored in the session
+  is only cross-checked against that row — a tampered or stale value resolves nothing instead of
+  switching tenants. `Principal` carries `user_id`/`membership_id`; `GET /me/organization/`
+  returns the company and membership from that row, ignores a company in the query string or a
+  header, and answers 403 `membership_inactive` for an account with no active membership (HTML
+  shows the access-denied page). The development sign-in now selects a seeded account with an
+  active membership and stores only its reference and membership id; the department comes from
+  the membership. `test_company_context.py` (13 tests) proves derivation, tampering, two-company
+  separation and a cross-company course as 404. `pytest -q` → 632 passed, 1 failed (D-046 only,
+  unchanged and still enabled); `ruff`, `mypy` (155 files), `makemigrations --check`, G5, G7 and
+  G9 (40 files) clean. Branch `task/T-026-tenancy-cp3`, head `a6264ba`, CI run 45775460129
+  success. **Awaiting owner merge approval.**
 - 2026-11-26 — **T-026 CP2 merged.** `manage.py backfill_tenancy` maps the owner's
   identity CSV to disabled accounts with exactly one active membership, creates one department
   per legacy ref, and fills every nullable tenancy link in 5,000-row batches. A strict preflight
@@ -144,10 +161,11 @@ Single register: [`docs/decisions.md`](docs/decisions.md). This file does not du
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-**T-026 CP2 is merged** as `e3f9715` (CI run 45773205917); the owner approved the implementation and
-deliberately kept the real-data mapping/reconciliation open as an acceptance condition. **T-026
-CP3** (server company context from the single membership, `/me/organization`, isolation suite) is
-the next checkpoint and has **not** started. Real accounts still require the legacy identity CSV
+**T-026 CP3 awaits the owner's merge approval** (branch `task/T-026-tenancy-cp3`, head `a6264ba`,
+CI run 45775460129 success); merging is the owner's decision. After it lands, T-026 still needs the
+real-data mapping/reconciliation that the owner deliberately kept open, so it stays `[~]` until
+that condition or a written statement that no rows need migrating is recorded. Real accounts still
+require the legacy identity CSV
 (or a written statement that no rows need migration): the command's dry run names every missing
 ref and writes nothing. T-033 remains `[ ]` and may start only after T-026 is `[x]`, in parallel
 with T-027/T-028; T-026 CP1/CP2 alone are not sufficient. D-046 stays open, enabled and unweakened
