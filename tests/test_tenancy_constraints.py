@@ -145,6 +145,32 @@ def test_tenant_row_requires_an_existing_company() -> None:
 
 
 @pytest.mark.django_db
+def test_department_legacy_ref_is_unique_per_company(org_id: UUID, other_org_id: UUID) -> None:
+    Department.objects.create(organization_id=org_id, name_ar="A", legacy_ref="dep-1")
+    Department.objects.create(organization_id=org_id, name_ar="B")
+    Department.objects.create(organization_id=org_id, name_ar="C")
+    Department.objects.create(organization_id=other_org_id, name_ar="A", legacy_ref="dep-1")
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Department.objects.create(organization_id=org_id, name_ar="D", legacy_ref="dep-1")
+
+
+@pytest.mark.django_db
+def test_user_legacy_ref_is_unique_and_optional() -> None:
+    first = make_user("one@example.com")
+    first.legacy_ref = "u-1"
+    first.save()
+    assert first.must_set_email is False
+    make_user("two@example.com")
+    make_user("three@example.com")
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        duplicate = make_user("four@example.com")
+        duplicate.legacy_ref = "u-1"
+        duplicate.save()
+
+
+@pytest.mark.django_db
 def test_membership_removal_keeps_history(org_id: UUID) -> None:
     user = make_user()
     membership = make_membership(org_id, user)

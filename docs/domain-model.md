@@ -88,8 +88,11 @@ Indexes: `UNIQUE (slug)`, `(status)`. No hard delete while any tenant row exists
 | `last_login_at` | timestamptz | yes | `NULL` | Server clock |
 | `password_changed_at` | timestamptz | yes | `NULL` | Used to revoke older sessions |
 | `anonymized_at` | timestamptz | yes | `NULL` | PII replaced; row kept for history |
+| `legacy_ref` | varchar(64) | yes | `NULL` | Migration only (T-026 CP2): the imported `user_ref`; `UNIQUE` when set; dropped at contract (M6) |
+| `must_set_email` | boolean | no | `false` | Migration only (T-026 CP2): an imported account with no address keeps a non-deliverable placeholder and cannot sign in until T-027 sets one |
 
-Constraints: `CHECK (status IN (...))`, unique lower(email) (citext). Index `(status)`.
+Constraints: `CHECK (status IN (...))`, unique lower(email) (citext), unique `legacy_ref` where
+not null. Index `(status)`.
 `email` is replaced with `anon+<uuid>@invalid` on anonymization; `display_name` with
 `Deleted user`. One account holds at most one membership; the account is never company-scoped.
 A platform-only account (`PlatformRoleAssignment`) may have **zero** memberships and needs no
@@ -122,8 +125,10 @@ both the API and a direct duplicate insert. Platform administrators have no row 
 | `parent_id` | uuid FK → Department | yes | `NULL` | Composite `(organization_id, parent_id)`; no cycles (service) |
 | `status` | varchar(16) | no | `active` | `active \| archived` |
 | `position` | integer | no | `0` | Sibling display order |
+| `legacy_ref` | varchar(64) | yes | `NULL` | Migration only (T-026 CP2): the imported `department_ref`, `UNIQUE` per company when set; dropped at contract (M6) |
 
 Constraints: `UNIQUE (organization_id, id)`, `UNIQUE (organization_id, parent_id, name_ar)`,
+`UNIQUE (organization_id, legacy_ref)` where `legacy_ref` is not null,
 `CHECK (parent_id <> id)`. Index `(organization_id, status)`.
 Depth limit 5 (service). Archiving requires no active memberships or assignments in the subtree.
 

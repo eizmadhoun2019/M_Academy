@@ -113,6 +113,12 @@ class User(BaseModel):
 
     email = models.EmailField(max_length=254)
     display_name = models.CharField(max_length=150)
+    # T-026 CP2: the opaque Hub/dev reference this account was imported from. Migration-only:
+    # dropped at contract (M6) once no legacy column is read.
+    legacy_ref = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001 - NULL is semantic: the account was created locally
+    # T-026 CP2: an imported account with no e-mail keeps a non-deliverable placeholder address
+    # and cannot sign in until a real one is set (docs/migration-h1.5.md §3).
+    must_set_email = models.BooleanField(default=False)
     # Django's password column; T-027 replaces the empty placeholder with an unusable hash.
     password = models.CharField(max_length=128, blank=True, default="")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNVERIFIED)
@@ -137,6 +143,11 @@ class User(BaseModel):
                 condition=models.Q(preferred_language__in=["ar", "en"]),
                 name="user_language_valid",
             ),
+            models.UniqueConstraint(
+                fields=["legacy_ref"],
+                condition=models.Q(legacy_ref__isnull=False),
+                name="user_legacy_ref_unique",
+            ),
         ]
         indexes = [models.Index(fields=["status"], name="user_status")]
 
@@ -157,6 +168,9 @@ class Department(TenantModel):
 
     name_ar = models.CharField(max_length=200)
     name_en = models.CharField(max_length=200, null=True, blank=True)  # noqa: DJ001 - NULL is semantic: "not translated", never ""
+    # T-026 CP2: the opaque ``department_ref`` this node was imported from, unique per company
+    # so the backfill can resolve a ref idempotently. Migration-only (dropped at contract, M6).
+    legacy_ref = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001 - NULL is semantic: a locally created department has no legacy ref
     parent = models.ForeignKey(
         "self",
         on_delete=models.PROTECT,
@@ -189,6 +203,11 @@ class Department(TenantModel):
             models.CheckConstraint(
                 condition=models.Q(name_ar__regex=NOT_BLANK),
                 name="department_name_not_blank",
+            ),
+            models.UniqueConstraint(
+                fields=["organization_id", "legacy_ref"],
+                condition=models.Q(legacy_ref__isnull=False),
+                name="department_legacy_ref_unique",
             ),
         ]
         indexes = [models.Index(fields=["organization_id", "status"], name="department_org_status")]
