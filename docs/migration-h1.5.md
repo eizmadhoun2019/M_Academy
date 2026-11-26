@@ -48,7 +48,7 @@ their rows and primary keys.
 |---|---|---|
 | `ACADEMY_ORGANIZATION_ID` | `Organization.id` | Seed one row with this UUID, name `ACADEMY_COMPANY_NAME` (default “Masheed Academy”), slug `masheed`, `status='active'`, `timezone=ACADEMY_BUSINESS_TZ`, `default_language=ACADEMY_DEFAULT_LANGUAGE`; re-running is a no-op. |
 | `department_ref` / `owner_department_ref` / `target_ref` | `Department.id` | Create one Department per distinct ref in the seeded company; keep `legacy_ref` unique per company for lookup; re-parent from the existing hierarchy if present, otherwise flat. Unresolved refs are reported and block cutover. |
-| `user_ref` (progress, enrollment, notification, grants) | `User.id` + `Membership.id` | Create a disabled account from the owner's `legacy_user_ref,email,display_name` CSV; without an email, generate `pending+<uuid>@invalid.masheed` and `must_set_email=true` (non-deliverable, cannot sign in). Create one active Membership in the seeded company. |
+| `user_ref` (progress, enrollment, notification, grants) | `User.id` + `Membership.id` | Create a disabled account from the owner's `legacy_user_ref,email,display_name` CSV; without an email, generate `pending+<uuid>@invalid.masheed` and `must_set_email=true` (non-deliverable, cannot sign in). Create one active Membership in the seeded company. `User.legacy_ref` (unique when set) and `Department.legacy_ref` (unique per company) keep the mapping without a permanent mapping table. |
 | `actor_ref` / `recipient_ref` / `manager_ref` | `User`/`Membership` | Same mapping; `system` stays null with `actor_type='system'`. Unknown values keep the legacy text in `legacy_actor_ref` for audit reconstruction; they never become a real account. |
 | `PermissionGrant(user_ref, capability)` | `RoleAssignment`/`PermissionGrant(membership)` | Map legacy capability strings through `docs/access-control.md` §5; a capability with no H1.5 equivalent is listed in the migration report and dropped only with owner sign-off. |
 | `MediaAsset.organization_id`, storage key | `Organization.id` | Keys are already `org/<uuid>/...`; verify prefix matches the new company id; no object copy needed. |
@@ -66,13 +66,18 @@ commit and image digest.
 columns. No read path changes yet.
 
 **M2 — seed and map.** Create the company, departments and accounts from the CSV. Write a
-mapping table (report, not a permanent model) of `legacy_ref → new id`. Reconcile counts:
+mapping table (report, not a permanent model) of `legacy_ref → new id`.
+`manage.py backfill_tenancy --identities <csv> --dry-run --report <json>` validates and reports;
+the same command without `--dry-run` writes, and a second run changes nothing. Reconcile counts:
 distinct legacy user refs = accounts created; distinct department refs = departments created;
 every enrollment/progress row has a resolvable learner. Assert one membership per account and
 zero accounts with memberships in two companies; any violation aborts with a report.
 
 **M3 — backfill.** In batches (5,000 rows, one transaction per batch): set `organization_id`,
-`user_id`, `membership_id`, `department_id`. Abort on any unresolved row; never guess.
+`user_id`, `membership_id`, `department_id`. Abort on any unresolved row; never guess. The
+append-only audit ledger and the immutable completion record accept exactly one fill of their new
+nullable links from `NULL` (migration 0009 replaces both guards); any other edit, and any rewrite
+of a filled link, is still refused, and reversing 0009 restores the strict guards.
 
 **M4 — constraints and reads.** Make columns non-null where the model requires it; add composite
 FKs; switch services/selectors/API/permissions to the new fields; keep legacy columns read-only.
