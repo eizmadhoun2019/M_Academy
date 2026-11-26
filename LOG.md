@@ -21,6 +21,40 @@
 
 ## Entries
 
+### [2026-11-26] — T-027 CP1: local email/password identity, verification and reset
+
+- **Type:** Change
+- **Status:** Implemented (branch `task/T-027-identity-cp1`; merge awaits owner approval)
+- **Summary:** Local accounts now authenticate with email + password through
+  `academy.access.backends.EmailPasswordBackend`, the only configured backend. The email is
+  matched case-insensitively, an unknown address pays one dummy hash verification, and a disabled
+  or unverified-import account is refused with the same generic `invalid_credentials` response.
+  Five failures per email+IP within `ACADEMY_LOGIN_WINDOW_SECONDS` lock the pair (429), every
+  failure and lock is logged with a truncated address and no email, and a success clears the
+  counter. Sign-in rotates the session key and stores only the account UUID, a password
+  fingerprint and default roles; a password reset/change therefore invalidates other sessions
+  without a second registry. `AccountToken` (migration `0010`) stores only a SHA-256 digest with
+  an expiry and a single-use claim; issuing a new token of the same purpose retires the previous
+  one. Email verification activates the account and `email_unverified` (403) refuses tenant data
+  until then. Password policy is Django's four validators at `ACADEMY_PASSWORD_MIN_LENGTH=12`;
+  Argon2 is first in `PASSWORD_HASHERS` with PBKDF2 retained for older hashes (D-033). Seven
+  `/api/v1/academy/auth/` endpoints follow `docs/api.md` §3. The development stub is unchanged
+  and still gated by `DEVELOPMENT_LOGIN`; its removal is CP3.
+- **Impact:** The session can now identify a real account in standalone mode; `Principal` derives
+  the company from that account's single membership and refuses an unverified address. Grants are
+  still resolved from `user_ref`, which keeps the T-028 work unchanged. No existing test was
+  weakened: the two model-classification tests now name `AccountToken` as the third global table
+  (`docs/domain-model.md` §1.1/§2.0.10). D-046 is untouched and still the only local failure.
+- **Evidence:** `tests/test_auth.py` (18 tests: credential-only sessions, enumeration equality,
+  case folding, disabled accounts, the five-failure lock, hashed/single-use/expired tokens,
+  reset invalidation, weak-password refusal, change-password session semantics, unverified
+  refusal, logout, no-secret log grep); `pytest -q` → 651 passed, 1 failed (D-046 only);
+  `ruff check`, `ruff format --check`, `mypy .`, `makemigrations --check`, G5, G7 and G9 green.
+- **Approved by:** Project owner (2026-11-26, «كمل» after T-026 closure authorises the next
+  checkpoint); the merge itself still needs explicit approval.
+- **References:** T-027 CP1, REQ-22, D-033, D-037, D-043, `docs/security.md` §2–§3, `docs/api.md`
+  §3/§14, `docs/domain-model.md` §2.0.2/§2.0.10.
+
 ### [2026-11-26] — T-026 closed: reconciliation condition accepted, staging re-audit required
 
 - **Type:** Milestone / Decision

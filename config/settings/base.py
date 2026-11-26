@@ -63,6 +63,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 APPEND_SLASH = False
 
+# D-033: the Academy account is the Django auth user for typing, backends and future login().
+AUTH_USER_MODEL = "academy.User"
+# ``auth.W004`` only recognises a field-level ``unique=True``; the email is unique through the
+# case-insensitive constraint ``user_email_unique_ci`` (docs/domain-model.md §2.0.2), which is
+# stricter for login purposes, so the warning is acknowledged rather than fixed by dropping it.
+SILENCED_SYSTEM_CHECKS = ["auth.W004"]
+
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
@@ -232,6 +239,7 @@ CELERY_BEAT_SCHEDULE = {
 
 # --- Email (Hub mail API arrives with T-015) ---------------------------------
 EMAIL_BACKEND = env("ACADEMY_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+DEFAULT_FROM_EMAIL = env("ACADEMY_DEFAULT_FROM_EMAIL", "no-reply@academy.invalid")
 EMAIL_HOST = env("ACADEMY_EMAIL_HOST", "mailhog")
 EMAIL_PORT = env_int("ACADEMY_EMAIL_PORT", 1025)
 EMAIL_USE_TLS = env_bool("ACADEMY_EMAIL_USE_TLS", False)
@@ -254,6 +262,30 @@ ACADEMY_ORGANIZATION_ID = env("ACADEMY_ORGANIZATION_ID", "25498ed9-13b1-4f10-829
 # T-026: display name of the seeded company (docs/migration-h1.5.md §3).
 ACADEMY_COMPANY_NAME = env("ACADEMY_COMPANY_NAME", "Masheed Academy")
 DEVELOPMENT_LOGIN = env_bool("ACADEMY_DEVELOPMENT_LOGIN", False)
+
+# --- Local accounts (T-027, docs/security.md §2) -----------------------------
+AUTHENTICATION_BACKENDS = ["academy.access.backends.EmailPasswordBackend"]
+# D-033: Argon2 first; PBKDF2 stays for hashes created before this release.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": env_int("ACADEMY_PASSWORD_MIN_LENGTH", 12)},
+    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS = env_int("ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS", 86400)
+ACADEMY_PASSWORD_RESET_TTL_SECONDS = env_int("ACADEMY_PASSWORD_RESET_TTL_SECONDS", 3600)
+ACADEMY_LOGIN_MAX_FAILURES = env_int("ACADEMY_LOGIN_MAX_FAILURES", 5)
+ACADEMY_LOGIN_IP_MAX_FAILURES = env_int("ACADEMY_LOGIN_IP_MAX_FAILURES", 20)
+ACADEMY_LOGIN_WINDOW_SECONDS = env_int("ACADEMY_LOGIN_WINDOW_SECONDS", 900)
+# Absolute origin account links are built from (never the request's Host header).
+ACADEMY_PUBLIC_ORIGIN = env("ACADEMY_PUBLIC_ORIGIN", "")
 THROTTLES_ENABLED = env_bool("ACADEMY_THROTTLES_ENABLED", True)
 THROTTLE_RATES = {
     "anon": "20/min",

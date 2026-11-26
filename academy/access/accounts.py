@@ -1,0 +1,250 @@
+"""Account lifecycle: sign-in, email verification and password reset — T-027 CP1.
+
+Everything the auth endpoints do lives here, so the rules are testable without HTTP: the
+email+IP failure window, the enumeration-safe responses, hashed single-use tokens, password
+validation and the security log line. No secret, token or email address is written to a log or
+to the session; a log line carries the account UUID and a truncated client address.
+"""
+
+from __future__ import annotations
+
+import ipaddress
+import logging
+from typing import Any, cast
+
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils import timezone
+
+from academy.access.principals import SESSION_KEY, session_auth_hash
+from academy.access.tokens import consume, issue
+from academy.exceptions import (
+    DomainValidationError,
+    InvalidCredentials,
+    TokenInvalid,
+    TooManyAttempts,
+)
+from academy.models import AccountToken, User
+
+logger = logging.getLogger("academy.security")
+
+_PAIR_KEY = "academy:loginfail:pair:{email}:{ip}"
+_IP_KEY = "academy:loginfail:ip:{ip}"
+
+#: Longest message a mail template receives; the account's language is CP3's delivery work.
+_MAIL_SUBJECTS = {
+    "verification": "Activate your Masheed Academy account",
+    "password_reset": "Reset your Masheed Academy password",
+}
+
+
+def client_ip(request: Any) -> str:
+    if request is None:
+        return "unknown"
+    meta = getattr(request, "META", {})
+    return str(meta.get("REMOTE_ADDR") or "unknown")
+
+
+def truncated_ip(value: str) -> str:
+    """The address form that may appear in logs: a /24 (v4) or /48 (v6) network."""
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError:
+        return "unknown"
+    prefix = 24 if address.version == 4 else 48
+    network = ipaddress.ip_network(f"{address}/{prefix}", strict=False)
+    return str(network.network_address)
+
+
+def _guard_enabled() -> bool:
+    return bool(getattr(settings, "THROTTLES_ENABLED", True))
+
+
+def _increment(key: str, window: int) -> int:
+    cache.add(key, 0, timeout=window)
+    try:
+        return int(cast(int, cache.incr(key)))
+    except ValueError:  # the key expired between ``add`` and ``incr``
+        cache.set(key, 1, timeout=window)
+        return 1
+
+
+def login_locked(request: Any, email: str) -> bool:
+    """Five failures for one email+IP, or the per-IP ceiling, lock the window."""
+    if not _guard_enabled():
+        return False
+    address = client_ip(request)
+    pair = int(cache.get(_PAIR_KEY.format(email=email.strip().lower(), ip=address)) or 0)
+    per_ip = int(cache.get(_IP_KEY.format(ip=address)) or 0)
+    return pair >= int(getattr(settings, "ACADEMY_LOGIN_MAX_FAILURES", 5)) or per_ip >= int(
+        getattr(settings, "ACADEMY_LOGIN_IP_MAX_FAILURES", 20)
+    )
+
+
+def record_login_failure(request: Any, email: str) -> None:
+    if not _guard_enabled():
+        return
+    window = int(getattr(settings, "ACADEMY_LOGIN_WINDOW_SECONDS", 900))
+    address = client_ip(request)
+    _increment(_PAIR_KEY.format(email=email.strip().lower(), ip=address), window)
+    _increment(_IP_KEY.format(ip=address), window)
+
+
+def clear_login_failures(request: Any, email: str) -> None:
+    cache.delete(_PAIR_KEY.format(email=email.strip().lower(), ip=client_ip(request)))
+
+
+def sign_in(request: Any, user: User) -> None:
+    """Rotate the session key and store the account, never a capability or a secret."""
+    request.session.cycle_key()
+    request.session[SESSION_KEY] = {
+        "user_id": str(user.pk),
+        "auth_hash": session_auth_hash(user),
+        "roles": ["employee"],
+    }
+    user.last_login_at = timezone.now()
+    user.save(update_fields=["last_login_at", "updated_at"])
+
+
+def authenticate_credentials(request: Any, email: str, password: str) -> User:
+    """Authenticate or fail with one generic error; each failure feeds the lock window."""
+    address = email.strip().lower()
+    if login_locked(request, address):
+        logger.warning(
+            "auth.login_locked",
+            extra={"event": "auth.login_locked", "ip": truncated_ip(client_ip(request))},
+        )
+        raise TooManyAttempts("too many failed sign-in attempts; try again later")
+
+    # ``authenticate`` dispatches to the configured backend, whose return type the stubs cannot
+    # infer from settings; the backend above is the only one configured and returns ``User``.
+    user = cast(User | None, authenticate(request, username=address, password=password))
+    if user is None:
+        record_login_failure(request, address)
+        logger.warning(
+            "auth.login_failed",
+            extra={"event": "auth.login_failed", "ip": truncated_ip(client_ip(request))},
+        )
+        raise InvalidCredentials("invalid email or password")
+
+    clear_login_failures(request, address)
+    sign_in(request, user)
+    logger.info(
+        "auth.login_succeeded",
+        extra={"event": "auth.login_succeeded", "user_id": str(user.pk)},
+    )
+    return user
+
+
+def verification_token(user: User) -> str:
+    """A fresh verification token; issuing one retires the account's previous token."""
+    return issue(
+        user,
+        AccountToken.Purpose.VERIFY_EMAIL,
+        ttl_seconds=int(getattr(settings, "ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS", 86400)),
+    )
+
+
+def confirm_email(raw: str) -> User:
+    """Consume a verification token once and activate the account."""
+    row = consume(raw, AccountToken.Purpose.VERIFY_EMAIL)
+    if row is None:
+        raise TokenInvalid("the verification link is invalid or has expired")
+    user = row.user
+    fields: list[str] = []
+    if not user.is_email_verified:
+        user.is_email_verified = True
+        fields.append("is_email_verified")
+    if user.status == User.Status.UNVERIFIED:
+        user.status = User.Status.ACTIVE
+        fields.append("status")
+    if fields:
+        user.save(update_fields=[*fields, "updated_at"])
+    logger.info(
+        "auth.email_verified",
+        extra={"event": "auth.email_verified", "user_id": str(user.pk)},
+    )
+    return user
+
+
+def password_reset_token(email: str) -> tuple[User, str] | None:
+    """A reset token for an eligible account; ``None`` answers exactly like an unknown email."""
+    user = User.objects.filter(email__iexact=email.strip()).first()
+    if user is None or not user.is_active or not user.has_usable_password():
+        return None
+    raw = issue(
+        user,
+        AccountToken.Purpose.RESET_PASSWORD,
+        ttl_seconds=int(getattr(settings, "ACADEMY_PASSWORD_RESET_TTL_SECONDS", 3600)),
+    )
+    return user, raw
+
+
+def reset_password(raw: str, new_password: str) -> User:
+    """Set a new password from a single-use token; every other session stops resolving."""
+    row = consume(raw, AccountToken.Purpose.RESET_PASSWORD)
+    if row is None:
+        raise TokenInvalid("the reset link is invalid or has expired")
+    user = row.user
+    _validate_password(user, new_password)
+    user.set_password(new_password)
+    user.password_changed_at = timezone.now()
+    user.save(update_fields=["password", "password_changed_at", "updated_at"])
+    logger.info(
+        "auth.password_reset", extra={"event": "auth.password_reset", "user_id": str(user.pk)}
+    )
+    return user
+
+
+def change_password(user: User, current_password: str, new_password: str) -> None:
+    """Change a known password; the current one is required and re-verified."""
+    if not user.check_password(current_password):
+        raise DomainValidationError(
+            "the current password is not correct", fields={"current_password": ["incorrect"]}
+        )
+    _validate_password(user, new_password)
+    user.set_password(new_password)
+    user.password_changed_at = timezone.now()
+    user.save(update_fields=["password", "password_changed_at", "updated_at"])
+    logger.info(
+        "auth.password_changed",
+        extra={"event": "auth.password_changed", "user_id": str(user.pk)},
+    )
+
+
+def send_account_mail(user: User, template: str, link: str, ttl_seconds: int) -> None:
+    """Render and send one account mail; a transport failure is logged, never raised."""
+    body = render_to_string(
+        f"academy/mail/{template}.txt",
+        {
+            "display_name": user.display_name,
+            "link": link,
+            "hours": max(1, ttl_seconds // 3600),
+        },
+    )
+    try:
+        send_mail(
+            _MAIL_SUBJECTS[template],
+            body,
+            str(getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@masheed.local")),
+            [user.email],
+        )
+    except Exception:
+        logger.exception(
+            "auth.mail_failed",
+            extra={"event": "auth.mail_failed", "template": template},
+        )
+
+
+def _validate_password(user: User, password: str) -> None:
+    try:
+        validate_password(password, cast(Any, user))
+    except ValidationError as error:
+        raise DomainValidationError(
+            "the password does not meet the policy", fields={"password": list(error.messages)}
+        ) from error

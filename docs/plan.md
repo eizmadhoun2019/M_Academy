@@ -46,7 +46,7 @@
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
 | **T-026** | Tenancy and account foundation | `[x]` CP1 `a5373c0`, CP2 `e3f9715`, CP3 `5ae89f6`; zero-row audit accepted by the owner 2026-11-26; staging re-audit before cutover | T-025 | GATE-1 |
-| **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
+| **T-027** | Local identity and account lifecycle | `[~]` CP1 implemented on `task/T-027-identity-cp1` (email/password, verification, reset, 18 tests); CP2/CP3 pending | T-026 `[x]` | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
 | **T-030** | Platform and company administration consoles | `[ ]` | T-029 | GATE-1 |

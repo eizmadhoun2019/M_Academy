@@ -14,6 +14,15 @@ from academy.api.assignments import (
     MyCoursesView,
     MyEnrollmentsView,
 )
+from academy.api.auth import (
+    EmailVerifyConfirmView,
+    EmailVerifyRequestView,
+    LoginView,
+    LogoutView,
+    PasswordChangeView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+)
 from academy.api.content import (
     CourseArchiveView,
     CourseCloneView,
@@ -55,6 +64,33 @@ from academy.api.views import MeCapabilitiesView, MeOrganizationView
 app_name = "academy_api"
 
 urlpatterns = [
+    path("auth/login/", LoginView.as_view(), name="auth-login"),
+    path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    path(
+        "auth/password/reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="auth-password-reset-request",
+    ),
+    path(
+        "auth/password/reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="auth-password-reset-confirm",
+    ),
+    path(
+        "auth/password/change/",
+        PasswordChangeView.as_view(),
+        name="auth-password-change",
+    ),
+    path(
+        "auth/email/verify/request/",
+        EmailVerifyRequestView.as_view(),
+        name="auth-email-verify-request",
+    ),
+    path(
+        "auth/email/verify/confirm/",
+        EmailVerifyConfirmView.as_view(),
+        name="auth-email-verify-confirm",
+    ),
     path("me/capabilities/", MeCapabilitiesView.as_view(), name="me-capabilities"),
     path("me/organization/", MeOrganizationView.as_view(), name="me-organization"),
     path("manage/grants/", GrantListCreateView.as_view(), name="manage-grants"),
