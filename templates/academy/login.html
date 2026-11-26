@@ -39,12 +39,6 @@
         </div>
 
         <div class="field">
-          <label for="{{ form.department_ref.id_for_label }}">{% translate "Department reference" %}</label>
-          {{ form.department_ref }}
-          <p class="hint">{% translate "Optional. Leave it empty for a personal account." %}</p>
-        </div>
-
-        <div class="field">
           <label for="{{ form.simulate_inactive.id_for_label }}">
             {{ form.simulate_inactive }} {% translate "Simulate an inactive membership" %}
           </label>

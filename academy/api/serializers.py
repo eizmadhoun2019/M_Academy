@@ -15,3 +15,32 @@ class CapabilitiesSerializer(serializers.Serializer):
     user_ref = serializers.CharField()
     organization_id = serializers.UUIDField()
     capabilities = CapabilityScopeSerializer(many=True)
+
+
+class DepartmentContextSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name_ar = serializers.CharField()
+
+
+class OrganizationSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name_ar = serializers.CharField()
+    name_en = serializers.CharField(allow_null=True)
+    slug = serializers.CharField()
+    status = serializers.CharField()
+    default_language = serializers.CharField()
+    timezone = serializers.CharField()
+    reminder_hour = serializers.IntegerField()
+
+
+class MembershipContextSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    status = serializers.CharField()
+    department = DepartmentContextSerializer(allow_null=True)
+
+
+class OrganizationContextSerializer(serializers.Serializer):
+    """The caller's single company — ``docs/api.md`` §4."""
+
+    organization = OrganizationSerializer()
+    membership = MembershipContextSerializer()

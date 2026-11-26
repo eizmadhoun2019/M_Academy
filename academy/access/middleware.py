@@ -10,7 +10,7 @@ from django.http import HttpRequest, HttpResponseBase
 from django.shortcuts import render
 
 from academy.access.cache import cached_access
-from academy.access.principals import current_principal
+from academy.access.principals import current_principal, session_without_membership
 from academy.access.suspensions import is_suspended
 from academy.authorization.core import Access
 from academy.grants.service import grants_for
@@ -32,6 +32,13 @@ class AcademyAccessMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponseBase:
         access: Access | None = None
         principal = current_principal(request)
+        if principal is None and _is_blocked_page(request) and session_without_membership(request):
+            return render(
+                request,
+                "academy/access_denied.html",
+                {"reason": "membership"},
+                status=403,
+            )
         if principal is not None:
             if is_suspended(principal.organization_id, principal.user_ref):
                 principal = replace(principal, suspended=True)

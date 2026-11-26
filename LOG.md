@@ -21,6 +21,32 @@
 
 ## Entries
 
+### [2026-11-26] — T-026 CP3 implemented: company context from the single membership
+
+- **Type:** Change
+- **Status:** Implemented; awaiting owner merge approval
+- **Summary:** The company is no longer read from `ACADEMY_ORGANIZATION_ID` on the request path.
+  `academy/access/tenancy.py` resolves the account by its legacy reference, requires exactly one
+  active membership, and returns the membership's company; a `membership_id` stored in the session
+  is cross-checked against that row, so a tampered or stale id resolves no identity instead of
+  switching tenants. `Principal` now carries `user_id`/`membership_id` (the access-cache key
+  includes the membership). `GET /me/organization/` answers from the membership, returns
+  `private, no-store`, ignores any company in the query string or a header, and a signed-in
+  account with no active membership gets 403 `membership_inactive` on the API and the
+  access-denied page on the web. The development sign-in now offers only seeded accounts with an
+  active membership, stores just the account reference and membership id, and takes the
+  department from the membership instead of accepting a free department reference.
+- **Impact:** The single-company default is now a seed value, not the source of tenant context;
+  no table, migration, service signature or read path changed. Hub mode still maps its signed
+  claim (dormant, T-032 quarantines it). T-026 stays `[~]` pending this merge and the open
+  real-data reconciliation; T-027/T-033 remain gated. D-046 stays enabled and unchanged.
+- **Evidence:** Branch `task/T-026-tenancy-cp3`, head `a6264ba`, CI run 45775460129 success;
+  `tests/test_company_context.py` (13 tests) plus updated `test_sessions`/`test_hub_identity`;
+  `pytest -q` → 632 passed and only D-046 failed; `ruff check`, `ruff format --check`, `mypy .`
+  (155 files), `makemigrations --check`, G5, G7 and G9 (40 files) clean.
+- **Approved by:** Implementation under the owner's standing «كمل»; merge approval still pending.
+- **References:** T-026 CP3, D-032, D-043, `docs/api.md` §4, `docs/access-control.md` §4.
+
 ### [2026-11-26] — T-026 CP2 merged; real-data reconciliation kept as an open acceptance condition
 
 - **Type:** Milestone / Decision

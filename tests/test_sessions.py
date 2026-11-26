@@ -25,7 +25,7 @@ from academy.access.principals import (
     principal_from_session,
 )
 from academy.authorization.core import Access, Principal, resolve_access
-from academy.models import AccessSuspension
+from academy.models import AccessSuspension, Department, Membership, User
 
 ORG = UUID("25498ed9-13b1-4f10-8294-859ff80a41b7")
 
@@ -47,6 +47,33 @@ def _fresh_cache() -> None:
     cache.clear()
 
 
+def make_account(
+    user_ref: str = "u-42",
+    *,
+    organization_id: UUID = ORG,
+    department: Department | None = None,
+) -> Membership:
+    """A seeded account with exactly one active membership, as T-026 CP3 requires."""
+    user, _ = User.objects.get_or_create(
+        legacy_ref=user_ref,
+        defaults={
+            "email": f"{user_ref}@example.com",
+            "display_name": user_ref,
+            "status": User.Status.ACTIVE,
+        },
+    )
+    membership = Membership.objects.filter(user=user).first()
+    if membership is None:
+        membership = Membership.objects.create(
+            organization_id=organization_id,
+            user=user,
+            status=Membership.Status.ACTIVE,
+            joined_at=timezone.now(),
+            department=department,
+        )
+    return membership
+
+
 def sign_in(
     client: Client,
     user_ref: str = "u-42",
@@ -55,9 +82,11 @@ def sign_in(
     departments: tuple[str, ...] = (),
     active: bool = True,
 ) -> None:
+    membership = make_account(user_ref)
     session = client.session
     session[SESSION_KEY] = {
         "user_ref": user_ref,
+        "membership_id": str(membership.pk),
         "roles": list(roles),
         "department_refs": list(departments),
         "is_active": active,
@@ -74,13 +103,22 @@ def suspend(user_ref: str = "u-42", reason: str = "Policy review") -> AccessSusp
     )
 
 
-def test_the_session_names_the_user_and_never_the_capabilities() -> None:
+def test_the_session_names_the_user_and_never_the_capabilities(db: Any) -> None:
+    membership = make_account()
     request = RequestFactory().get(PREVIEW)
-    cast(Any, request).session = {"academy_identity": {"user_ref": "u-42", "roles": ["employee"]}}
+    cast(Any, request).session = {
+        "academy_identity": {
+            "user_ref": "u-42",
+            "membership_id": str(membership.pk),
+            "roles": ["employee"],
+        }
+    }
     principal = principal_from_session(request)
     assert principal is not None
     assert principal.user_ref == "u-42"
-    assert principal.organization_id == ORG
+    assert principal.organization_id == membership.organization_id == ORG
+    assert principal.membership_id == membership.pk
+    assert principal.user_id == membership.user_id
     assert principal.is_active is True
 
 
@@ -115,8 +153,15 @@ def test_hub_claims_map_role_and_departments() -> None:
 
 
 def test_the_middleware_publishes_one_access_object(db: Any) -> None:
+    membership = make_account()
     request = RequestFactory().get(PREVIEW)
-    cast(Any, request).session = {"academy_identity": {"user_ref": "u-42", "roles": ["employee"]}}
+    cast(Any, request).session = {
+        "academy_identity": {
+            "user_ref": "u-42",
+            "membership_id": str(membership.pk),
+            "roles": ["employee"],
+        }
+    }
     seen: dict[str, Any] = {}
 
     def view(inner: HttpRequest) -> HttpResponse:
@@ -238,18 +283,23 @@ def test_the_login_form_is_unavailable_in_hub_mode(client: Client) -> None:
 
 
 def test_login_stores_identity_only(db: Any, client: Client) -> None:
+    department = Department.objects.create(
+        organization_id=ORG, name_ar="التدريب", legacy_ref="dep-1"
+    )
+    membership = make_account("u-77", department=department)
     response = client.post(
-        "/academy/login/",
-        {"user_ref": "u-77", "password": "secret", "role": "employee", "department_ref": "dep-1"},
+        "/academy/login/", {"user_ref": "u-77", "password": "secret", "role": "employee"}
     )
     assert response.status_code == 302
     identity = client.session[SESSION_KEY]
     assert identity["user_ref"] == "u-77"
+    assert identity["membership_id"] == str(membership.pk)
     assert identity["department_refs"] == ["dep-1"]
     assert "secret" not in str(dict(client.session))
 
 
 def test_login_can_preview_the_inactive_screen(db: Any, client: Client) -> None:
+    make_account("u-77")
     response = client.post(
         "/academy/login/",
         {"user_ref": "u-77", "password": "x", "role": "employee", "simulate_inactive": "on"},

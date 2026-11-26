@@ -24,6 +24,7 @@ def _fingerprint(principal: Principal, grants: Sequence[Grant], mode: str) -> st
         mode,
         principal.user_ref,
         str(principal.organization_id),
+        str(principal.membership_id or ""),
         "1" if principal.is_active else "0",
         "1" if principal.suspended else "0",
         ",".join(sorted(principal.roles)),

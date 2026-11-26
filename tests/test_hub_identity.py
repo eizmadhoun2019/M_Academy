@@ -108,8 +108,33 @@ def test_an_inactive_member_is_403_account_inactive(db: Any, client: Any) -> Non
 def test_a_hub_identity_is_ignored_in_standalone_mode(db: Any, client: Any) -> None:
     with override_settings(**{**HUB, "ACADEMY_ACCESS_MODE": "standalone"}):
         assert client.get(CAPABILITIES, **{"HTTP_X_MASHEED_IDENTITY": token()}).status_code == 401
+        from django.utils import timezone
+
+        from academy.models import Membership, User
+
+        local, _ = User.objects.get_or_create(
+            legacy_ref="u-local",
+            defaults={
+                "email": "u-local@example.com",
+                "display_name": "Local",
+                "status": User.Status.ACTIVE,
+            },
+        )
+        membership, _ = Membership.objects.get_or_create(
+            user=local,
+            defaults={
+                "organization_id": ORG,
+                "status": Membership.Status.ACTIVE,
+                "joined_at": timezone.now(),
+            },
+        )
         session = client.session
-        session[SESSION_KEY] = {"user_ref": "u-local", "roles": ["employee"], "is_active": True}
+        session[SESSION_KEY] = {
+            "user_ref": "u-local",
+            "membership_id": str(membership.pk),
+            "roles": ["employee"],
+            "is_active": True,
+        }
         session.save()
         response = client.get(CAPABILITIES, **{"HTTP_X_MASHEED_IDENTITY": token()})
         assert response.json()["user_ref"] == "u-local"

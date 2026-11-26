@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from academy.access.forms import DevelopmentLoginForm
 from academy.access.principals import SESSION_KEY, access_mode
+from academy.access.tenancy import context_for_ref
 from academy.access.throttles import throttle_exceeded
 
 
@@ -33,15 +34,21 @@ def login_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = DevelopmentLoginForm(request.POST)
         if form.is_valid():
-            request.session.cycle_key()
-            department = form.cleaned_data["department_ref"]
-            request.session[SESSION_KEY] = {
-                "user_ref": form.cleaned_data["user_ref"],
-                "roles": [form.cleaned_data["role"]],
-                "department_refs": [department] if department else [],
-                "is_active": not form.cleaned_data["simulate_inactive"],
-            }
-            return redirect(_landing_url(request))
+            user_ref = str(form.cleaned_data["user_ref"])
+            context = context_for_ref(user_ref)
+            if context is None:
+                form.add_error("user_ref", "The selected account has no active membership.")
+            else:
+                request.session.cycle_key()
+                department = context.department_ref
+                request.session[SESSION_KEY] = {
+                    "user_ref": user_ref,
+                    "membership_id": str(context.membership_id),
+                    "roles": [form.cleaned_data["role"]],
+                    "department_refs": [department] if department else [],
+                    "is_active": not form.cleaned_data["simulate_inactive"],
+                }
+                return redirect(_landing_url(request))
     else:
         form = DevelopmentLoginForm()
     return render(request, "academy/login.html", {"form": form})

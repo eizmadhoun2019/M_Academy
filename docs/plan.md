@@ -45,7 +45,7 @@
 | **T-023** | Learner + management web UI (old scope) | `[–]` **superseded by T-031** | — | — |
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
-| **T-026** | Tenancy and account foundation | `[~]` CP1 merged `a5373c0`; CP2 merged `e3f9715` (real-data reconciliation open); CP3 pending | T-025 | GATE-1 |
+| **T-026** | Tenancy and account foundation | `[~]` CP1 merged `a5373c0`; CP2 merged `e3f9715`; CP3 on branch `a6264ba` (CI 45775460129 success), awaiting merge; real-data reconciliation open | T-025 | GATE-1 |
 | **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
@@ -147,8 +147,8 @@ selects a seeded **user** (its membership supplies the company), never a company
 6. Masheed exists once as an active company; its departments mirror the legacy department list.
 7. A second membership insert for any user fails at the database; the service maps it to
    `already_member`; a platform-only account has no membership and no synthetic company.
-**Tests:** `test_tenancy_constraints`, `test_single_membership`, `test_org_context`, expanded
-`test_isolation`, migration rehearsal on a snapshot.
+**Tests:** `test_tenancy_constraints`, `test_single_membership`, `test_company_context` (CP3),
+expanded `test_tenant_isolation`, migration rehearsal on a snapshot.
 **Risks:** data mapping errors or hidden duplicate memberships; mitigated by dry-run + duplicate
 report + reconciliation + backup.
 **Docs:** domain-model, api, configuration, migration-h1.5, decisions, STATUS.

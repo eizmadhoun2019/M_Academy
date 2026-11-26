@@ -1,7 +1,7 @@
 # API — Contracts, Endpoints and Compatibility
 
 **Status:** Canonical API surface. `ARCHITECTURE.md` §8 summarizes; this file decides.
-**Last updated:** 2026-11-25
+**Last updated:** 2026-11-26
 **Implements:** REQ-06…REQ-14, REQ-19, REQ-22…REQ-26, REQ-28
 **Depends on:** `docs/domain-model.md`, `docs/access-control.md`, `docs/security.md`,
 `docs/hub-contract.md` (optional webhook/identity), `docs/decisions.md`
@@ -84,7 +84,13 @@ self-service profile writes. Email change is a separate verified flow (`POST /me
 ## 4. Company context (read-only)
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `me/organization/` | The caller's single company | Company name, status, time zone and the caller's department names; `null` for a platform-only account. Never lists other companies or members. |
+| GET | `me/organization/` | The caller's single company | Company name, status, time zone and the caller's department name; `null` for a platform-only account. Never lists other companies or members. |
+
+The response is `{organization: {id, name_ar, name_en, slug, status, default_language, timezone,
+reminder_hour}, membership: {id, status, department: {id, name_ar} | null}}`, always
+`private, no-store`. T-026 CP3 derives it from the membership that resolved the caller's access:
+a company id in the query string or a header is never read, and an account with no active
+membership answers **403 `membership_inactive`** (API) or the access-denied page (HTML).
 
 There is no company-selection, switching or membership-list endpoint for a normal user. The
 session stores only the user; the server resolves the company from the membership on every

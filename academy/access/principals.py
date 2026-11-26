@@ -8,7 +8,8 @@ Two documented modes (``docs/configuration.md`` §1, D-026):
     maps validated claims and rejects another organization.
 ``standalone``
     A Django database session holds the signed-in local identity. Nothing about capabilities
-    is stored in it: the session names the user, and every request resolves access again.
+    is stored in it: the session names the user, its single membership supplies the company
+    (T-026 CP3), and every request resolves access again.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 
+from academy.access.tenancy import account_without_membership, context_for_session
 from academy.authorization.core import Principal
 
 ACCESS_MODES = ("hub", "standalone")
@@ -52,17 +54,42 @@ def organization_id() -> UUID:
 
 
 def principal_from_session(request: HttpRequest) -> Principal | None:
+    """Resolve the session's account and derive its company from its single membership.
+
+    The session never names the company. If it also stores a ``membership_id``, that id must be
+    the account's own row; anything else resolves nothing, so a tampered value cannot switch
+    tenants (T-026 CP3, D-043).
+    """
     data = request.session.get(SESSION_KEY)
     if not isinstance(data, dict) or not data.get("user_ref"):
         return None
+    user_ref = str(data["user_ref"])
+    context = context_for_session(user_ref, data.get("membership_id"))
+    if context is None:
+        return None
     roles = frozenset(role for role in data.get("roles", ()) if role in ROLES)
+    departments = {str(ref) for ref in data.get("department_refs", ()) if ref}
+    if context.department_ref:
+        departments.add(context.department_ref)
     return Principal(
-        user_ref=str(data["user_ref"]),
-        organization_id=organization_id(),
+        user_ref=user_ref,
+        organization_id=context.organization_id,
         roles=roles,
-        department_refs=frozenset(str(ref) for ref in data.get("department_refs", ()) if ref),
+        department_refs=frozenset(departments),
         is_active=bool(data.get("is_active", True)),
+        user_id=context.user_id,
+        membership_id=context.membership_id,
     )
+
+
+def session_without_membership(request: HttpRequest) -> bool:
+    """A signed-in account that has no active company membership (403 ``membership_inactive``)."""
+    if access_mode() != "standalone":
+        return False
+    data = request.session.get(SESSION_KEY)
+    if not isinstance(data, dict) or not data.get("user_ref"):
+        return False
+    return account_without_membership(str(data["user_ref"]))
 
 
 def principal_from_claims(claims: Mapping[str, Any] | None) -> Principal | None:
