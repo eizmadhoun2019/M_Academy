@@ -45,7 +45,7 @@
 | **T-023** | Learner + management web UI (old scope) | `[–]` **superseded by T-031** | — | — |
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
-| **T-026** | Tenancy and account foundation | `[~]` CP1 merged `a5373c0`; CP2 on branch `565a87c` (CI 45768707833 success), awaiting merge; CP3 pending | T-025 | GATE-1 |
+| **T-026** | Tenancy and account foundation | `[~]` CP1 merged `a5373c0`; CP2 merged `e3f9715` (real-data reconciliation open); CP3 pending | T-025 | GATE-1 |
 | **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
@@ -141,7 +141,9 @@ selects a seeded **user** (its membership supplies the company), never a company
    reports, media keys or audit (isolation suite expanded).
 5. Legacy org id and user refs migrate idempotently; duplicate memberships are reported and the
    migration aborts for manual resolution; counts reconcile; training/progress rows remain
-   attached to the same learner.
+   attached to the same learner. CP2 delivers this in code (merged `e3f9715`); the reconciliation
+   against real data stays an **open acceptance condition** until the owner's identity file
+   arrives or the absence of rows requiring migration is proven.
 6. Masheed exists once as an active company; its departments mirror the legacy department list.
 7. A second membership insert for any user fails at the database; the service maps it to
    `already_member`; a platform-only account has no membership and no synthetic company.

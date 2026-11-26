@@ -1,7 +1,7 @@
 # MIGRATION H1.5 — From Single-Company References to Local Tenancy
 
 **Status:** Canonical migration plan for T-026…T-028 and T-032/T-034.
-**Last updated:** 2026-11-25
+**Last updated:** 2026-11-26
 **Decisions:** D-032 (tenancy), D-033 (local identity), D-034 (RBAC), D-038 (company settings),
 D-043 (one company membership per account).
 **Related:** `docs/domain-model.md`, `docs/security.md` §6, `docs/operations/environments.md` §10.
@@ -72,6 +72,11 @@ the same command without `--dry-run` writes, and a second run changes nothing. R
 distinct legacy user refs = accounts created; distinct department refs = departments created;
 every enrollment/progress row has a resolvable learner. Assert one membership per account and
 zero accounts with memberships in two companies; any violation aborts with a report.
+
+The command, migration 0009 and their tests are merged (T-026 CP2, `e3f9715`). The reconciliation
+itself is an **open acceptance condition**: it closes only when the owner supplies the identity
+CSV, or states in writing that no rows require migration. Until then the dry run names every
+missing ref and writes nothing, no real account exists, and T-026 cannot close.
 
 **M3 — backfill.** In batches (5,000 rows, one transaction per batch): set `organization_id`,
 `user_id`, `membership_id`, `department_id`. Abort on any unresolved row; never guess. The

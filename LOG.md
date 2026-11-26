@@ -21,6 +21,29 @@
 
 ## Entries
 
+### [2026-11-26] — T-026 CP2 merged; real-data reconciliation kept as an open acceptance condition
+
+- **Type:** Milestone / Decision
+- **Status:** Merged; acceptance condition open
+- **Summary:** The owner approved CP2's implementation («معتمد CP2 من ناحية التنفيذ البرمجي») and
+  asked for a governed merge while explicitly keeping the actual mapping and reconciliation of
+  legacy data open until the real identity file is supplied or the absence of rows requiring
+  migration is proven. `task/T-026-tenancy-cp2` (head `0ec430e`, CI run 45769212077 success) merged
+  into `main` with `--no-ff` as `e3f9715`; CI run 45773205917 on `main` succeeded. The merge
+  changed no code, migration, guard or test — only the approved branch content.
+- **Impact:** `manage.py backfill_tenancy`, migration 0009 and their tests are on `main`. T-026
+  stays `[~]`: CP3 has not started and the real-data reconciliation is not yet demonstrated, so
+  T-027/T-033 remain gated. D-046 stays open, enabled and unweakened; the audit append-only guard
+  and the immutable completion guard keep exactly one permitted `NULL`→value fill and still refuse
+  any other edit or rewrite; no data was written to any real database.
+- **Evidence:** Merge `e3f9715`; branch CI 45769212077 success; `main` CI 45773205917 success;
+  `STATUS.md`, `docs/plan.md` (§4 T-026 acceptance 5) and `docs/migration-h1.5.md` (§4 M2) record
+  the open condition; the empty dev database dry run still writes a complete report with every
+  count at zero.
+- **Approved by:** Project owner (2026-11-26): «معتمد CP2 من ناحية التنفيذ البرمجي، ادمج وفق
+  الحوكمة».
+- **References:** T-026 CP2, `docs/migration-h1.5.md` M2–M3, D-043, D-046.
+
 ### [2026-11-26] — T-026 CP2 implemented: legacy mapping/backfill and reconciliation
 
 - **Type:** Change
