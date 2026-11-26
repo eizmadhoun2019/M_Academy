@@ -288,3 +288,46 @@ def test_a_successful_login_clears_the_failure_counter(db: Any, client: Client) 
             login(client, password="wrong-password")
         assert login(client).status_code == 200
         assert accounts.login_locked(client.request, "learner@example.com") is False
+
+
+SESSIONS = "/api/v1/academy/auth/sessions/"
+
+
+def test_sessions_list_shows_only_live_sessions_of_the_caller(db: Any, client: Client) -> None:
+    make_user()
+    login(client)
+    rows = client.get(SESSIONS).json()
+    assert len(rows) == 1
+    assert rows[0]["current"] is True
+    assert rows[0]["user_agent_family"]
+
+
+def test_revoking_another_device_ends_only_that_session(db: Any, client: Client) -> None:
+    make_user()
+    other = Client()
+    assert login(client).status_code == 200
+    assert login(other).status_code == 200
+    rows = client.get(SESSIONS).json()
+    assert len(rows) == 2
+    target = next(row for row in rows if not row["current"])
+
+    assert client.delete(f"{SESSIONS}{target['id']}/").status_code == 204
+    assert other.get(CAPABILITIES).status_code == 401
+    assert client.get(CAPABILITIES).status_code == 200
+
+
+def test_another_accounts_session_is_a_plain_404(db: Any, client: Client) -> None:
+    make_user()
+    make_user("second@example.com")
+    other = Client()
+    login(client)
+    login(other, "second@example.com")
+    foreign = other.get(SESSIONS).json()[0]["id"]
+    assert client.delete(f"{SESSIONS}{foreign}/").status_code == 404
+
+
+@override_settings(ACADEMY_SESSION_IDLE_SECONDS=0)
+def test_the_idle_window_ends_the_session(db: Any, client: Client) -> None:
+    make_user()
+    login(client)
+    assert client.get(CAPABILITIES).status_code == 401

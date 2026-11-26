@@ -8,7 +8,6 @@ to the session; a log line carries the account UUID and a truncated client addre
 
 from __future__ import annotations
 
-import ipaddress
 import logging
 from typing import Any, cast
 
@@ -21,6 +20,8 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from academy.access import sessions
+from academy.access.net import client_ip, truncated_ip
 from academy.access.principals import SESSION_KEY, session_auth_hash
 from academy.access.tokens import consume, issue
 from academy.exceptions import (
@@ -41,24 +42,6 @@ _MAIL_SUBJECTS = {
     "verification": "Activate your Masheed Academy account",
     "password_reset": "Reset your Masheed Academy password",
 }
-
-
-def client_ip(request: Any) -> str:
-    if request is None:
-        return "unknown"
-    meta = getattr(request, "META", {})
-    return str(meta.get("REMOTE_ADDR") or "unknown")
-
-
-def truncated_ip(value: str) -> str:
-    """The address form that may appear in logs: a /24 (v4) or /48 (v6) network."""
-    try:
-        address = ipaddress.ip_address(value)
-    except ValueError:
-        return "unknown"
-    prefix = 24 if address.version == 4 else 48
-    network = ipaddress.ip_network(f"{address}/{prefix}", strict=False)
-    return str(network.network_address)
 
 
 def _guard_enabled() -> bool:
@@ -107,6 +90,7 @@ def sign_in(request: Any, user: User) -> None:
         "auth_hash": session_auth_hash(user),
         "roles": ["employee"],
     }
+    sessions.start(user, request.session.session_key, request=request)
     user.last_login_at = timezone.now()
     user.save(update_fields=["last_login_at", "updated_at"])
 
@@ -195,6 +179,7 @@ def reset_password(raw: str, new_password: str) -> User:
     user.set_password(new_password)
     user.password_changed_at = timezone.now()
     user.save(update_fields=["password", "password_changed_at", "updated_at"])
+    sessions.revoke_all(user)
     logger.info(
         "auth.password_reset", extra={"event": "auth.password_reset", "user_id": str(user.pk)}
     )

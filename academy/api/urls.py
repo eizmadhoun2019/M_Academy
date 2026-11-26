@@ -22,6 +22,8 @@ from academy.api.auth import (
     PasswordChangeView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
+    SessionListView,
+    SessionRevokeView,
 )
 from academy.api.content import (
     CourseArchiveView,
@@ -90,6 +92,12 @@ urlpatterns = [
         "auth/email/verify/confirm/",
         EmailVerifyConfirmView.as_view(),
         name="auth-email-verify-confirm",
+    ),
+    path("auth/sessions/", SessionListView.as_view(), name="auth-sessions"),
+    path(
+        "auth/sessions/<uuid:session_id>/",
+        SessionRevokeView.as_view(),
+        name="auth-session-revoke",
     ),
     path("me/capabilities/", MeCapabilitiesView.as_view(), name="me-capabilities"),
     path("me/organization/", MeOrganizationView.as_view(), name="me-organization"),

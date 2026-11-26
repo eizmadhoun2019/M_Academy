@@ -45,7 +45,7 @@ merged, and the 2026-11-26 audit found no legacy row to migrate in the only data
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
 | T-035 | Official UI/UX reference adoption and repository hygiene | `[x]` — merged in `47638b0`; CI success 45694757748; owner approved 2026-11-25 | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; restore rehearsal 14/14; `check_docs` green |
 | T-026 | Tenancy and account foundation | `[x]` — CP1 `a5373c0` (CI 45700454330), CP2 `e3f9715` (CI 45773205917), CP3 `5ae89f6` (CI 45776614160); zero-row audit accepted by the owner 2026-11-26; staging re-audit before cutover | AI agent; owner approved 2026-11-26 | T-025 | `docs/plan.md` §4 T-026; `test_tenancy_constraints`, `test_tenancy_backfill`, `test_company_context`, `test_tenancy_audit`; `docs/migration-h1.5.md` §8 |
-| T-027 | Local identity and account lifecycle | `[~]` — CP1 merged `6d72a63`: Django auth backend, verification/reset/change with hashed single-use tokens, sessions bound to a password fingerprint, 5-failure lock, Argon2; CP2 (invitations, session listing/revocation, MFA) and CP3 (dev-login removal, guard, mail) pending | AI agent; owner approved CP1 2026-11-26 | T-026 `[x]` | `docs/plan.md` §4 T-027; `tests/test_auth.py` (18); gates G1, G3, G5, G7, G9 |
+| T-027 | Local identity and account lifecycle | `[~]` — CP1 merged `6d72a63`; CP2 in progress on `task/T-027-identity-cp2`: `UserSession` registry, `GET /auth/sessions/`, `DELETE /auth/sessions/{id}/`, 30-minute idle window, revocation on reset/change (22 auth tests); invitations and MFA remain; CP3 pending | AI agent; owner approved CP1 2026-11-26 | T-026 `[x]` | `docs/plan.md` §4 T-027; `tests/test_auth.py` (22); gates G1, G3, G5, G7, G9 |
 | T-033 | Hub quarantine | `[ ]` — unblocked by T-026 `[x]`; starts only on the owner's instruction | AI agent | T-026 `[x]` | `docs/plan.md` §4 T-033 |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
@@ -57,6 +57,11 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
+- 2026-11-26 — **T-027 CP2 sessions slice.** `UserSession` (migration `0011`) stores only a
+  SHA-256 of the session key, an absolute expiry, a coarse last-seen and an optional revocation
+  stamp; a session without a live row resolves to no principal, so revocation and the 30-minute
+  idle window are server-side. Owners list their live sessions and revoke any of them; a reset or
+  password change revokes the account's other rows. Invitations and MFA remain in CP2.
 - 2026-11-26 — **T-027 CP1 merged** as `6d72a63` (`--no-ff`, branch `c157739`, CI 45786234699 success).
 - 2026-11-26 — **T-027 CP1 implemented.** `academy/access/backends.py` is the only authenticator:
   email + password, case-insensitive, with a dummy-hash path so an unknown address costs the same

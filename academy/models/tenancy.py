@@ -225,6 +225,29 @@ class AccountToken(BaseModel):
         return f"{self.purpose} for {self.user_id}"
 
 
+class UserSession(BaseModel):
+    """One signed-in browser/device, addressable so its owner can revoke it (T-027 CP2).
+
+    The key is stored as a SHA-256 digest; the row carries the absolute expiry and the last
+    activity the idle policy reads, so a revocation or timeout resolves to no principal without
+    trusting anything the client sends.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    session_key_hash = models.CharField(max_length=64, unique=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    ip_prefix = models.CharField(max_length=64, blank=True, default="")
+    user_agent_family = models.CharField(max_length=40, blank=True, default="")
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "revoked_at"], name="user_session_user_state")]
+
+    def __str__(self) -> str:
+        return f"session of {self.user_id}"
+
+
 class Department(TenantModel):
     """A node of one company's department tree (depth limit is a service rule)."""
 

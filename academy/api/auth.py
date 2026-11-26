@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import quote
 
 from django.conf import settings
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated, Throttled
@@ -19,10 +20,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from academy.access import accounts
+from academy.access import accounts, sessions
 from academy.access.principals import SESSION_KEY, session_auth_hash, session_user
 from academy.access.throttles import throttle_exceeded
-from academy.models import User
+from academy.exceptions import NotFound
+from academy.models import User, UserSession
 
 _NO_STORE = {"Cache-Control": "private, no-store"}
 
@@ -183,6 +185,7 @@ class PasswordChangeView(APIView):
             "auth_hash": session_auth_hash(user),
             "roles": ["employee"],
         }
+        sessions.revoke_others(user, keep_key=request.session.session_key)
         return Response({"status": "changed"}, headers=_NO_STORE)
 
 
@@ -228,3 +231,55 @@ class EmailVerifyConfirmView(APIView):
         serializer.is_valid(raise_exception=True)
         accounts.confirm_email(serializer.validated_data["token"])
         return Response({"status": "verified"}, headers=_NO_STORE)
+
+
+class SessionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    created_at = serializers.DateTimeField()
+    last_seen_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField()
+    current = serializers.BooleanField()
+    ip_prefix = serializers.CharField()
+    user_agent_family = serializers.CharField()
+
+
+class SessionListView(APIView):
+    """List the caller's live sessions; the current one is flagged, never another account's."""
+
+    @extend_schema(responses=SessionSerializer(many=True))
+    def get(self, request: Request) -> Response:
+        user = session_user(request)
+        if user is None:
+            raise NotAuthenticated("no Academy session")
+        current_hash = sessions.key_hash(request.session.session_key)
+        rows = UserSession.objects.filter(
+            user=user, revoked_at__isnull=True, expires_at__gt=timezone.now()
+        ).order_by("-last_seen_at")
+        payload = [
+            {
+                "id": row.pk,
+                "created_at": row.created_at,
+                "last_seen_at": row.last_seen_at,
+                "expires_at": row.expires_at,
+                "current": row.session_key_hash == current_hash,
+                "ip_prefix": row.ip_prefix,
+                "user_agent_family": row.user_agent_family,
+            }
+            for row in rows
+        ]
+        return Response(payload, headers=_NO_STORE)
+
+
+class SessionRevokeView(APIView):
+    """Revoke one of the caller's sessions; another account's id is a plain 404."""
+
+    @extend_schema(request=None, responses={204: OpenApiResponse(description="revoked")})
+    def delete(self, request: Request, session_id: Any) -> Response:
+        user = session_user(request)
+        if user is None:
+            raise NotAuthenticated("no Academy session")
+        row = UserSession.objects.filter(pk=session_id, user=user).first()
+        if row is None:
+            raise NotFound("session not found")
+        sessions.revoke(row)
+        return Response(status=204)

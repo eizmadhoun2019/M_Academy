@@ -22,6 +22,7 @@ from academy.models.tenancy import (
     Membership,
     Organization,
     User,
+    UserSession,
 )
 
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     "Membership",
     "Organization",
     "User",
+    "UserSession",
     "Assignment",
     "AuditEvent",
     "CompletionRecord",

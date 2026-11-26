@@ -21,6 +21,25 @@
 
 ## Entries
 
+### [2026-11-26] — T-027 CP2: session registry, listing and revocation (partial CP2)
+
+- **Type:** Change
+- **Status:** Implemented (branch `task/T-027-identity-cp2`; not merged)
+- **Summary:** `UserSession` (migration `0011`) records each signed-in browser with a SHA-256 of
+  the session key, an absolute expiry, a five-minute-coarse `last_seen_at`, optional revocation
+  and a truncated address. A real session resolves to no principal unless its row is live, so the
+  30-minute idle window (`ACADEMY_SESSION_IDLE_SECONDS`) and "sign out everywhere" are decided
+  server-side. `GET /auth/sessions/` lists only the caller's live rows and flags the current one;
+  `DELETE /auth/sessions/{id}/` revokes an owned row and answers 404 for another account's id.
+  Password reset revokes every row; password change keeps the current one.
+- **Impact:** Sessions no longer outlive revocation or idleness; invitations and TOTP MFA are the
+  remaining CP2 scope. `AccountToken`/`UserSession` are the two global identity tables, and the two
+  model-classification tests name both. D-046 is untouched.
+- **Evidence:** `tests/test_auth.py` → 22 passed; full suite → 655 passed, 1 failed (D-046 only);
+  `ruff`, `mypy` (164 files), `makemigrations --check`, G5, G7, G9 green.
+- **Approved by:** Project owner (2026-11-26, «كمل» after the CP1 merge).
+- **References:** T-027 CP2, D-033, `docs/domain-model.md` §2.0.12, `docs/api.md` §3.
+
 ### [2026-11-26] — T-027 CP1 merged
 
 - **Type:** Milestone

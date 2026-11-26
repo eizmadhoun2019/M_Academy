@@ -23,6 +23,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django.utils.crypto import salted_hmac
 
+from academy.access import sessions
 from academy.access.tenancy import account_without_membership, context_for_session, context_for_user
 from academy.authorization.core import Principal
 from academy.models import User
@@ -111,6 +112,8 @@ def principal_from_session(request: HttpRequest) -> Principal | None:
         return None
     account = session_user(request)
     if account is not None:
+        if sessions.live(request) is None:
+            return None
         if not account.is_email_verified:
             return None
         context = context_for_user(account)
