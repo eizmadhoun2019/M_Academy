@@ -45,7 +45,7 @@
 | **T-023** | Learner + management web UI (old scope) | `[–]` **superseded by T-031** | — | — |
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
-| **T-026** | Tenancy and account foundation | `[~]` CP1 `a5373c0`, CP2 `e3f9715`, CP3 `5ae89f6` merged; legacy-data audit 2026-11-26 = zero rows in the only database; closure pending owner acceptance | T-025 | GATE-1 |
+| **T-026** | Tenancy and account foundation | `[x]` CP1 `a5373c0`, CP2 `e3f9715`, CP3 `5ae89f6`; zero-row audit accepted by the owner 2026-11-26; staging re-audit before cutover | T-025 | GATE-1 |
 | **T-027** | Local identity and account lifecycle | `[ ]` | T-026 | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
@@ -144,8 +144,10 @@ selects a seeded **user** (its membership supplies the company), never a company
    attached to the same learner. CP2 delivers this in code (merged `e3f9715`). The reconciliation
    audit of 2026-11-26 (`manage.py audit_legacy_data`, `docs/migration-h1.5.md` §8) found **zero
    legacy rows** in the only existing database, so the absence of rows requiring migration is
-   proven for it; the condition closes when the owner accepts that evidence. Any database
-   provisioned later is audited the same way before cutover.
+   proven for it; the owner accepted that evidence on 2026-11-26 and **the condition is closed**.
+   Any database provisioned later (staging in T-034, production) is audited the same way before
+   cutover; a non-zero result blocks cutover until the identity CSV is imported and the dry run
+   reviewed.
 6. Masheed exists once as an active company; its departments mirror the legacy department list.
 7. A second membership insert for any user fails at the database; the service maps it to
    `already_member`; a platform-only account has no membership and no synthetic company.
@@ -154,7 +156,9 @@ expanded `test_tenant_isolation`, migration rehearsal on a snapshot.
 **Risks:** data mapping errors or hidden duplicate memberships; mitigated by dry-run + duplicate
 report + reconciliation + backup.
 **Docs:** domain-model, api, configuration, migration-h1.5, decisions, STATUS.
-**Evidence:** migration output, isolation suite, reconciliation counts, CI.
+**Evidence:** migration output, isolation suite, reconciliation counts
+(`docs/migration-h1.5.md` §8), CI runs 45700454330 / 45773205917 / 45776614160; closed by owner
+acceptance 2026-11-26.
 
 ### T-027 — Local identity and account lifecycle
 **Checkpoints:** CP1 email/password core, verification and reset; CP2 invitations, session management and MFA; CP3 dev-login removal, production guard, mail delivery and auth security suite.

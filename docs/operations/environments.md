@@ -21,6 +21,10 @@ same host, sharing nothing: not a network, volume, database, cache, bucket, cred
 A feature is “done” in development, “verified” on staging, and “released” only when the owner
 accepts GATE-1 and the production decision. Documentation never substitutes for a drill.
 
+When staging is provisioned (T-034), `python manage.py audit_legacy_data` runs against the restored
+dump before any cutover and its counts are recorded with the release evidence; a non-zero result
+blocks cutover until the tenancy mapping is completed and reviewed (`docs/migration-h1.5.md` §8).
+
 ## 2. Repository
 | Item | Value |
 |---|---|

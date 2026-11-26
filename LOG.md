@@ -21,6 +21,29 @@
 
 ## Entries
 
+### [2026-11-26] — T-026 closed: reconciliation condition accepted, staging re-audit required
+
+- **Type:** Milestone / Decision
+- **Status:** Closed (Accepted)
+- **Summary:** The owner accepted the 2026-11-26 audit as proof that the only existing database
+  (development `academy`) holds no legacy row, closing CP2's reconciliation condition and T-026.
+  The task is `[x]` with CP1 `a5373c0`, CP2 `e3f9715` and CP3 `5ae89f6` on `main` and their CI
+  runs green. The closure changed no code, migration, guard or test. The audit is a standing
+  requirement, not a waiver: when T-034 provisions staging, `manage.py audit_legacy_data` runs on
+  the restored dump before cutover and its counts join the release evidence; a non-zero result
+  blocks cutover until the owner's identity CSV is imported, the `--dry-run` report is reviewed
+  and the duplicate-membership queries stand at zero.
+- **Impact:** T-027 and T-033 are unblocked but **not started**; both wait for the owner's
+  instruction, and T-033 may run in parallel with T-027/T-028. D-046 stays open, enabled and
+  unweakened until paid before GATE-1; the audit append-only guard and the immutable completion
+  guard are unchanged. D-001, D-005 and D-009 remain open, and screen groups remain pending
+  owner approval.
+- **Evidence:** `STATUS.md` task table and next action; `docs/plan.md` §4 T-026 row, criterion 5
+  and evidence line; `docs/migration-h1.5.md` §8; `docs/operations/environments.md` §1.
+- **Approved by:** Project owner (2026-11-26): «معتمد التدقيق والأدلة، أغلق شرط المطابقة وأغلق
+  T-026 رسميًا وفق الحوكمة».
+- **References:** T-026, REQ-21, REQ-28, D-043, D-046, T-034.
+
 ### [2026-11-26] — T-026 CP3 merged; legacy-data audit finds nothing to migrate
 
 - **Type:** Milestone / Verification

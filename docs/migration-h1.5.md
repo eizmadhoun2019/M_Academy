@@ -169,3 +169,10 @@ command has no input to transform and the owner's identity CSV is not required f
 reconciliation condition can be closed on the owner's acceptance of this evidence. The same
 command runs against a restored production dump before cutover (§6 step 3); it prints counts
 only, so it is safe to run early and its output is the proof that the mapping is complete.
+
+**Closure and re-audit.** The owner accepted this evidence on 2026-11-26: the reconciliation
+condition is closed and T-026 is `[x]`. The audit is not a one-time waiver — it repeats for every
+database that holds or may hold rows. T-034 runs `manage.py audit_legacy_data` against the restored
+staging dump before cutover and records the output with the release evidence; a non-zero result
+blocks cutover until the owner's identity CSV is imported, the `--dry-run` report is reviewed and
+the duplicate-membership queries stand at zero.
