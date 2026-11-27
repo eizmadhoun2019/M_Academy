@@ -23,7 +23,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django.utils.crypto import salted_hmac
 
-from academy.access import sessions
+from academy.access import mfa, sessions
 from academy.access.tenancy import account_without_membership, context_for_session, context_for_user
 from academy.authorization.core import Principal
 from academy.models import User
@@ -66,7 +66,11 @@ def session_auth_hash(user: User) -> str:
 
 
 def _session_identity(request: HttpRequest) -> dict[str, Any] | None:
-    data = request.session.get(SESSION_KEY)
+    # A request without a session (a factory-built test request) resolves no identity.
+    session = getattr(request, "session", None)
+    if session is None:
+        return None
+    data = session.get(SESSION_KEY)
     return data if isinstance(data, dict) else None
 
 
@@ -97,6 +101,22 @@ def session_email_unverified(request: HttpRequest) -> bool:
     except (TypeError, ValueError):
         return False
     return user is not None and user.is_active and not user.is_email_verified
+
+
+def session_mfa_enrollment_required(request: HttpRequest) -> bool:
+    """True for a signed-in account whose role mandates a second factor it has not enrolled.
+
+    The check keeps such an account signed in — it can still enrol and sign out — while the API
+    refuses tenant data until the device is confirmed (403 ``mfa_enrollment_required``).
+    """
+    data = _session_identity(request)
+    if data is None or not data.get("user_id"):
+        return False
+    account = session_user(request)
+    if account is None:
+        return False
+    roles = frozenset(role for role in data.get("roles", ()) if role in ROLES)
+    return mfa.requires_enrollment(account, roles)
 
 
 def principal_from_session(request: HttpRequest) -> Principal | None:

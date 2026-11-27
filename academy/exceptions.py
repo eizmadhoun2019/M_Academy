@@ -59,6 +59,39 @@ class EmailUnverified(AcademyError):
     code = "email_unverified"
 
 
+class MFARequired(AcademyError):
+    """A correct password that still needs a second factor (401, ``mfa_required``)."""
+
+    code = "mfa_required"
+
+    def __init__(self, challenge_id: str) -> None:
+        super().__init__("a second factor is required", fields={"challenge_id": challenge_id})
+
+
+class MFAInvalid(AcademyError):
+    """An unknown, used or expired MFA challenge or code (401, ``mfa_invalid``)."""
+
+    code = "mfa_invalid"
+
+
+class MFAEnrollmentRequired(AcademyError):
+    """A role that mandates a second factor has not enrolled one yet (403)."""
+
+    code = "mfa_enrollment_required"
+
+
+class InvitationInvalid(AcademyError):
+    """An unknown, used, revoked or expired invitation token (400)."""
+
+    code = "invitation_invalid"
+
+
+class AlreadyMember(AcademyError):
+    """An invitation for an email that already holds a company membership (409)."""
+
+    code = "already_member"
+
+
 class Forbidden(AcademyError):
     """The caller lacks the capability or the object scope (403)."""
 

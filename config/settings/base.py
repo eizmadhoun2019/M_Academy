@@ -285,6 +285,15 @@ ACADEMY_LOGIN_MAX_FAILURES = env_int("ACADEMY_LOGIN_MAX_FAILURES", 5)
 ACADEMY_LOGIN_IP_MAX_FAILURES = env_int("ACADEMY_LOGIN_IP_MAX_FAILURES", 20)
 ACADEMY_LOGIN_WINDOW_SECONDS = env_int("ACADEMY_LOGIN_WINDOW_SECONDS", 900)
 ACADEMY_SESSION_IDLE_SECONDS = env_int("ACADEMY_SESSION_IDLE_SECONDS", 1800)
+# T-027 CP2: invitations expire after 7 days (docs/security.md §2).
+ACADEMY_INVITATION_TTL_SECONDS = env_int("ACADEMY_INVITATION_TTL_SECONDS", 604800)
+# The TOTP secret is encrypted with a key derived from this value; a long random string in
+# production (docs/configuration.md §2).
+ACADEMY_MFA_ENCRYPTION_KEY = env("ACADEMY_MFA_ENCRYPTION_KEY", "")
+# Roles that must present a second factor; the codes arrive with the T-028 role catalogue.
+ACADEMY_MFA_REQUIRED_ROLES = env_list("ACADEMY_MFA_REQUIRED_ROLES", "super_admin,company_admin")
+ACADEMY_MFA_CHALLENGE_TTL_SECONDS = env_int("ACADEMY_MFA_CHALLENGE_TTL_SECONDS", 300)
+ACADEMY_MFA_ISSUER = env("ACADEMY_MFA_ISSUER", "Masheed Academy")
 # Absolute origin account links are built from (never the request's Host header).
 ACADEMY_PUBLIC_ORIGIN = env("ACADEMY_PUBLIC_ORIGIN", "")
 THROTTLES_ENABLED = env_bool("ACADEMY_THROTTLES_ENABLED", True)

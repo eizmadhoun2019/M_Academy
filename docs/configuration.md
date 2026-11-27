@@ -46,8 +46,10 @@ committed (`docs/operations/environments.md` §7).
 | `ACADEMY_LOGIN_MAX_FAILURES` | `5` | Per email+IP per window |
 | `ACADEMY_LOGIN_WINDOW_SECONDS` | `900` | 15 min; then exponential backoff |
 | `ACADEMY_LOGIN_IP_MAX_FAILURES` | `20` | Per IP per window |
-| `ACADEMY_MFA_ENCRYPTION_KEY` | — required in production | 32-byte urlsafe key for TOTP secrets; rotation re-encrypts |
-| `ACADEMY_MFA_REQUIRED_ROLES` | `super_admin,company_admin` | Enforced at login; additional roles may be added |
+| `ACADEMY_MFA_ENCRYPTION_KEY` | — required in production | Long random string; hashed to the 32-byte key that encrypts TOTP secrets, so rotation re-encrypts |
+| `ACADEMY_MFA_REQUIRED_ROLES` | `super_admin,company_admin` | Roles that must present a second factor; the codes activate with the T-028 role catalogue, and a role configured here must also exist there |
+| `ACADEMY_MFA_CHALLENGE_TTL_SECONDS` | `300` | Lifetime of a single-use sign-in challenge |
+| `ACADEMY_MFA_ISSUER` | `Masheed Academy` | Issuer shown in the authenticator application |
 | `ACADEMY_PUBLIC_ORIGIN` | empty | Absolute origin used in mailed account links; never the request's `Host` header |
 | `ACADEMY_EMAIL_VERIFICATION_TTL_SECONDS` | `86400` | 24 h |
 | `ACADEMY_PASSWORD_RESET_TTL_SECONDS` | `3600` | 1 h |

@@ -15,6 +15,10 @@ from uuid import UUID
 
 from academy.models import Membership, Organization, User
 
+#: The company roles an invitation may grant (D-028). Platform roles are global and are never
+#: invited into a company; the dynamic catalogue replaces this tuple in T-028.
+COMPANY_ROLES = ("employee", "department_manager")
+
 
 @dataclass(frozen=True, slots=True)
 class CompanyContext:
@@ -43,6 +47,20 @@ class CompanyContext:
         if department is None:
             return None
         return department.legacy_ref or None
+
+
+def roles_for_user(user: User) -> list[str]:
+    """The role codes a new session carries for this account.
+
+    The membership is the source, so roles are derived from server state rather than trusted from
+    the client's session payload. An account without a membership — a platform-only account —
+    falls back to ``employee`` until the T-028 role catalogue supplies platform roles.
+    """
+    membership = Membership.objects.filter(user=user).first()
+    if membership is None:
+        return ["employee"]
+    roles = [str(role) for role in (membership.roles or []) if str(role) in COMPANY_ROLES]
+    return roles or ["employee"]
 
 
 def account_for_ref(user_ref: str) -> User | None:

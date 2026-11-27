@@ -77,6 +77,14 @@ explicit company id in their route and never fabricate a membership.
 | POST | `mfa/confirm/` | Confirm TOTP + receive recovery codes | Codes shown once |
 | POST | `mfa/disable/` | Disable MFA | Password + TOTP/recovery code; audited |
 
+A confirmed TOTP device makes `login/` answer **401 `mfa_required`** with `fields.challenge_id`;
+`mfa/verify/` consumes that challenge once (five minutes) and creates the session. The code may
+also be supplied inline as `mfa_code`, and one of the ten recovery codes works in either place,
+once. An account whose role appears in `ACADEMY_MFA_REQUIRED_ROLES` and has no confirmed device
+stays signed in, but every route outside `/auth/` answers **403 `mfa_enrollment_required`** until
+it enrols, so it can still enrol and sign out. Invitation acceptance creates the account,
+verifies its address and creates its membership; it is not a credential and creates no session.
+
 `GET /me/` (profile) and `PATCH /me/` (display name, preferred language) are the only
 self-service profile writes. Email change is a separate verified flow (`POST /me/email/change/`
 → confirm token) and revokes other sessions.
@@ -261,7 +269,7 @@ business rules.
 `upload_too_large` 400 · `unsupported_type` 400 · `token_invalid` 400 ·
 `invitation_invalid` 400 · `invalid_credentials` 401 · `mfa_required` 401 · `mfa_invalid` 401 ·
 `unauthorized` 401 · `account_inactive` 403 · `membership_inactive` 403 ·
-`email_unverified` 403 ·
+`email_unverified` 403 · `mfa_enrollment_required` 403 ·
 `organization_suspended` 403 · `forbidden` 403 · `lesson_locked` 403 ·
 `access_suspended` 403 · `platform_access_readonly` 403 · `not_found` 404 ·
 `method_not_allowed` 405 · `idempotency_conflict` 409 · `draft_exists` 409 ·

@@ -20,8 +20,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from academy.access import accounts, sessions
-from academy.access.principals import SESSION_KEY, session_auth_hash, session_user
+from academy.access import accounts, invitations, mfa, sessions
+from academy.access.principals import session_user
 from academy.access.throttles import throttle_exceeded
 from academy.exceptions import NotFound
 from academy.models import User, UserSession
@@ -40,6 +40,7 @@ def _public_link(request: Request, path: str, token: str) -> str:
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(trim_whitespace=False, style={"input_type": "password"})
+    mfa_code = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class AccountSerializer(serializers.Serializer):
@@ -76,6 +77,23 @@ class AcceptedSerializer(serializers.Serializer):
     status = serializers.CharField()
 
 
+def _account(user: User) -> dict[str, Any]:
+    return {
+        "id": user.pk,
+        "display_name": user.display_name,
+        "email_verified": user.is_email_verified,
+    }
+
+
+def _signed_in(user: User) -> dict[str, Any]:
+    return {
+        "user": _account(user),
+        "redirect": "/academy/",
+        "email_verified": user.is_email_verified,
+        "mfa_enabled": mfa.enabled(user),
+    }
+
+
 class LoginView(APIView):
     """Email + password sign-in; a failure never creates a session."""
 
@@ -97,19 +115,9 @@ class LoginView(APIView):
             request,
             serializer.validated_data["email"],
             serializer.validated_data["password"],
+            serializer.validated_data.get("mfa_code") or None,
         )
-        return Response(
-            {
-                "user": {
-                    "id": user.pk,
-                    "display_name": user.display_name,
-                    "email_verified": user.is_email_verified,
-                },
-                "redirect": "/academy/",
-                "email_verified": user.is_email_verified,
-            },
-            headers=_NO_STORE,
-        )
+        return Response(_signed_in(user), headers=_NO_STORE)
 
 
 class LogoutView(APIView):
@@ -180,11 +188,7 @@ class PasswordChangeView(APIView):
             serializer.validated_data["current_password"],
             serializer.validated_data["password"],
         )
-        request.session[SESSION_KEY] = {
-            "user_id": str(user.pk),
-            "auth_hash": session_auth_hash(user),
-            "roles": ["employee"],
-        }
+        request.session[accounts.SESSION_KEY] = accounts.session_payload(user)
         sessions.revoke_others(user, keep_key=request.session.session_key)
         return Response({"status": "changed"}, headers=_NO_STORE)
 
@@ -283,3 +287,156 @@ class SessionRevokeView(APIView):
             raise NotFound("session not found")
         sessions.revoke(row)
         return Response(status=204)
+
+
+class MFAVerifySerializer(serializers.Serializer):
+    challenge_id = serializers.CharField()
+    code = serializers.CharField(trim_whitespace=False)
+
+
+class MFAEnrollSerializer(serializers.Serializer):
+    password = serializers.CharField(trim_whitespace=False, style={"input_type": "password"})
+
+
+class MFAEnrollResponseSerializer(serializers.Serializer):
+    secret = serializers.CharField()
+    otpauth_uri = serializers.CharField()
+
+
+class MFAConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField(trim_whitespace=False)
+
+
+class MFAConfirmResponseSerializer(serializers.Serializer):
+    recovery_codes = serializers.ListField(child=serializers.CharField())
+
+
+class MFADisableSerializer(serializers.Serializer):
+    password = serializers.CharField(trim_whitespace=False, style={"input_type": "password"})
+    code = serializers.CharField(trim_whitespace=False)
+
+
+class InvitationAcceptSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(trim_whitespace=False, style={"input_type": "password"})
+    display_name = serializers.CharField(max_length=150)
+
+
+class InvitationAcceptedSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    redirect = serializers.CharField()
+
+
+class MFAVerifyView(APIView):
+    """Complete a challenged sign-in with a TOTP or recovery code (single use, 5 minutes)."""
+
+    authentication_classes: list[Any] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=MFAVerifySerializer,
+        responses={
+            200: LoginResponseSerializer,
+            401: OpenApiResponse(description="mfa_invalid"),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = MFAVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = accounts.complete_mfa(
+            request,
+            serializer.validated_data["challenge_id"],
+            serializer.validated_data["code"],
+        )
+        return Response(_signed_in(user), headers=_NO_STORE)
+
+
+class MFAEnrollView(APIView):
+    """Start TOTP enrolment after a password re-entry; the secret is returned once."""
+
+    @extend_schema(
+        request=MFAEnrollSerializer,
+        responses={
+            200: MFAEnrollResponseSerializer,
+            400: OpenApiResponse(description="validation_error"),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = MFAEnrollSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = session_user(request)
+        if user is None:
+            raise NotAuthenticated("no Academy session")
+        _, secret, uri = mfa.enroll(user, serializer.validated_data["password"])
+        return Response({"secret": secret, "otpauth_uri": uri}, headers=_NO_STORE)
+
+
+class MFAConfirmView(APIView):
+    """Confirm the pending device; the ten recovery codes are shown once."""
+
+    @extend_schema(
+        request=MFAConfirmSerializer,
+        responses={
+            200: MFAConfirmResponseSerializer,
+            400: OpenApiResponse(description="validation_error"),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = MFAConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = session_user(request)
+        if user is None:
+            raise NotAuthenticated("no Academy session")
+        codes = mfa.confirm(user, serializer.validated_data["code"])
+        return Response({"recovery_codes": codes}, headers=_NO_STORE)
+
+
+class MFADisableView(APIView):
+    """Remove the second factor; both the password and a current code are required."""
+
+    @extend_schema(
+        request=MFADisableSerializer,
+        responses={
+            200: AcceptedSerializer,
+            400: OpenApiResponse(description="validation_error"),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = MFADisableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = session_user(request)
+        if user is None:
+            raise NotAuthenticated("no Academy session")
+        mfa.disable(
+            user,
+            serializer.validated_data["password"],
+            serializer.validated_data["code"],
+        )
+        return Response({"status": "disabled"}, headers=_NO_STORE)
+
+
+class InvitationAcceptView(APIView):
+    """Accept a company invitation once; no session is created without the credential."""
+
+    authentication_classes: list[Any] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=InvitationAcceptSerializer,
+        responses={
+            200: InvitationAcceptedSerializer,
+            400: OpenApiResponse(description="invitation_invalid"),
+            409: OpenApiResponse(description="already_member"),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = InvitationAcceptSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if throttle_exceeded(request, "auth_invitation_accept", "10/hour"):
+            raise Throttled()
+        invitations.accept(
+            serializer.validated_data["token"],
+            password=serializer.validated_data["password"],
+            display_name=serializer.validated_data["display_name"],
+        )
+        return Response({"status": "accepted", "redirect": "/academy/login/"}, headers=_NO_STORE)

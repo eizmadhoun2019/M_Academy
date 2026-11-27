@@ -32,7 +32,14 @@ def test_every_academy_model_has_a_factory() -> None:
     tenant_models = {model for model in registered if issubclass(model, TenantModel)}
     # Global by design (docs/domain-model.md §1.1, §2.0.2): account tokens belong to a global
     # account and never carry a company.
-    global_models = {"AccountToken", "Organization", "User", "UserSession"}
+    global_models = {
+        "AccountToken",
+        "MFADevice",
+        "Organization",
+        "RecoveryCode",
+        "User",
+        "UserSession",
+    }
     missing = sorted(model.__name__ for model in tenant_models - set(FACTORIES))
 
     assert missing == []

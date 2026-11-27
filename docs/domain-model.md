@@ -107,6 +107,7 @@ synthetic company row.
 | `removed_at` | timestamptz | yes | `NULL` | Required iff `removed` |
 | `invited_by_id` | uuid FK → User | yes | `NULL` | `SET NULL` |
 | `department_id` | uuid FK → Department | yes | `NULL` | Composite tenant FK; primary department |
+| `roles` | jsonb | no | `[]` | **Provisional (T-027 CP2):** the company role codes an invitation granted; read when a session is created. T-028 replaces it with `RoleAssignment` and migrates the codes |
 
 Constraints: **`UNIQUE (user_id)`** (D-043 — one company per account; this is the authoritative
 cardinality constraint), `UNIQUE (organization_id, id)`,
@@ -201,7 +202,10 @@ Index `(organization_id, expires_at) WHERE revoked_at IS NULL`.
 | `roles` | M2M → Role | — | — | Must be company roles or `learner` |
 
 Constraints: `UNIQUE (organization_id, email) WHERE accepted_at IS NULL` (one live invite),
-`CHECK (expires_at > created_at)`, index `(token_hash)` unique. Acceptance creates/reactivates
+`CHECK (expires_at > created_at)`, index `(token_hash)` unique. T-027 CP2 stores `roles` as the
+jsonb list of company role codes (`employee`, `department_manager`) that the accepted membership
+receives; the M2M `Role` relation arrives with the T-028 catalogue. Re-inviting deletes the
+previous live row, and revoking deletes the row. Acceptance creates/reactivates
 the `User` and `Membership` and applies active assignments. Acceptance **rejects an email that
 already has a membership in another company**; for the same company it restores the removed row
 instead of inserting a second one (`already_member` otherwise).

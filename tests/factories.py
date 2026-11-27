@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Iterable
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +26,7 @@ from academy.models import (
     Department,
     Enrollment,
     HubWebhookEvent,
+    Invitation,
     Lesson,
     LessonProgress,
     MediaAsset,
@@ -64,6 +66,18 @@ def make_membership(organization_id: UUID, **overrides: Any) -> Membership:
     }
     values.update(overrides)
     return Membership.objects.create(**values)
+
+
+def make_invitation(organization_id: UUID, **overrides: Any) -> Invitation:
+    values: dict[str, Any] = {
+        "organization_id": organization_id,
+        "email": f"invitee-{uuid.uuid4()}@example.com",
+        "token_hash": uuid.uuid4().hex + uuid.uuid4().hex,
+        "expires_at": timezone.now() + timedelta(days=7),
+        "roles": ["employee"],
+    }
+    values.update(overrides)
+    return Invitation.objects.create(**values)
 
 
 def make_grant(organization_id: UUID, **overrides: Any) -> PermissionGrant:
@@ -356,6 +370,7 @@ def make_audit(organization_id: UUID, **overrides: Any) -> AuditEvent:
 FACTORIES: dict[type[TenantModel], Callable[[UUID], TenantModel]] = {
     Department: make_department,
     Membership: make_membership,
+    Invitation: make_invitation,
     Course: make_course,
     CourseVersion: make_version,
     Section: make_section,

@@ -27,6 +27,8 @@ ACADEMY_ADAPTERS = {  # noqa: F405 - name comes from `base` via the star import
 }
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+# Public test-only constant: TOTP secrets never leave the test database (T-027 CP2).
+ACADEMY_MFA_ENCRYPTION_KEY = "test-only-mfa-key-not-used-outside-tests-000000"  # nosec B105
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

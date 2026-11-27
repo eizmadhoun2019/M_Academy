@@ -332,6 +332,10 @@ class Membership(TenantModel):
         null=True,
         blank=True,
     )
+    # T-027 CP2: the codes an invitation grants, stored on the membership until T-028 replaces
+    # this column with the dynamic `RoleAssignment` table (D-033). Read by
+    # ``academy.access.tenancy.roles_for_user`` when a session is created.
+    roles = models.JSONField(default=list, blank=True)
     objects: TenantManager[Membership] = TenantManager()  # type: ignore[assignment]
 
     class Meta:
@@ -366,3 +370,96 @@ class Membership(TenantModel):
 
     def __str__(self) -> str:
         return f"{self.user_id} @ {self.organization_id}"
+
+
+class Invitation(TenantModel):
+    """One pending company invitation — ``docs/domain-model.md`` §2.0.9 (T-027 CP2).
+
+    The token is stored as a SHA-256 digest only; the raw value exists once, in the mailed link.
+    ``UNIQUE (organization_id, email) WHERE accepted_at IS NULL`` keeps one live invitation per
+    address, so re-inviting retires the previous token. ``roles`` carries the codes the accepted
+    membership starts with until T-028 introduces the role catalogue.
+    """
+
+    email = models.EmailField(max_length=254)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    invited_by = models.ForeignKey(
+        Membership,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    roles = models.JSONField(default=list, blank=True)
+    objects: TenantManager[Invitation] = TenantManager()  # type: ignore[assignment]
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization_id", "email"],
+                condition=models.Q(accepted_at__isnull=True),
+                name="invitation_one_live_per_email",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(expires_at__gt=models.F("created_at")),
+                name="invitation_expiry_after_creation",
+            ),
+        ]
+        indexes = [models.Index(fields=["organization_id", "email"], name="invitation_org_email")]
+
+    def __str__(self) -> str:
+        return f"{self.email} @ {self.organization_id}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+
+
+class MFADevice(BaseModel):
+    """One account's confirmed TOTP device — ``docs/domain-model.md`` §2.0.11 (T-027 CP2).
+
+    The shared secret is encrypted with ``ACADEMY_MFA_ENCRYPTION_KEY``; an unconfirmed row is an
+    enrolment in progress and is replaced by the next ``mfa/enroll/`` call.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="mfa_devices")
+    secret_encrypted = models.CharField(max_length=512)
+    label = models.CharField(max_length=40, blank=True, default="")
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(confirmed_at__isnull=False),
+                name="mfa_device_one_confirmed_per_user",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "confirmed_at"], name="mfa_device_user_state")]
+
+    def __str__(self) -> str:
+        return f"MFA device of {self.user_id}"
+
+
+class RecoveryCode(BaseModel):
+    """One single-use MFA recovery code, stored hashed (T-027 CP2)."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recovery_codes")
+    code_hash = models.CharField(max_length=128)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "used_at"], name="recovery_code_user_state")]
+
+    def __str__(self) -> str:
+        return f"recovery code of {self.user_id}"
