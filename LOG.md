@@ -21,6 +21,38 @@
 
 ## Entries
 
+### [2026-11-27] — T-027 CP2: company invitations, TOTP MFA and recovery codes
+
+- **Type:** Change
+- **Status:** Implemented (branch `task/T-027-identity-cp2` at `afe6084`; not merged — waits for the
+  owner's approval)
+- **Summary:** `Invitation` (migration `0012`) binds a hashed seven-day token to one address, one
+  company, one department and a set of company role codes; one live invitation per address per
+  company, and re-inviting deletes the previous row so its token stops working. `POST
+  /auth/invitations/accept/` creates or reactivates the account, verifies its address and creates
+  or restores its single membership; an address that already holds a membership is refused with
+  409 `already_member` and no second row is written. `MFADevice` stores the TOTP secret encrypted
+  with `ACADEMY_MFA_ENCRYPTION_KEY`; `mfa/enroll/` needs the password, `mfa/confirm/` issues ten
+  hashed single-use recovery codes, `mfa/disable/` needs the password and a current code. A
+  confirmed device makes `login/` answer 401 `mfa_required` with a five-minute single-use challenge
+  that `mfa/verify/` consumes once; a recovery code also works once. Accounts whose role is listed
+  in `ACADEMY_MFA_REQUIRED_ROLES` and have no device stay signed in but every route outside
+  `/auth/` answers 403 `mfa_enrollment_required` until they enrol. A session's role list now comes
+  from its membership (`Membership.roles`, the provisional pre-RBAC carrier that T-028 replaces
+  with `RoleAssignment`) instead of a hard-coded `employee`.
+- **Impact:** CP2 is complete; CP3 (dev-login removal, production guard, `MailTransport` delivery
+  and the auth security suite) is the remaining T-027 checkpoint. `pyotp` and `cryptography` are
+  new pinned dependencies and the development image was rebuilt. D-046 is untouched.
+- **Evidence:** `tests/test_invitations.py` (16) and `tests/test_mfa.py` (11) pass; `tests/test_auth.py`
+  (22) still pass; `ruff`, `ruff format --check`, `mypy` (168 files), `makemigrations --check`,
+  `spectacular --validate --fail-on-warn` (zero warnings), `scripts/gate_imports.py` and
+  `scripts/check_docs.py` (40 files) are green locally; CI run `45954587695` on the branch is
+  green.
+- **Approved by:** Project owner (2026-11-26, «كمل» after the CP1 merge); the merge itself is not
+  authorised yet.
+- **References:** T-027 CP2, `docs/security.md` §2, `docs/api.md` §3/§14, `docs/domain-model.md`
+  §2.0.3/§2.0.9/§2.0.11, `docs/configuration.md` §2, D-033, D-043.
+
 ### [2026-11-26] — T-027 CP2: session registry, listing and revocation (partial CP2)
 
 - **Type:** Change

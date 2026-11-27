@@ -46,7 +46,7 @@
 | **T-024** | Hardening + E2E + ops + pilot (old scope) | `[–]` **superseded by T-034** | — | — |
 | **T-025** | Documentation and governance consolidation | `[x]` (merged `b592498`) | owner approval | GATE-1 |
 | **T-026** | Tenancy and account foundation | `[x]` CP1 `a5373c0`, CP2 `e3f9715`, CP3 `5ae89f6`; zero-row audit accepted by the owner 2026-11-26; staging re-audit before cutover | T-025 | GATE-1 |
-| **T-027** | Local identity and account lifecycle | `[~]` CP1 merged `6d72a63`; CP2 in progress (session registry, listing/revocation, idle window; invitations and MFA remain); CP3 pending | T-026 `[x]` | GATE-1 |
+| **T-027** | Local identity and account lifecycle | `[~]` CP1 merged `6d72a63`; CP2 implemented on `task/T-027-identity-cp2` at `afe6084` (CI 45954587695), awaiting merge approval: session registry/listing/revocation/idle, invitations with acceptance, TOTP MFA with recovery codes and role-enforced enrolment; CP3 pending | T-026 `[x]` | GATE-1 |
 | **T-028** | Dynamic scoped RBAC and administration API | `[ ]` | T-027 | GATE-1 |
 | **T-029** | Public website, auth screens and application shell (ar/en) | `[ ]` | T-028 | GATE-1 |
 | **T-030** | Platform and company administration consoles | `[ ]` | T-029 | GATE-1 |
@@ -191,7 +191,11 @@ assertions.
 **Risks:** mail deliverability; MFA lockout. Mitigations: recovery codes, admin reset runbook,
 staging mail test.
 **Docs:** security §2–§3, api §3, configuration §2/§4, domain-model §2.0, operations.
-**Evidence:** test names + CI, staging mail transcript, guard test.
+**Evidence:** CP1 merge `6d72a63` (CI 45786234699); CP2 `afe6084` on `task/T-027-identity-cp2`
+(CI 45954587695 success) — `tests/test_auth.py` (22), `tests/test_invitations.py` (16),
+`tests/test_mfa.py` (11); `ruff`/`mypy` (168 files)/`makemigrations --check` clean, G5 zero
+warnings, G7 and G9 green. CP3's guard test, staging mail transcript and the auth-security suite
+remain.
 
 ### T-028 — Dynamic scoped RBAC and administration API
 **Checkpoints:** CP1 catalogue/models/default roles; CP2 resolver, scope enforcement, escalation and last-admin guards; CP3 member/role/grant/department API, legacy grant migration, capabilities v2.

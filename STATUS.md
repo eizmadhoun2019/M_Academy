@@ -3,12 +3,12 @@
 > Current state only. Historical detail belongs in `LOG.md`.
 > Task definitions and acceptance criteria live in `docs/plan.md`.
 
-**Last updated:** 2026-11-26 (T-027 CP1 merged `6d72a63`: email/password, verification, reset)
-**Updated by:** AI agent (T-027 CP1), under the owner's delegation
+**Last updated:** 2026-11-27 (T-027 CP2 invitations and MFA implemented on `task/T-027-identity-cp2`)
+**Updated by:** AI agent (T-027 CP2), under the owner's delegation
 **Current phase:** H1.5 — Foundation (GATE-1)
 **Project scale:** Medium (design envelope: 10 companies / 5,000 users)
 **Sensitivity:** Sensitive
-**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is merged as `a5373c0`; CP2 (mapping/backfill and reconciliation report) is merged as `e3f9715` (branch `0ec430e`, CI 45769212077; merge CI run 45773205917), with the real-data mapping and reconciliation kept open as an acceptance condition until the owner's identity file arrives or the absence of rows requiring migration is proven; CP3 (company context from the single membership, `/me/organization`, expanded isolation) is merged as `5ae89f6` (CI 45776614160 success). The legacy-data audit of 2026-11-26 (`manage.py audit_legacy_data`) found **zero legacy rows** in the only existing database (development); the owner accepted that evidence on 2026-11-26, so the reconciliation condition is closed and **T-026 is `[x]`**. **T-027 CP1** (local email/password sign-in, email verification and password reset/change, hashed single-use tokens, session fingerprint, login failure lock, Argon2) is merged as `6d72a63` (branch `c157739`; CI 45786234699) with 18 tests and all gates green; CP2 (invitations, session listing/revocation, MFA) and CP3 (dev-login removal, production guard, mail) remain
+**Overall status:** Active — T-025 and T-035 are merged; the official UI/UX reference is the single design authority; T-026 CP1 (schema expand, nullable FKs, constraints, seed) is merged as `a5373c0`; CP2 (mapping/backfill and reconciliation report) is merged as `e3f9715` (branch `0ec430e`, CI 45769212077; merge CI run 45773205917), with the real-data mapping and reconciliation kept open as an acceptance condition until the owner's identity file arrives or the absence of rows requiring migration is proven; CP3 (company context from the single membership, `/me/organization`, expanded isolation) is merged as `5ae89f6` (CI 45776614160 success). The legacy-data audit of 2026-11-26 (`manage.py audit_legacy_data`) found **zero legacy rows** in the only existing database (development); the owner accepted that evidence on 2026-11-26, so the reconciliation condition is closed and **T-026 is `[x]`**. **T-027 CP1** (local email/password sign-in, email verification and password reset/change, hashed single-use tokens, session fingerprint, login failure lock, Argon2) is merged as `6d72a63` (branch `c157739`; CI 45786234699) with 18 tests and all gates green; **CP2** (session registry/listing/revocation and idle window, company invitations, TOTP MFA with recovery codes and role-enforced enrolment) is implemented on `task/T-027-identity-cp2` at `afe6084` (CI 45954587695 success) and **awaits the owner's approval to merge**; CP3 (dev-login removal, production guard, mail delivery) remains
 
 ## Snapshot
 `main` carries the working H1 foundations: T-001…T-022 are implemented and tested (590 tests at
@@ -45,7 +45,7 @@ merged, and the 2026-11-26 audit found no legacy row to migrate in the only data
 | T-025 | Documentation and governance consolidation | `[x]` — merged in `b592498`; CI success 45687216183 | AI agent; owner approved 2026-11-25 | owner approval | `docs/plan.md` §4 T-025; `check_docs` green (38 files); 23-row capability matrix |
 | T-035 | Official UI/UX reference adoption and repository hygiene | `[x]` — merged in `47638b0`; CI success 45694757748; owner approved 2026-11-25 | AI agent; docs only | T-025 | `docs/plan.md` §4 T-035; `docs/ui/design-reference.md`; restore rehearsal 14/14; `check_docs` green |
 | T-026 | Tenancy and account foundation | `[x]` — CP1 `a5373c0` (CI 45700454330), CP2 `e3f9715` (CI 45773205917), CP3 `5ae89f6` (CI 45776614160); zero-row audit accepted by the owner 2026-11-26; staging re-audit before cutover | AI agent; owner approved 2026-11-26 | T-025 | `docs/plan.md` §4 T-026; `test_tenancy_constraints`, `test_tenancy_backfill`, `test_company_context`, `test_tenancy_audit`; `docs/migration-h1.5.md` §8 |
-| T-027 | Local identity and account lifecycle | `[~]` — CP1 merged `6d72a63`; CP2 in progress on `task/T-027-identity-cp2`: `UserSession` registry, `GET /auth/sessions/`, `DELETE /auth/sessions/{id}/`, 30-minute idle window, revocation on reset/change (22 auth tests); invitations and MFA remain; CP3 pending | AI agent; owner approved CP1 2026-11-26 | T-026 `[x]` | `docs/plan.md` §4 T-027; `tests/test_auth.py` (22); gates G1, G3, G5, G7, G9 |
+| T-027 | Local identity and account lifecycle | `[~]` — CP1 merged `6d72a63`; CP2 implemented on `task/T-027-identity-cp2` at `afe6084` (CI 45954587695 success), awaiting the owner's merge approval: `UserSession` registry, `GET /auth/sessions/`, `DELETE /auth/sessions/{id}/`, 30-minute idle window, revocation on reset/change; `Invitation` + `POST /auth/invitations/accept/` with `already_member`; TOTP MFA, 10 hashed recovery codes, single-use login challenges and `mfa_enrollment_required`; migration `0012`; CP3 pending | AI agent; owner approved CP1 2026-11-26 | T-026 `[x]` | `docs/plan.md` §4 T-027; `tests/test_auth.py` (22), `tests/test_invitations.py` (16), `tests/test_mfa.py` (11); gates G1, G3, G5, G7, G9 |
 | T-033 | Hub quarantine | `[ ]` — unblocked by T-026 `[x]`; starts only on the owner's instruction | AI agent | T-026 `[x]` | `docs/plan.md` §4 T-033 |
 | T-001 | Repository and stack bootstrap | `[~]` — bucket step evidence outstanding | Tech authority | — | `docs/operations/environments.md` §12 step 7 |
 | T-013 | UI foundation | `[~]` — extended by T-029 | Tech authority | T-002 | en catalogue + axe evidence land in T-029 |
@@ -57,6 +57,18 @@ Completed: T-002…T-012, T-014…T-022 on `main` with their CI/LOG evidence. T-
 that T-033 will quarantine; T-016/T-009 are completed v1 engines that T-028 replaces.
 
 ## Recently completed
+- 2026-11-27 — **T-027 CP2 invitations and MFA implemented** on `task/T-027-identity-cp2` as
+  `afe6084` (CI 45954587695 success); not merged. `Invitation` (migration `0012`) stores a
+  SHA-256 token, a seven-day expiry and the role codes the accepted membership receives; one live
+  invitation per address per company, re-inviting retires the previous token, and acceptance
+  creates or reactivates the account, verifies the address and restores a removed membership
+  rather than inserting a second one (409 `already_member` otherwise). `MFADevice` keeps the TOTP
+  secret encrypted with `ACADEMY_MFA_ENCRYPTION_KEY`; confirmation issues ten hashed single-use
+  recovery codes; a confirmed device makes `login/` answer 401 `mfa_required` with a five-minute
+  single-use challenge, and a role in `ACADEMY_MFA_REQUIRED_ROLES` with no device is confined to
+  the auth routes by 403 `mfa_enrollment_required` until it enrols. Membership `roles` is the
+  provisional pre-RBAC carrier that T-028 replaces with `RoleAssignment`. Local suites: 16
+  invitation tests and 11 MFA tests; gates G5/G7/G9 green, `ruff`/`mypy` (168 files) clean.
 - 2026-11-26 — **T-027 CP2 sessions slice.** `UserSession` (migration `0011`) stores only a
   SHA-256 of the session key, an absolute expiry, a coarse last-seen and an optional revocation
   stamp; a session without a live row resolves to no principal, so revocation and the 30-minute
@@ -195,9 +207,10 @@ Single register: [`docs/decisions.md`](docs/decisions.md). This file does not du
 - Retired numbers (D-018…D-022, ADR numbers 15–22) are mapped in the register and must not reappear.
 
 ## Next action
-**T-027 CP1 is merged** as `6d72a63`; **CP2 (invitations, session listing/revocation, MFA) is the
-next eligible checkpoint** on a new `task/T-027-identity-cp2` branch. **T-033 is unblocked but not
-started** and waits for the owner's instruction. **Re-audit on staging:** when T-034 provisions it, run
+**T-027 CP1 is merged** as `6d72a63` and **CP2 is complete on `task/T-027-identity-cp2`** at
+`afe6084` (CI 45954587695 success), **waiting for the owner's merge approval**; the next eligible
+checkpoint after that approval is **T-027 CP3** (dev-login removal, production guard, mail
+delivery, auth security suite). **T-033 is unblocked but not started** and waits for the owner's instruction. **Re-audit on staging:** when T-034 provisions it, run
 `manage.py audit_legacy_data` against the restored dump before any cutover; a non-zero result
 blocks cutover until the owner's identity CSV is imported and `backfill_tenancy --dry-run` is
 reviewed. D-046 stays open, enabled and unweakened until paid before GATE-1.
